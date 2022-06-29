@@ -1,0 +1,46 @@
+version: '3.4'
+services:
+
+  historical_data_feeds:
+    network_mode: host
+    build: 
+      dockerfile: ./historical_data_feeds/Dockerfile
+    command: "python run.py"
+    env_file:
+      - .env
+
+  live_data_feeds:
+    network_mode: host
+    build:
+      dockerfile: ./live_data_feeds/Dockerfile
+    command: "python run.py"
+    env_file:
+      - .env
+
+  python_backtester:
+    network_mode: host
+    build: 
+      dockerfile: ./python_backtester/Dockerfile
+    command: "python run.py"
+    env_file:
+      - .env
+
+  python_engine:
+    network_mode: host
+    build:
+      dockerfile: ./python_engine/Dockerfile
+    command: "python run.py"
+    env_file:
+      - .env
+
+  python_executor:
+    network_mode: host
+    build: 
+      dockerfile: ./python_backtester/Dockerfile
+    command: "python run.py"
+    env_file:
+      - .env
+
+
+
+
