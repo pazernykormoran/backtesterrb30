@@ -8,6 +8,7 @@ class Service(ABC):
 
     def __init__(self, config: dict, logger: Callable = print):
         self.name = config['name']
+        self.config=config
         self.__logger = logger
 
     def run(self):

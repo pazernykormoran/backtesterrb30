@@ -11,7 +11,6 @@ class Engine(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.config = config
         self.register("data_feed", self.__data_feed)
 
     @abstractmethod

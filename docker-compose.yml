@@ -8,6 +8,9 @@ services:
     command: "python run.py"
     env_file:
       - .env
+      - .ports_config
+    environment:
+      - NAME=historical_data_feeds
 
   live_data_feeds:
     network_mode: host
@@ -16,6 +19,9 @@ services:
     command: "python run.py"
     env_file:
       - .env
+      - .ports_config
+    environment:
+      - NAME=live_data_feeds
 
   python_backtester:
     network_mode: host
@@ -24,6 +30,9 @@ services:
     command: "python run.py"
     env_file:
       - .env
+      - .ports_config
+    environment:
+      - NAME=python_backtester
 
   python_engine:
     network_mode: host
@@ -32,6 +41,9 @@ services:
     command: "python run.py"
     env_file:
       - .env
+      - .ports_config
+    environment:
+      - NAME=python_engine
 
   python_executor:
     network_mode: host
@@ -40,6 +52,9 @@ services:
     command: "python run.py"
     env_file:
       - .env
+      - .ports_config
+    environment:
+      - NAME=python_executor
 
 
 

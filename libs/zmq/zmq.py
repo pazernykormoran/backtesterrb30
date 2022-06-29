@@ -5,7 +5,7 @@ import zmq
 import zmq.asyncio
 import asyncio
 
-from lib.service import Service
+from libs.zmq.service import Service
 
 class ZMQ(Service, ABC):
 
@@ -25,7 +25,7 @@ class ZMQ(Service, ABC):
         self._is_active = False
 
         self._pub = {}
-        self._init_sockets(config)
+        
 
         self._commands = {'start': self._start,
                           'pause': self._pause,
@@ -33,6 +33,7 @@ class ZMQ(Service, ABC):
 
     # override
     def run(self):
+        self._init_sockets(self.config)
         self._is_running = True
         self._is_active = True
         super().run()

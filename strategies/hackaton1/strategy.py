@@ -1,11 +1,28 @@
 
-from python_engine.engine import Engine
-from pydantic import BaseModel
-from libs.data_feeds.data_feeds import IntervalConfigurator, STRATEGY_INTERVALS
+from libs.necessery_imports.necessery_imports import *
 
-IntervalConfigurator.set_strategy_interval(STRATEGY_INTERVALS.hour)
-IntervalConfigurator.add_symbol()
 
+# configure data feed =====================================
+
+data={
+    'interval':STRATEGY_INTERVALS.hour,
+    'data':[
+        {
+            'symbol': 'name1',
+            'main': False
+        },
+        {
+            'symbol': 'name2',
+            'trigger_feed': False,
+            'main': True,
+        }
+    ]
+}
+DATA = DataSchema(**data)
+
+
+
+# configure model =====================================
 
 class EventSchema(BaseModel):
     value1:float
@@ -13,14 +30,13 @@ class EventSchema(BaseModel):
 
 
 class Model(Engine):
-
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, config):
+        super().__init__(config)
 
     #override
     def on_feed(self, data):
-        super
+
         message = {
             'value1': 11.11,
             'value2': 'v2'
@@ -29,9 +45,15 @@ class Model(Engine):
         self._trigger_event(EventSchema(**message))
 
 
-class Trade_executor():
+
+# configure trade executor =====================================
+
+class TradeExecutor(Executor):
+
+    def __init__(self, config):
+        super().__init__(config)
 
     #override
-    def on_event():
+    def on_event(self, message):
         pass
 
