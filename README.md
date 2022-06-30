@@ -9,15 +9,12 @@ strategy=name_of_strategy
 
 # Strategy implementation using python engine
 
-In folder strategies add folder with your strategy and create file "strategy.py"
+In folder strategies add folder with your strategy and create three files: "data_schema.py", "executor.py", "model.py"
 
-Add necessery imports in the top of your strategy file. Under necessery imports you can import any other library as well.
+In "data_schema.py" configure your input data schema and strategy interval using "DataSchema" interface and list of avaliable instruments avaliable in #TODO
 ~~~
-from libs.necessery_imports.necessery_imports import *
-~~~
+from libs.necessery_imports.data_imports import *
 
-Configure your data feeds schema and strategy interval using "DataSchema" interface and list of avaliable instruments avaliable in #TODO
-~~~
 data={
     'interval':STRATEGY_INTERVALS.hour,
     'data':[
@@ -35,16 +32,12 @@ data={
 DATA = DataSchema(**data)
 ~~~
 
-Configure your event schema. Its interface between your model function and event function.
+In "model.py" configure your model class named Model ingeriting from Engine.
+Model has to contain "on_feed" function which is triggered every interval you have choosen.
+In this class, you can use "_trigger_event" function inheritet from Engine class.
 ~~~
-class EventSchema(BaseModel):
-    value1:float
-    value2:str
-~~~
+from libs.necessery_imports.model_imports import *
 
-Configure your model what means your function that is triggered every interval you have choosen.
-In this function, you can use "_trigger_event" function inheritet from Engine class.
-~~~
 class Model(Engine):
     
     def __init__(self, config):
@@ -58,12 +51,15 @@ class Model(Engine):
             'value2': 'v2'
         }
         
-        self._trigger_event(EventSchema(**message))
+        self._trigger_event(message)
 ~~~
 
-Configure your trade executor function what is a function triggered while your model returns event using 
-function self._trigger_event and pass to is object fitting EventSchema interface. In this function, you can use "_trade" function inheritet from Executor class.
+Configure your trade executor class named TradeExecutor inheriting from Executor.
+TradeExecutor contains function "on_event" triggered while your model returns event using 
+function self._trigger_event. In this function, you can use "_trade" function inheritet from Executor class.
 ~~~
+from libs.necessery_imports.executor_imports import *
+
 class TradeExecutor(Executor):
 
     def __init__(self, config):

@@ -1,24 +1,26 @@
 from os import getenv
 strategy_name = getenv('STRATEGY_NAME')
 microservice_name = getenv('NAME')
-sub_port = int(getenv(microservice_name).split(',')[0])
-pub_port = int(getenv(microservice_name).split(',')[1])
-from libs.necessery_imports.necessery_imports import *
+sub_ports = [int(p) for p in getenv(microservice_name+'_subs').split(',')]
+pub_ports = [int(p) for p in getenv(microservice_name+'_pubs').split(',')]
 import importlib
-module = importlib.import_module('strategies.'+strategy_name+'.strategy')
+
+module = importlib.import_module('strategies.'+strategy_name+'.model')
 config = {
     "name": microservice_name,
     "ip": "localhost",
-    "sub": {
-        "topic": microservice_name,
-        "port": sub_port
-    },
+    "sub": [
+        {
+        "topic": "",
+        "port": p
+        } for p in sub_ports
+    ],
     "pub": [
         {
-            "topic": "python_executor",
-            "port": pub_port
-        }
+            "topic": 'pub_'+str(p),
+            "port": p
+        } for p in pub_ports
     ]
 }
-print('calling run')
-engine = module.Model(config).run()
+engine = module.Model(config)
+engine.run()

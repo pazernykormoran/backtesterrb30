@@ -1,4 +1,4 @@
 **.json
 **/.env
 **/__pycache__
-.ports_config
+.additional_configs

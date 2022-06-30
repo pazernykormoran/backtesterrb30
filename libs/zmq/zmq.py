@@ -1,11 +1,12 @@
 from abc import abstractmethod, ABC
 from typing import Callable, Dict, List
-
+from asyncio import AbstractEventLoop
 import zmq
 import zmq.asyncio
 import asyncio
-
+from libs.list_of_services.list_of_services import SERVICES
 from libs.zmq.service import Service
+from os import getenv
 
 class ZMQ(Service, ABC):
 
@@ -24,7 +25,8 @@ class ZMQ(Service, ABC):
         self._is_running = False
         self._is_active = False
 
-        self._pub = {}
+        self._pubs = {}
+        self._subs = []
         
 
         self._commands = {'start': self._start,
@@ -38,13 +40,25 @@ class ZMQ(Service, ABC):
         self._is_active = True
         super().run()
 
+    def __find_topic(self, service):
+        port = ''
+        service_sub_ports = [int(p) for p in getenv(service+'_subs').split(',')]
+        for port in service_sub_ports:
+            for pub in self.config['pub']:
+                if pub['port'] == port:
+                    return 'pub_'+str(port)
+
     # override
-    def _send(self, topic: str, msg: str, *args):
+    def _send(self, service: SERVICES, msg: str, *args):
+        topic = self.__find_topic(service.value)
+        if not topic:
+            self._log('Cannot send message to this micro service. Check port configuration')
+            return
         if self._is_active:
             data = [topic.encode('utf-8'), msg.encode('utf-8')]
             for arg in args:
                 data.append(arg.encode('utf-8'))
-            self._pub[topic].send_multipart(data)
+            self._pubs[topic].send_multipart(data)
 
     @abstractmethod
     def _handle_zmq_message(self, msg: str):
@@ -53,24 +67,36 @@ class ZMQ(Service, ABC):
     def _init_sockets(self, config):
         sub_context = zmq.asyncio.Context()
         pub_context = zmq.Context()
-        self._sub = sub_socket(sub_context, 'tcp://' + config['ip'] + ':' + str(config['sub']['port']), config['sub']['topic'])
+        # self._sub = sub_socket(sub_context, 'tcp://' + config['ip'] + ':' + str(config['sub']['port']), config['sub']['topic'])
+        for sub in config['sub']:
+            print('sub', sub)
+            s = sub_socket(sub_context, 'tcp://' + config['ip'] + ':' + str(sub['port']), sub['topic'])
+            self._subs.append(s)
+
+        print('subs', self._subs)
 
         for pub in config['pub']:
-             self._pub[pub['topic']] = pub_socket(pub_context, 'tcp://*:' + str(pub['port']))
+             self._pubs['pub_'+str(pub['port'])] = pub_socket(pub_context, 'tcp://*:' + str(pub['port']))
+        
+        print('pubs', self._pubs)
 
-    async def _listen_zmq(self):
+    def _create_listeners(self, loop:AbstractEventLoop):
         self._log('Start main loop')
-        while self._is_running:
-            try:
-                if self._is_active:
-                    data = await self._sub.recv_multipart()
-                    if data:
-                        self._handle(data)
-                else:
-                    await asyncio.sleep(0.01)
+        for sub in self._subs:
+            loop.create_task(self._listen_zmq(sub))
 
-            except Exception as e:
-                self._log('Handled exception in zmq service: ', e)
+
+    async def _listen_zmq(self, sub):
+        while self._is_running:
+
+            if self._is_active:
+                data = await sub.recv_multipart()
+                if data:
+                    self._handle(data)
+            else:
+                await asyncio.sleep(0.01)
+
+
 
         self._deinit()
 
@@ -92,7 +118,7 @@ class ZMQ(Service, ABC):
 
     def _deinit(self):
         self._sub.close()
-        for pub in self._pub.values():
+        for pub in self._pubs.values():
             pub.close()
 
     def _stop(self):

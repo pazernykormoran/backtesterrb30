@@ -6,34 +6,34 @@ services:
     build: 
       context: ./
       dockerfile: ./historical_data_feeds/Dockerfile
-    command: "python run.py"
+    # command: "python run.py"
     env_file:
       - .env
-      - .ports_config
+      - .additional_configs
     environment:
       - NAME=historical_data_feeds
 
-  live_data_feeds:
-    network_mode: host
-    build:
-      context: ./
-      dockerfile: ./live_data_feeds/Dockerfile
-    command: "python run.py"
-    env_file:
-      - .env
-      - .ports_config
-    environment:
-      - NAME=live_data_feeds
+  # live_data_feeds:
+  #   network_mode: host
+  #   build:
+  #     context: ./
+  #     dockerfile: ./live_data_feeds/Dockerfile
+  #   # command: "python run.py"
+  #   env_file:
+  #     - .env
+  #     - .additional_configs
+  #   environment:
+  #     - NAME=live_data_feeds
 
   python_backtester:
     network_mode: host
     build: 
       context: ./
       dockerfile: ./python_backtester/Dockerfile
-    command: "python run.py"
+    # command: "python run.py"
     env_file:
       - .env
-      - .ports_config
+      - .additional_configs
     environment:
       - NAME=python_backtester
 
@@ -42,10 +42,10 @@ services:
     build:
       context: ./
       dockerfile: ./python_engine/Dockerfile
-    command: "python run.py"
+    # command: "python run.py"
     env_file:
       - .env
-      - .ports_config
+      - .additional_configs
     environment:
       - NAME=python_engine
 
@@ -53,11 +53,11 @@ services:
     network_mode: host
     build: 
       context: ./
-      dockerfile: ./python_backtester/Dockerfile
-    command: "python run.py"
+      dockerfile: ./python_executor/Dockerfile
+    # command: "python run.py"
     env_file:
       - .env
-      - .ports_config
+      - .additional_configs
     environment:
       - NAME=python_executor
 
