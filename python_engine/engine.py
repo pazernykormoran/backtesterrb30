@@ -22,7 +22,6 @@ class Engine(ZMQ):
         loop = asyncio.get_event_loop()
         loop.create_task(self._listen_zmq())
         # loop.create_task(self._test_loop())
-        loop.create_task(self._heartbeat())
         loop.run_forever()
         loop.close()
 

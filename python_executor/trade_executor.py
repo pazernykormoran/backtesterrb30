@@ -12,6 +12,11 @@ class Executor(ZMQ):
         super().__init__(config, logger)
         self.register("event", self.__event)
 
+    @abstractmethod
+    def on_event(self, message):
+        self._log('method should be implemented in strategy function')
+        pass
+
     # override
     def _loop(self):
         loop = asyncio.get_event_loop()
@@ -23,8 +28,10 @@ class Executor(ZMQ):
     def _handle_zmq_message(self, message):
         self.on_event(message)
 
-    @abstractmethod
-    def on_event(self, message):
+    def _trade(trade_value: float, direction: bool):
+        pass
+
+    def _close_all_trades():
         pass
 
     def __event(self):

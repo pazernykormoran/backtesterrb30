@@ -4,6 +4,7 @@ services:
   historical_data_feeds:
     network_mode: host
     build: 
+      context: ./
       dockerfile: ./historical_data_feeds/Dockerfile
     command: "python run.py"
     env_file:
@@ -15,6 +16,7 @@ services:
   live_data_feeds:
     network_mode: host
     build:
+      context: ./
       dockerfile: ./live_data_feeds/Dockerfile
     command: "python run.py"
     env_file:
@@ -26,6 +28,7 @@ services:
   python_backtester:
     network_mode: host
     build: 
+      context: ./
       dockerfile: ./python_backtester/Dockerfile
     command: "python run.py"
     env_file:
@@ -37,6 +40,7 @@ services:
   python_engine:
     network_mode: host
     build:
+      context: ./
       dockerfile: ./python_engine/Dockerfile
     command: "python run.py"
     env_file:
@@ -48,6 +52,7 @@ services:
   python_executor:
     network_mode: host
     build: 
+      context: ./
       dockerfile: ./python_backtester/Dockerfile
     command: "python run.py"
     env_file:
@@ -59,3 +64,4 @@ services:
 
 
 
+# TODO add volume that stores historical data to other strategies on this machne be able to use it.

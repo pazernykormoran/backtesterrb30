@@ -1,11 +1,24 @@
 from typing import Dict, Tuple, Type
-import os
+from os import getenv
 from dotenv import load_dotenv
 import importlib
 from libs.zmq.zmq import ZMQ
+
+def check_env():
+    from os.path import exists
+    file_exists = exists(".env")
+    if not file_exists:
+        print('Error: ".env" file does not exists. Create one and provide necessery information like: \nstrategy=name_of_strategy')
+        exit()
+print('checking env file')
+check_env()
+
 load_dotenv()
-strategy_name = os.getenv('strategy')
-print('trying run strategy name: ', strategy_name)
+strategy_name = getenv('STRATEGY_NAME')
+if not strategy_name or strategy_name == '':
+    print('Error: provide strategy name in .env file like: \nstrategy=name_of_strategy')
+    exit()
+print('running strategy name: ', strategy_name)
 strategy_module = importlib.import_module('strategies.'+strategy_name+'.strategy')
 config = {'name': 'test'}
 model = strategy_module.Model(config)
@@ -21,12 +34,7 @@ services = [
     'python_executor'
 ]
 
-def check_env():
-    from os.path import exists
-    file_exists = exists(".env")
-    if not file_exists:
-        print('Error: ".env" file does not exists. Create one and provide necessery information like: \nstrategy=name\nbacktest=true')
-        exit()
+
 
 def is_port_in_use(port: int) -> bool:
     import socket
@@ -51,8 +59,6 @@ def create_port_configurations(services):
 def validate_strategy(strategy):
     pass
 
-print('checking env file')
-check_env()
 print('preparing microservice ports configuration')
 create_port_configurations(services)
 # print('starting all containers')
