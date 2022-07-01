@@ -7,12 +7,13 @@ backtest_state = getenv('backtest_state')
 import importlib
 
 module = importlib.import_module('strategies.'+strategy_name+'.executor')
+from libs.interfaces.config import Config
 config = {
     "name": microservice_name,
     "ip": "localhost",
     "sub": [
         {
-        "topic": "",
+        "topic": microservice_name,
         "port": p
         } for p in sub_ports
     ],
@@ -22,7 +23,8 @@ config = {
             "port": p
         } for p in pub_ports
     ],
-    "backtest": True if backtest_state == 'true' else False
+    "backtest": True if backtest_state == 'true' else False,
+    "strategy_name": strategy_name
 }
-executor = module.TradeExecutor(config)
-executor.run()
+service = module.TradeExecutor(Config(**config))
+service.run()

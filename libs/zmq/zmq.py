@@ -6,22 +6,22 @@ import zmq.asyncio
 import asyncio
 from libs.list_of_services.list_of_services import SERVICES
 from libs.zmq.service import Service
-from os import getenv
+from libs.interfaces.config import Config
+from os import getenv, _exit
+from pydantic import BaseModel
+from json import dumps, loads
 
 class ZMQ(Service, ABC):
 
     _is_running: bool
     _is_active: bool
 
-    _sub: zmq.Socket
-    _pub: dict
-
     _commands: Dict[str, Callable]
 
     # override
-    def __init__(self, config: dict, logger=print):
+    def __init__(self, config: Config, logger=print):
         super().__init__(config, logger)
-
+        self.config=config
         self._is_running = False
         self._is_active = False
 
@@ -40,22 +40,25 @@ class ZMQ(Service, ABC):
         self._is_active = True
         super().run()
 
-    def __find_topic(self, service):
+    def __find_publisher(self, service):
+        # TODO you can map it in start of microservice instead of calculating every time.
         port = ''
         service_sub_ports = [int(p) for p in getenv(service+'_subs').split(',')]
         for port in service_sub_ports:
-            for pub in self.config['pub']:
-                if pub['port'] == port:
+            for pub in self.config.pub:
+                if pub.port == port:
                     return 'pub_'+str(port)
 
     # override
-    def _send(self, service: SERVICES, msg: str, *args):
-        topic = self.__find_topic(service.value)
+    def _send(self, service: SERVICES, msg: dict or BaseModel, *args):
+        if isinstance(msg,BaseModel):
+            msg = msg.dict()
+        topic = self.__find_publisher(service.value)
         if not topic:
             self._log('Cannot send message to this micro service. Check port configuration')
             return
         if self._is_active:
-            data = [topic.encode('utf-8'), msg.encode('utf-8')]
+            data = [service.value.encode('utf-8'), msg.encode('utf-8')]
             for arg in args:
                 data.append(arg.encode('utf-8'))
             self._pubs[topic].send_multipart(data)
@@ -64,21 +67,16 @@ class ZMQ(Service, ABC):
     def _handle_zmq_message(self, msg: str):
         pass
 
-    def _init_sockets(self, config):
+    def _init_sockets(self, config: Config):
         sub_context = zmq.asyncio.Context()
         pub_context = zmq.Context()
         # self._sub = sub_socket(sub_context, 'tcp://' + config['ip'] + ':' + str(config['sub']['port']), config['sub']['topic'])
-        for sub in config['sub']:
-            print('sub', sub)
-            s = sub_socket(sub_context, 'tcp://' + config['ip'] + ':' + str(sub['port']), sub['topic'])
+        for sub in config.sub:
+            s = sub_socket(sub_context, 'tcp://' + config.ip + ':' + str(sub.port), sub.topic)
             self._subs.append(s)
+        for pub in config.pub:
+             self._pubs['pub_'+str(pub.port)] = pub_socket(pub_context, 'tcp://*:' + str(pub.port))
 
-        print('subs', self._subs)
-
-        for pub in config['pub']:
-             self._pubs['pub_'+str(pub['port'])] = pub_socket(pub_context, 'tcp://*:' + str(pub['port']))
-        
-        print('pubs', self._pubs)
 
     def _create_listeners(self, loop:AbstractEventLoop):
         self._log('Start main loop')
@@ -106,7 +104,7 @@ class ZMQ(Service, ABC):
             topic, cmd, *args = data
             func = self._commands.get(cmd)
             if func:
-                self._log(f'Receive {cmd} command')
+                self._log(f'Receive "{cmd}" command')
                 if args:
                     func(*args)
                 else:
@@ -117,13 +115,13 @@ class ZMQ(Service, ABC):
         self._handle_zmq_message(data)
 
     def _deinit(self):
-        self._sub.close()
         for pub in self._pubs.values():
             pub.close()
 
     def _stop(self):
         self._log("Service stoped")
         self._is_running = False
+        _exit(1)
 
     def _start(self):
         self._log("Service started")

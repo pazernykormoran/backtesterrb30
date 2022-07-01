@@ -6,6 +6,7 @@ import asyncio
 import json
 from typing import Callable, List
 from libs.zmq.zmq import ZMQ
+import time
 
 from libs.list_of_services.list_of_services import SERVICES
 
@@ -37,17 +38,18 @@ class Executor(ZMQ):
     async def __broker_connection_monitor(self):
         while True:
             await asyncio.sleep(5)
-            if self.config['backtest'] == False:
+            if self.config.backtest == False:
                 print('broker connection monitor')
             # self._log('trade executor sending some message')
             # self._send(SERVICES.python_engine,'message from trade executor')
 
-    def _trade(self, trade_value: float, direction: bool):
+    def _trade(self, trade_quantity: float, price: float):
         trade_params = {
-            'value': trade_value,
-            'direction': direction
+            'quantity': trade_quantity,
+            'price': price,
+            'timestamp': time.time()
         }
-        if self.config['backtest'] == True:
+        if self.config.backtest == True:
             self._send(SERVICES.python_backtester,'trade', json.dumps(trade_params))
         else:
             # TODO trade in real broker

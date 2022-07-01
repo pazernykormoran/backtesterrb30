@@ -6,9 +6,8 @@ class Service(ABC):
     name: str
     __logger: Callable
 
-    def __init__(self, config: dict, logger: Callable = print):
-        self.name = config['name']
-        self.config=config
+    def __init__(self, config, logger: Callable = print):
+        self.name = config.name
         self.__logger = logger
 
     def run(self):
@@ -24,6 +23,7 @@ class Service(ABC):
         pass
 
     def _log(self, *msg):
-        time = datetime.now().strftime("%H:%M:%S")
+        time = str(datetime.now())
         msg = ' '.join(str(el) for el in msg)
-        self.__logger(f'{time} [{self.name}] {msg}')
+        # self.__logger(f'{time} [{self.name}] {msg}')
+        self.__logger(f'{time}|  {msg}')
