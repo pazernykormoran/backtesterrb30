@@ -5,6 +5,9 @@ import json
 from typing import Callable, List
 from libs.zmq.zmq import ZMQ
 from libs.list_of_services.list_of_services import SERVICES
+import pandas as pd
+from libs.data_feeds.data_feeds import DataSchema
+from importlib import import_module
 
 
 class Engine(ZMQ):
@@ -12,6 +15,11 @@ class Engine(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
+        self.data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
+
+        data_buffer = pd.DataFrame(columns=[c.symbol for c in self.data_schema.data])
+        print('databuffer', data_buffer)
+
         self.register("data_feed", self.__data_feed)
 
     @abstractmethod
@@ -38,6 +46,7 @@ class Engine(ZMQ):
 
     def __data_feed(self, msg):
         self._log(f"Received data feed: {msg}")
+        # TODO append data
         self.on_feed(msg)
         
     

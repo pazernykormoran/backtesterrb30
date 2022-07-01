@@ -65,10 +65,15 @@ def create_port_configurations():
         
 def validate_strategy(strategy_name):
     data_schema: DataSchema = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
+    if backtest_state:
+        if data_schema.backtest_date_start == None:
+            print('Error. You must provide "backtest_date_start" field in data_schema file while you are backtesting your strategy')
+            exit()
     model_module = importlib.import_module('strategies.'+strategy_name+'.model')
     executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
     class Asd:
-        name = "test"
+        name = "test",
+        strategy_name = strategy_name
     config = Asd()
     model = model_module.Model(config)
     executor = executor_module.TradeExecutor(config)
