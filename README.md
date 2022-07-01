@@ -74,9 +74,22 @@ class TradeExecutor(Executor):
 
 # Library implementation
 
-If you implement come piece of code that can be usefull in other strategies use "libs".
+If you implement come piece of code that can be usefull in other strategies use "libs". Your communication interfaces place to libs/interfaces
 In "libs" folder create folder with your library and it will be avaliable to import froma any strategy code.
 
-# Data feed implementation
+# Microservice implementation
 
-in progress
+3. #TODO all run files are the same. 
+
+1. Add your folder with microservice named as your microservice name.
+2. Add your microservice to libs/list_of_services enum.
+
+Scheme of run file:
+4. ~~~
+5. #TODO
+6. ~~~
+
+Scheme of service:
+4. ~~~
+5. #TODO
+6. ~~~
