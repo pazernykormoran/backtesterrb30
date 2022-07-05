@@ -9,6 +9,7 @@ from pydantic import BaseModel
 import time
 from libs.list_of_services.list_of_services import SERVICES_ARRAY
 from libs.data_feeds.data_feeds import DataSchema
+from datetime import datetime
 
 #TODO hardcoded backtest mode: 
 backtest_state='true'
@@ -68,6 +69,9 @@ def validate_strategy(strategy_name):
     if backtest_state:
         if data_schema.backtest_date_start == None:
             print('Error. You must provide "backtest_date_start" field in data_schema file while you are backtesting your strategy')
+            exit()
+        if data_schema.backtest_date_start > data_schema.backtest_date_stop: 
+            print('Error. You have provided "backtest_date_start" biger than "backtest_date_start" ')
             exit()
     model_module = importlib.import_module('strategies.'+strategy_name+'.model')
     executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')

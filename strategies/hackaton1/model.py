@@ -11,6 +11,8 @@ class Model(Engine):
 
     #override
     def on_feed(self, data):
+
+        print('len data', data)
         
         if self.counter == 0:
             message = {

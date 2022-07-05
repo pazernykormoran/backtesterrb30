@@ -23,8 +23,8 @@ class DataSymbol(BaseModel):
 
 class DataSchema(BaseModel):
     interval: STRATEGY_INTERVALS
-    backtest_date_start: Optional[datetime]
-    backtest_date_stop: Optional[datetime]
+    backtest_date_start: datetime
+    backtest_date_stop: datetime
     data: List[DataSymbol]
 
 """

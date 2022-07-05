@@ -12,6 +12,8 @@ services:
       - .additional_configs
     environment:
       - NAME=historical_data_feeds
+    volumes:
+      - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
 
   # live_data_feeds:
   #   network_mode: host
@@ -36,6 +38,8 @@ services:
       - .additional_configs
     environment:
       - NAME=python_backtester
+    volumes:
+      - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
 
   python_engine:
     network_mode: host
@@ -48,6 +52,8 @@ services:
       - .additional_configs
     environment:
       - NAME=python_engine
+    volumes:
+      - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
 
   python_executor:
     network_mode: host
@@ -60,6 +66,8 @@ services:
       - .additional_configs
     environment:
       - NAME=python_executor
+    volumes:
+      - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
 
 
 

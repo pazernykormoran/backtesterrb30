@@ -17,8 +17,7 @@ class Engine(ZMQ):
         super().__init__(config, logger)
         self.data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
 
-        data_buffer = pd.DataFrame(columns=[c.symbol for c in self.data_schema.data])
-        print('databuffer', data_buffer)
+        self.data_buffer = pd.DataFrame(columns=['timestamp']+[c.symbol for c in self.data_schema.data])
 
         self.register("data_feed", self.__data_feed)
 
@@ -44,10 +43,9 @@ class Engine(ZMQ):
     def _handle_zmq_message(self, message):
         pass
 
-    def __data_feed(self, msg):
-        self._log(f"Received data feed: {msg}")
-        # TODO append data
-        self.on_feed(msg)
+    def __data_feed(self, new_data_row):
+        self.data_buffer.loc[len(self.data_buffer)]=new_data_row
+        self.on_feed(self.data_buffer)
         
     
     def _trigger_event(self, event):
