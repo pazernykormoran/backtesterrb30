@@ -4,15 +4,17 @@ from libs.necessery_imports.data_imports import *
 
 data={
     'interval':STRATEGY_INTERVALS.hour,
-    'backtest_date_start': datetime(2018,6,1),
-    'backtest_date_stop': datetime.now(),
+    'backtest_date_start': datetime(2021,6,1),
+    'backtest_date_stop': datetime(2022,6,1),
     'data':[
         {
-            'symbol': 'name1',
+            'symbol': 'BTCUSDT',
+            'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': False
         },
         {
-            'symbol': 'name2',
+            'symbol': 'ETHUSDT',
+            'historical_data_source': HISTORICAL_SOURCES.binance,
             'trigger_feed': False,
             'main': True,
         }

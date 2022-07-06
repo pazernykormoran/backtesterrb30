@@ -73,6 +73,13 @@ def validate_strategy(strategy_name):
         if data_schema.backtest_date_start > data_schema.backtest_date_stop: 
             print('Error. You have provided "backtest_date_start" biger than "backtest_date_start" ')
             exit()
+        if data_schema.interval.value == 'tick': 
+            print('Error. Tick interval is not implemented yet ')
+            exit()
+        for data in data_schema.data:
+            if data.historical_data_source.value != 'binance': 
+                print('Error. This historical_data_source not implemented yet')
+                exit()
     model_module = importlib.import_module('strategies.'+strategy_name+'.model')
     executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
     class Asd:

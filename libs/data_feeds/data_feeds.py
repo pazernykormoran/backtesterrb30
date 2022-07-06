@@ -5,7 +5,6 @@ from datetime import datetime
 
 class STRATEGY_INTERVALS(Enum):
     tick='tick'
-    second='second'
     minute='minute'
     minute15='minute15'
     minute30='minute30'
@@ -14,9 +13,14 @@ class STRATEGY_INTERVALS(Enum):
     week='week'
     month='month'
 
+class HISTORICAL_SOURCES(Enum):
+    binance='binance'
+    ducascopy='ducascopy'
+    rb30disk='rb30disk'
 
 class DataSymbol(BaseModel):
     symbol: str
+    historical_data_source: HISTORICAL_SOURCES
     trigger_feed: Optional[bool]
     main: Optional[bool]
 
