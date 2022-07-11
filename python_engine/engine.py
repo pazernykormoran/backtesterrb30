@@ -66,7 +66,7 @@ class Engine(ZMQ):
         self.__data_buffer.append(new_data_row)
         if len(self.__data_buffer)>self.__buffer_length:
             self.__data_buffer.pop(0)
-        self.on_feed(self.__data_buffer)
+            self.on_feed(self.__data_buffer)
         
         
     def __historical_sending_locked(self):

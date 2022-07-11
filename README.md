@@ -20,10 +20,12 @@ data={
     'data':[
         {
             'symbol': 'name1',
+            'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': False
         },
         {
             'symbol': 'name2',
+            'historical_data_source': HISTORICAL_SOURCES.binance,
             'trigger_feed': False,
             'main': True,
         }
@@ -34,7 +36,8 @@ DATA = DataSchema(**data)
 
 In "model.py" configure your model class named Model ingeriting from Engine.
 Model has to contain "on_feed" function which is triggered every interval you have choosen.
-In this class, you can use "_trigger_event" function inheritet from Engine class.
+In this class, you can use "_trigger_event" function inheritet from Engine class. This function triggers your "on_event" method in executor file.
+In this class, you can use "_set_buffer_length" which sets buffer length that is provided to on_feed method.
 ~~~
 from libs.necessery_imports.model_imports import *
 
@@ -42,9 +45,10 @@ class Model(Engine):
     
     def __init__(self, config):
         super().__init__(config)
+        self._set_buffer_length(200)
 
     #override
-    def on_feed(self, data):
+    def on_feed(self, buffer):
 
         message = {
             'value1': 11.11,
@@ -74,8 +78,7 @@ class TradeExecutor(Executor):
 
 # Library implementation
 
-If you implement come piece of code that can be usefull in other strategies use "libs". Your communication interfaces place to libs/interfaces
-In "libs" folder create folder with your library and it will be avaliable to import froma any strategy code.
+If you are implementing piece of code that can be usefull in other strategies, use "libs" folder. It will be avaliable to import in other strategies of notebooks.
 
 # Microservice implementation
 
@@ -83,13 +86,14 @@ In "libs" folder create folder with your library and it will be avaliable to imp
 
 1. Add your folder with microservice named as your microservice name.
 2. Add your microservice to libs/list_of_services enum.
+3. Add your microservice in run.sh
 
 Scheme of run file:
 4. ~~~
 5. #TODO
 6. ~~~
 
-Scheme of service:
+Scheme of service file:
 4. ~~~
 5. #TODO
 6. ~~~
