@@ -102,3 +102,11 @@ else:
     
 # print('starting all containers')
 # system('sudo docker-compose up --build --remove-orphans')
+
+
+# TODO list
+"""
+1. add validation if there is more than one main instrument.
+2. add trading on main instrument auomatycli in historical mode, add sendding the last price automaticly.
+
+"""
