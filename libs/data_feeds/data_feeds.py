@@ -36,23 +36,20 @@ example of data:
 
 data={
     'interval':STRATEGY_INTERVALS.hour,
-    'backtest_date_start': datetime(2018,6,1),
+    'backtest_date_start': datetime(2020,6,1),
+    'backtest_date_stop': datetime(2022,6,1),
     'data':[
         {
-            'symbol': 'name1',
+            'symbol': 'BTCUSDT',
+            'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': False
         },
         {
-            'symbol': 'name2',
+            'symbol': 'ETHUSDT',
+            'historical_data_source': HISTORICAL_SOURCES.binance,
             'trigger_feed': False,
             'main': True,
         }
     ]
 }
 """
-
-
-#     # ustawiany jest interwał całej strategii. 
-#     # dodawane są aktywa praktycznie dowolnie jeśli jakieś aktywno będzie miało za niski interwał to po prostu będzie próbkowane rzadziej. 
-#     # przy interwale tick, tick każdego aktywa powoduje trigger chyba, że ustawisz mu triggers_feed na false.
-

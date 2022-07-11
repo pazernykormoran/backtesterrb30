@@ -6,38 +6,20 @@ services:
     build: 
       context: ./
       dockerfile: ./historical_data_feeds/Dockerfile
-    # command: "python run.py"
     env_file:
       - .env
       - .additional_configs
-    environment:
-      - NAME=historical_data_feeds
     volumes:
       - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
-
-  # live_data_feeds:
-  #   network_mode: host
-  #   build:
-  #     context: ./
-  #     dockerfile: ./live_data_feeds/Dockerfile
-  #   # command: "python run.py"
-  #   env_file:
-  #     - .env
-  #     - .additional_configs
-  #   environment:
-  #     - NAME=live_data_feeds
 
   python_backtester:
     network_mode: host
     build: 
       context: ./
       dockerfile: ./python_backtester/Dockerfile
-    # command: "python run.py"
     env_file:
       - .env
       - .additional_configs
-    environment:
-      - NAME=python_backtester
     volumes:
       - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
 
@@ -46,12 +28,9 @@ services:
     build:
       context: ./
       dockerfile: ./python_engine/Dockerfile
-    # command: "python run.py"
     env_file:
       - .env
       - .additional_configs
-    environment:
-      - NAME=python_engine
     volumes:
       - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
 
@@ -60,16 +39,8 @@ services:
     build: 
       context: ./
       dockerfile: ./python_executor/Dockerfile
-    # command: "python run.py"
     env_file:
       - .env
       - .additional_configs
-    environment:
-      - NAME=python_executor
     volumes:
       - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
-
-
-
-
-# TODO add volume that stores historical data to other strategies on this machne be able to use it.

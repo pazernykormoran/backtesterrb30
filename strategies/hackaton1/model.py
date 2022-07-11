@@ -11,8 +11,9 @@ class Model(Engine):
 
     #override
     def on_feed(self, data):
-
-        print('len data', data)
+        
+        if self.counter % 100 == 0:
+            print('feed received', self.counter)
         
         if self.counter == 0:
             message = {
@@ -35,7 +36,8 @@ class Model(Engine):
                 'price': 100
             }
 
-        self._trigger_event(message)
+
+        # self._trigger_event(message)
         self.counter += 1
 
 

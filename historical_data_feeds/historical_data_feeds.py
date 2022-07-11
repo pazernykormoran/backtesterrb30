@@ -22,12 +22,13 @@ class HistoricalDataFeeds(ZMQ):
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
         self.data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
-        self.register("data_feed", self.__data_feed)
+        
         binance_api_secret=getenv("binance_api_secret")
         binance_api_key=getenv("binance_api_key")
         self.client = Client(binance_api_key, binance_api_secret)
-            
-        # load add data?
+        self.sending_locked = False
+    
+        self.register("unlock_historical_sending", self.__unlock_historical_sending)
 
     # override
     def run(self):
@@ -40,7 +41,7 @@ class HistoricalDataFeeds(ZMQ):
 
         # bofero starting loop you need to validate histroical data files
         self.validate_downloaded_data_folder()
-        self.data_to_download =  self.check_if_all_data_exists(self.data_schema)
+        self.file_names_to_load, self.data_to_download =  self.check_if_all_data_exists(self.data_schema)
         if len(self.data_to_download) > 0:
             self.download_data(self.data_to_download, loop)
         self._create_listeners(loop)
@@ -57,19 +58,30 @@ class HistoricalDataFeeds(ZMQ):
         while True:
             if self.data_downloaded(self.data_to_download): 
                 self._log('All data has been downloaded!')
-                timestamp = datetime.timestamp(self.data_schema.backtest_date_start)
-                step_timestamp = self.__get_interval_step_seconds(self.data_schema.interval)
-
-                
-                for i in range(4):
+                # timestamp = datetime.timestamp(self.data_schema.backtest_date_start)
+                # step_timestamp = self.__get_interval_step_seconds(self.data_schema.interval)
+                data_parts = self.prepare_loading_data_structure(self.file_names_to_load)
+                for time, array in data_parts.items():
+                    data_part: pd.DataFrame = self.__load_data_frame(array)
+                    for index, row in data_part.iterrows():
+                        self._send(SERVICES.python_engine,'data_feed',row.to_string())
+                    self.sending_locked = True
+                    self._send(SERVICES.python_engine, 'historical_sending_locked')
+                    while self.sending_locked:
+                        await asyncio.sleep(0.01)
+                    self._log('historical sendig unlocked')
+                # #TEST LOOP
+                # for i in range(4):
                     
-                    await asyncio.sleep(1)
-                    self._log('')
-                    self._log('historical data feeds sending some message')
-                    self._send(SERVICES.python_engine,'data_feed','message from histroical data')
-                    timestamp += step_timestamp
-                await asyncio.sleep(1)
-                
+                #     await asyncio.sleep(1)
+                #     self._log('')
+                #     self._log('historical data feeds sending some message')
+                #     self._send(SERVICES.python_engine,'data_feed','message from histroical data')
+                #     timestamp += step_timestamp
+                # await asyncio.sleep(1)
+                # #TEST LOOP END
+
+                self._log('sending stop params')
                 finish_params = {
                     'main_instrument_price': 100
                 }
@@ -126,7 +138,7 @@ class HistoricalDataFeeds(ZMQ):
         # print('files_in_directory',files_in_directory)
         files_to_download = list(set(file_names) - set(files_in_directory))
         # print('files_to_download', files_to_download)
-        return files_to_download
+        return file_names, files_to_download
 
     def download_data(self, data_to_download, loop: asyncio.AbstractEventLoop):
         for instrument_file_name in data_to_download:
@@ -134,44 +146,63 @@ class HistoricalDataFeeds(ZMQ):
             source, instrment, interval, time_start, time_stop = tuple(data_instrument.split('__'))
             # print('data_splitted', source, instrment, interval, time_start, time_stop )
             if source == HISTORICAL_SOURCES.binance.value: 
-                loop.create_task(self._download_binance_data(instrument_file_name, instrment, interval, int(time_start), int(time_stop)))
+                self._download_binance_data(instrument_file_name, instrment, interval, int(time_start), int(time_stop))
             if source == HISTORICAL_SOURCES.ducascopy.value: 
-                loop.create_task(self._download_ducascopy_data(instrument_file_name, instrment, interval, int(time_start), int(time_stop)))
+                self._download_ducascopy_data(instrument_file_name, instrment, interval, int(time_start), int(time_stop))
             if source == HISTORICAL_SOURCES.rb30disk.value: 
-                loop.create_task(self._download_rb30_disk_data(instrument_file_name, instrment, interval, int(time_start), int(time_stop)))
+                self._download_rb30_disk_data(instrument_file_name, instrment, interval, int(time_start), int(time_stop))
 
         # if tick: get_aggregate_trades
 
 
-    async def _download_binance_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
+    def _download_binance_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
         self._log('downloading binance data')
         binance_interval = self.__get_binance_interval(interval)
         klines = self.client.get_historical_klines(instrument, binance_interval, time_start, time_stop)
         df = pd.DataFrame(klines).iloc[:, [0,1]]
         self._log('BINANCE DATA LEN', len(df))
-        df.to_csv(join(self.downloaded_data_path, instrument_file_name), index=False)
+        df.to_csv(join(self.downloaded_data_path, instrument_file_name), index=False, header=False)
 
-    async def _download_ducascopy_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
+    def _download_ducascopy_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
         print('_download_ducascopy_data')
         pass
 
-    async def _download_rb30_disk_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
+    def _download_rb30_disk_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
         # TODO
         print('_download_rb30_disk_data')
         pass
 
-    def load_data(self, data_schema: DataSchema):
-        pass
+    def prepare_loading_data_structure(self, file_names_to_load):
+        files_collection = {}
+        for instrument_file_name in file_names_to_load:
+            
+            data_instrument = instrument_file_name[:-4]
+            source, instrument, interval, time_start, time_stop = tuple(data_instrument.split('__'))
+            if not time_start in files_collection:
+                files_collection[time_start] = []
+            files_collection[time_start].append([instrument, instrument_file_name])
+        return files_collection
+            
+    def __load_data_frame(self, files_array: list):
+        array_of_arrays = pd.DataFrame()
+        for file in files_array:
+            df = pd.read_csv(join(self.downloaded_data_path, file[1]), index_col=None, header=None, names=['timestamp', file[0]])
+            if len(array_of_arrays) == 0:
+                array_of_arrays = df
+            else:
+                array_of_arrays[file[0]] = df.iloc[:, [1]]
+        return array_of_arrays
+        
 
-    def __get_interval_step_seconds(self, interval: STRATEGY_INTERVALS):
-        if interval == STRATEGY_INTERVALS.tick: return 9999999999
-        if interval == STRATEGY_INTERVALS.minute: return 60
-        if interval == STRATEGY_INTERVALS.minute15: return 60*15
-        if interval == STRATEGY_INTERVALS.minute30: return 60*30
-        if interval == STRATEGY_INTERVALS.hour: return 60*60
-        if interval == STRATEGY_INTERVALS.day: return 60*60*24
-        if interval == STRATEGY_INTERVALS.week: return 60*60*24*7
-        if interval == STRATEGY_INTERVALS.month: return 60*60*24*7*30
+    # def __get_interval_step_seconds(self, interval: STRATEGY_INTERVALS):
+    #     if interval == STRATEGY_INTERVALS.tick: return 9999999999
+    #     if interval == STRATEGY_INTERVALS.minute: return 60
+    #     if interval == STRATEGY_INTERVALS.minute15: return 60*15
+    #     if interval == STRATEGY_INTERVALS.minute30: return 60*30
+    #     if interval == STRATEGY_INTERVALS.hour: return 60*60
+    #     if interval == STRATEGY_INTERVALS.day: return 60*60*24
+    #     if interval == STRATEGY_INTERVALS.week: return 60*60*24*7
+    #     if interval == STRATEGY_INTERVALS.month: return 60*60*24*7*30
  
     def __get_binance_interval(self, interval: STRATEGY_INTERVALS):
         if interval == 'minute': return Client.KLINE_INTERVAL_1MINUTE
@@ -186,5 +217,6 @@ class HistoricalDataFeeds(ZMQ):
         pass
 
     # COMMANDS
-    def __data_feed(self, msg):
-        self._log(f"Received data feed: {msg}")
+
+    def __unlock_historical_sending(self):
+        self.sending_locked = False

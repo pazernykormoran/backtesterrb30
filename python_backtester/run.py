@@ -1,6 +1,7 @@
 from os import getenv
 strategy_name = getenv('STRATEGY_NAME')
-microservice_name = getenv('NAME')
+# microservice_name = getenv('NAME')
+microservice_name = 'python_backtester'
 sub_ports = [int(p) for p in getenv(microservice_name+'_subs').split(',')]
 pub_ports = [int(p) for p in getenv(microservice_name+'_pubs').split(',')]
 backtest_state = getenv('backtest_state')

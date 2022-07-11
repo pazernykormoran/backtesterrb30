@@ -2,10 +2,10 @@ FROM python:3.8
 RUN mkdir /usr/src/app
 RUN apt-get update && apt-get -y install gcc libzmq3-dev
 WORKDIR /usr/src/app
-COPY ./python_engine/run.py .
-COPY ./python_engine/requirements.txt .
-COPY ./python_engine ./python_engine
+ADD ./python_engine/requirements.txt .
 RUN pip install -r requirements.txt
-COPY ./libs ./libs
-COPY ./strategies ./strategies
+ADD ./python_engine/run.py .
+ADD ./python_engine ./python_engine
+ADD ./libs ./libs
+ADD ./strategies ./strategies
 CMD ["python","-u","run.py"]

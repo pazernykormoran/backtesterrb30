@@ -104,7 +104,7 @@ class ZMQ(Service, ABC):
             topic, cmd, *args = data
             func = self._commands.get(cmd)
             if func:
-                self._log(f'Receive "{cmd}" command')
+                # self._log(f'Receive "{cmd}" command')
                 if args:
                     func(*args)
                 else:

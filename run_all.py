@@ -95,5 +95,10 @@ print('preparing microservice ports configuration')
 create_port_configurations()
 with open('.additional_configs', 'a') as f:
     f.write('backtest_state='+backtest_state)
-print('starting all containers')
-system('sudo docker-compose up --build --remove-orphans')
+if backtest_state:
+    system('sudo bash run.sh') 
+else:
+    print('live strategies not implemented')
+    
+# print('starting all containers')
+# system('sudo docker-compose up --build --remove-orphans')

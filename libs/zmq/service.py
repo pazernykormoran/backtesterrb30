@@ -25,5 +25,5 @@ class Service(ABC):
     def _log(self, *msg):
         time = str(datetime.now())
         msg = ' '.join(str(el) for el in msg)
-        # self.__logger(f'{time} [{self.name}] {msg}')
-        self.__logger(f'{time}|  {msg}')
+        self.__logger(f'{time} [{self.name:>25}] {msg}')
+        # self.__logger(f'{time}|  {msg}')
