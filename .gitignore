@@ -2,3 +2,4 @@
 **/.env
 **/__pycache__
 .additional_configs
+**/data_historical_downloaded

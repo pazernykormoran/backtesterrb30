@@ -1,6 +1,7 @@
 
 from libs.necessery_imports.model_imports import *
 from asyncio import sleep
+import pandas as pd
 # configure model =====================================
 
 class Model(Engine):
@@ -8,35 +9,17 @@ class Model(Engine):
     def __init__(self, config):
         super().__init__(config)
         self.counter = 0
+        self._set_buffer_length(200)
 
     #override
-    def on_feed(self, data):
+    def on_feed(self, data: pd.DataFrame):
         
-        if self.counter % 100 == 0:
+        if self.counter % 1000 == 0:
             print('feed received', self.counter)
-        
-        if self.counter == 0:
-            message = {
-                'value': 10,
-                'price': 200
-            }
-        if self.counter == 1:
-            message = {
-                'value': 10,
-                'price': 200
-            }
-        if self.counter == 2:
-            message = {
-                'value': -10,
-                'price': 100
-            }
-        if self.counter == 3:
-            message = {
-                'value': 0,
-                'price': 100
-            }
-
-
+            print('data len', len(data))
+            for d in data:
+                print(d)
+    
         # self._trigger_event(message)
         self.counter += 1
 

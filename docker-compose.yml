@@ -10,7 +10,7 @@ services:
       - .env
       - .additional_configs
     volumes:
-      - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
+      - /var/opt/data_historical_downloaded:/var/opt/data_historical_downloaded
 
   python_backtester:
     network_mode: host
@@ -21,7 +21,7 @@ services:
       - .env
       - .additional_configs
     volumes:
-      - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
+      - /var/opt/data_historical_downloaded:/var/opt/data_historical_downloaded
 
   python_engine:
     network_mode: host
@@ -32,7 +32,7 @@ services:
       - .env
       - .additional_configs
     volumes:
-      - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
+      - /var/opt/data_historical_downloaded:/var/opt/data_historical_downloaded
 
   python_executor:
     network_mode: host
@@ -43,4 +43,4 @@ services:
       - .env
       - .additional_configs
     volumes:
-      - /var/opt/data_historical_downloaded:/usr/src/app/data_historical_downloaded
+      - /var/opt/data_historical_downloaded:/var/opt/data_historical_downloaded

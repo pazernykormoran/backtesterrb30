@@ -17,7 +17,7 @@ import pandas as pd
 
 class HistoricalDataFeeds(ZMQ):
     
-    downloaded_data_path = './data_historical_downloaded'
+    downloaded_data_path = '/var/opt/data_historical_downloaded'
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
@@ -62,9 +62,11 @@ class HistoricalDataFeeds(ZMQ):
                 # step_timestamp = self.__get_interval_step_seconds(self.data_schema.interval)
                 data_parts = self.prepare_loading_data_structure(self.file_names_to_load)
                 for time, array in data_parts.items():
-                    data_part: pd.DataFrame = self.__load_data_frame(array)
+                    data_part = self.__load_data_frame(array)
                     for index, row in data_part.iterrows():
-                        self._send(SERVICES.python_engine,'data_feed',row.to_string())
+                        # print(list(row))
+                        # await asyncio.sleep(1)
+                        self._send(SERVICES.python_engine,'data_feed',dumps(list(row)))
                     self.sending_locked = True
                     self._send(SERVICES.python_engine, 'historical_sending_locked')
                     while self.sending_locked:

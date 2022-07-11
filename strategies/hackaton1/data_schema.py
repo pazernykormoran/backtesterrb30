@@ -17,6 +17,18 @@ data={
             'historical_data_source': HISTORICAL_SOURCES.binance,
             'trigger_feed': False,
             'main': True,
+        },
+        {
+            'symbol': 'LTCUSDT',
+            'historical_data_source': HISTORICAL_SOURCES.binance,
+            'trigger_feed': False,
+            'main': True,
+        },
+        {
+            'symbol': 'TRXUSDT',
+            'historical_data_source': HISTORICAL_SOURCES.binance,
+            'trigger_feed': False,
+            'main': True,
         }
     ]
 }
