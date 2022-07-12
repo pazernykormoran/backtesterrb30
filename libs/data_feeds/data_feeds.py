@@ -22,7 +22,7 @@ class DataSymbol(BaseModel):
     symbol: str
     historical_data_source: HISTORICAL_SOURCES
     trigger_feed: Optional[bool]
-    main: Optional[bool]
+    main: bool
 
 
 class DataSchema(BaseModel):

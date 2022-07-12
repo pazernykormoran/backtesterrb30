@@ -47,22 +47,27 @@ def create_port_configurations():
     start_port = 1000
     assigned = False
     while not assigned:
+        port_in_use = False
         for port in range(start_port,start_port+50):
             if is_port_in_use(port):
                 print('Port '+str(port)+ ' is already in use, changing port range.')
                 start_port += 50
+                port_in_use = True
                 break
-        with open('.additional_configs', 'w') as f:
-            for i, service in enumerate(services_array):
-                f.write(service+'_pubs='+str(start_port+i)+'\n')
-                subs_str = service+'_subs='
-                for j in range(len(services_array)):
-                    if j != i:
-                        subs_str += str(start_port+j)+','
-                subs_str = subs_str[:-1]
-                subs_str += '\n'
-                f.write(subs_str)
-        assigned = True
+        if port_in_use == False:
+            assigned = True
+            
+    with open('.additional_configs', 'w') as f:
+        for i, service in enumerate(services_array):
+            f.write(service+'_pubs='+str(start_port+i)+'\n')
+            subs_str = service+'_subs='
+            for j in range(len(services_array)):
+                if j != i:
+                    subs_str += str(start_port+j)+','
+            subs_str = subs_str[:-1]
+            subs_str += '\n'
+            f.write(subs_str)
+        
         
 def validate_strategy(strategy_name):
     data_schema: DataSchema = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
@@ -76,10 +81,16 @@ def validate_strategy(strategy_name):
         if data_schema.interval.value == 'tick': 
             print('Error. Tick interval is not implemented yet ')
             exit()
+        number_of_mains = 0
         for data in data_schema.data:
             if data.historical_data_source.value != 'binance': 
                 print('Error. This historical_data_source not implemented yet')
                 exit()
+            if data.main == True:
+                number_of_mains += 1
+        if number_of_mains != 1:
+            print('Error. Yout "data_schema.py" must have one main instrument')
+            exit()
     model_module = importlib.import_module('strategies.'+strategy_name+'.model')
     executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
     class Asd:
@@ -106,7 +117,8 @@ else:
 
 # TODO list
 """
-1. add validation if there is more than one main instrument.
-2. add trading on main instrument auomatycli in historical mode, add sendding the last price automaticly.
+
+- interfaces for all functions
+- add checking dependencies
 
 """

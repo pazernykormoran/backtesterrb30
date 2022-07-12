@@ -1,13 +1,14 @@
 
 from abc import abstractmethod
 import asyncio
-import json
+from json import dumps, loads
 from typing import Callable, List
 from libs.zmq.zmq import ZMQ
 from libs.list_of_services.list_of_services import SERVICES
 import pandas as pd
 from libs.data_feeds.data_feeds import DataSchema
 from importlib import import_module
+from libs.interfaces.utils import JSONSerializable
 
 
 class Engine(ZMQ):
@@ -23,9 +24,13 @@ class Engine(ZMQ):
 
         self.register("data_feed", self.__data_feed)
         self.register("historical_sending_locked", self.__historical_sending_locked)
+        self.register("data_finish", self.__data_finish)
 
     @abstractmethod
-    def on_feed(data):
+    def on_feed(self, data):
+        pass
+
+    def on_data_finish(self):
         pass
 
     # override
@@ -49,12 +54,20 @@ class Engine(ZMQ):
     def _set_buffer_length(self, length: int):
         self.__buffer_length = length
 
-    def _trigger_event(self, event):
-        self._send(SERVICES.python_executor,'event',json.dumps(event))
+    def _trigger_event(self, event: JSONSerializable):
+        msg = {
+            'price': self.__get_main_intrument_price(),
+            'message': event
+        }
+        self._send(SERVICES.python_executor,'event', dumps(msg))
+
+    def __get_main_intrument_price(self):
+        num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
+        return self.__data_buffer[-1][num+1]
 
     #COMMANDS
     # def __data_feed(self, new_data_row):
-    #     new_data_row = json.loads(new_data_row)
+    #     new_data_row = loads(new_data_row)
     #     if self.__data_buffer.shape[0]>self.__buffer_length:
     #         self.__data_buffer.drop(self.__data_buffer.head(1).index,inplace=True)
     #     # self.__data_buffer.loc[self.__data_buffer.shape[0]]=new_data_row
@@ -62,7 +75,7 @@ class Engine(ZMQ):
     #     self.on_feed(self.__data_buffer)
 
     def __data_feed(self, new_data_row):
-        new_data_row = json.loads(new_data_row)
+        new_data_row = loads(new_data_row)
         self.__data_buffer.append(new_data_row)
         if len(self.__data_buffer)>self.__buffer_length:
             self.__data_buffer.pop(0)
@@ -70,5 +83,13 @@ class Engine(ZMQ):
         
         
     def __historical_sending_locked(self):
+        # self._log('sending unlocked to historical data feeds')
         self._send(SERVICES.historical_data_feeds,'unlock_historical_sending')
 
+    
+    def __data_finish(self, finish_params):
+        self.on_data_finish()
+        finish_params = loads(finish_params)
+        finish_params['main_instrument_price']= self.__get_main_intrument_price()
+        
+        self._send(SERVICES.python_backtester, 'data_finish', dumps(finish_params))

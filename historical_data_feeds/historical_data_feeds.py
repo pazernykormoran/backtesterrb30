@@ -55,39 +55,35 @@ class HistoricalDataFeeds(ZMQ):
         pass
 
     async def __historical_data_loop(self):
+        self._log('waiting for all ports starts up')
+        await asyncio.sleep(0.5)
         while True:
             if self.data_downloaded(self.data_to_download): 
                 self._log('All data has been downloaded!')
                 # timestamp = datetime.timestamp(self.data_schema.backtest_date_start)
                 # step_timestamp = self.__get_interval_step_seconds(self.data_schema.interval)
                 data_parts = self.prepare_loading_data_structure(self.file_names_to_load)
+                sending_counter = 0
                 for time, array in data_parts.items():
+
                     data_part = self.__load_data_frame(array)
                     for index, row in data_part.iterrows():
-                        # print(list(row))
-                        # await asyncio.sleep(1)
+
                         self._send(SERVICES.python_engine,'data_feed',dumps(list(row)))
-                    self.sending_locked = True
-                    self._send(SERVICES.python_engine, 'historical_sending_locked')
-                    while self.sending_locked:
-                        await asyncio.sleep(0.01)
-                    self._log('historical sendig unlocked')
-                # #TEST LOOP
-                # for i in range(4):
-                    
-                #     await asyncio.sleep(1)
-                #     self._log('')
-                #     self._log('historical data feeds sending some message')
-                #     self._send(SERVICES.python_engine,'data_feed','message from histroical data')
-                #     timestamp += step_timestamp
-                # await asyncio.sleep(1)
-                # #TEST LOOP END
+                        sending_counter += 1
+                        if sending_counter % 1000 == 0:
+                            self.sending_locked = True
+                            self._send(SERVICES.python_engine, 'historical_sending_locked')
+                            while self.sending_locked:
+                                await asyncio.sleep(0.01)
+                            self._log('historical sendig unlocked')
 
                 self._log('sending stop params')
+                
                 finish_params = {
-                    'main_instrument_price': 100
+                    'file_names': self.file_names_to_load
                 }
-                self._send(SERVICES.python_backtester, 'data_finish', dumps(finish_params))
+                self._send(SERVICES.python_engine, 'data_finish', dumps(finish_params))
                 break
             else:
                 await asyncio.sleep(1)

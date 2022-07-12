@@ -8,5 +8,5 @@ class TradeExecutor(Executor):
     #override
     def on_event(self, message):
         self._log('handling on event method in exeturor', message)
-        self._trade(message['value'], message['price'])
+        self._trade(message['value'])
 

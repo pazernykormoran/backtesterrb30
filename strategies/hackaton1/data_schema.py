@@ -15,12 +15,12 @@ data={
         {
             'symbol': 'ETHUSDT',
             'historical_data_source': HISTORICAL_SOURCES.binance,
-            'main': True,
+            'main': False,
         },
         {
             'symbol': 'LTCUSDT',
             'historical_data_source': HISTORICAL_SOURCES.binance,
-            'main': False,
+            'main': True,
         },
         {
             'symbol': 'TRXUSDT',

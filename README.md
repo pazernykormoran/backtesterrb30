@@ -3,9 +3,9 @@
 # Quick start
 
 1. provide .env file with name of strategy existing in strategies folder like:
-strategy=name_of_strategy
+strategy=name_of_folder_including_strategy
 
-1. run with command: "python3 run_all.py"
+2. run with command: "python3 run_all.py"
 
 # Strategy implementation using python engine
 
@@ -35,9 +35,14 @@ DATA = DataSchema(**data)
 ~~~
 
 In "model.py" configure your model class named Model ingeriting from Engine.
-Model has to contain "on_feed" function which is triggered every interval you have choosen.
+Override "on_feed" function which is triggered every interval you have choosen.
 In this class, you can use "_trigger_event" function inheritet from Engine class. This function triggers your "on_event" method in executor file.
 In this class, you can use "_set_buffer_length" which sets buffer length that is provided to on_feed method.
+
+All avaliable methods: 
+- "_set_buffer_length"
+- "_trigger_event"
+- "_log"
 ~~~
 from libs.necessery_imports.model_imports import *
 
@@ -58,9 +63,14 @@ class Model(Engine):
         self._trigger_event(message)
 ~~~
 
-Configure your trade executor class named TradeExecutor inheriting from Executor.
-TradeExecutor contains function "on_event" triggered while your model returns event using 
-function self._trigger_event. In this function, you can use "_trade" function inheritet from Executor class.
+In "executor.py" configure your trade executor class named TradeExecutor inheriting from Executor.
+Override "on_event" triggered while your implemented model returns event. In this class, you can use "_trade" function inheritet from Executor class.
+
+All avaliable methods: 
+- "_trade"
+- "_close_all_trades"
+- "_get_number_of_actions"
+- "_log"
 ~~~
 from libs.necessery_imports.executor_imports import *
 
@@ -76,9 +86,11 @@ class TradeExecutor(Executor):
         self._trade(trade_value)
 ~~~
 
+
 # Library implementation
 
-If you are implementing piece of code that can be usefull in other strategies, use "libs" folder. It will be avaliable to import in other strategies of notebooks.
+If you are implementing piece of code that can be usefull in other strategies, use "libs" folder. It will be avaliable to import in other strategies or notebooks.
+Your communication interfaces include in "libs/interfaces" folder.
 
 # Microservice implementation
 

@@ -1,7 +1,6 @@
 
 from libs.necessery_imports.model_imports import *
-from asyncio import sleep
-import pandas as pd
+from random import randint
 # configure model =====================================
 
 class Model(Engine):
@@ -12,15 +11,21 @@ class Model(Engine):
         self._set_buffer_length(200)
 
     #override
-    def on_feed(self, data: pd.DataFrame):
+    def on_feed(self, data: list):
         
-        if self.counter % 1000 == 0:
-            print('feed received', self.counter)
-            print('data len', len(data))
-            for d in data:
-                print(d)
+        if self.counter % 300 == 0:
+            self._log('feed received', self.counter)
+            self._log('data len', len(data))
+            quant = randint(-2,2)
+            if quant != 0:
+                message = {
+                    'value': quant
+                }
+                self._trigger_event(message)
+            # for d in data:
+            #     print(d)
     
-        # self._trigger_event(message)
+        # 
         self.counter += 1
 
 
