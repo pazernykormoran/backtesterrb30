@@ -10,7 +10,6 @@ class STRATEGY_INTERVALS(Enum):
     minute30='minute30'
     hour='hour'
     day='day'
-    week='week'
     month='month'
 
 class HISTORICAL_SOURCES(Enum):

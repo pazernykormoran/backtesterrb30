@@ -8,7 +8,7 @@ from sys import argv
 from pydantic import BaseModel
 import time
 from libs.list_of_services.list_of_services import SERVICES_ARRAY
-from libs.data_feeds.data_feeds import DataSchema
+from libs.data_feeds.data_feeds import DataSchema, HISTORICAL_SOURCES, STRATEGY_INTERVALS
 from datetime import datetime
 
 #TODO hardcoded backtest mode: 
@@ -78,12 +78,12 @@ def validate_strategy(strategy_name):
         if data_schema.backtest_date_start > data_schema.backtest_date_stop: 
             print('Error. You have provided "backtest_date_start" biger than "backtest_date_start" ')
             exit()
-        if data_schema.interval.value == 'tick': 
+        if data_schema.interval.value == STRATEGY_INTERVALS.tick.value: 
             print('Error. Tick interval is not implemented yet ')
             exit()
         number_of_mains = 0
         for data in data_schema.data:
-            if data.historical_data_source.value != 'binance': 
+            if data.historical_data_source.value not in (HISTORICAL_SOURCES.binance.value, HISTORICAL_SOURCES.ducascopy.value): 
                 print('Error. This historical_data_source not implemented yet')
                 exit()
             if data.main == True:
@@ -118,7 +118,13 @@ else:
 # TODO list
 """
 
+- implement validate_dataframe_timestamps in histroical feeds
+- wgile loading one year frame, implement function checking all data lenghts are equal
 - interfaces for all functions
-- add checking dependencies
+- add checking dependencies while running without docker.
+- make all other functions inpossible to use and override in model and executor class.
+- add own interval and own data range for all the insruments in dataschema. it requires an inteligent data integration.
+- what with strategies that wants to play on  many instruments? every instrument will be required to flag as main   
+    and the trade function must be overriten for this case and getting one more argument which is instrument.
 
 """

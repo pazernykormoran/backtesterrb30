@@ -14,6 +14,8 @@ from os import listdir
 from os.path import isfile, join
 from binance import Client, AsyncClient
 import pandas as pd
+from os import system, remove
+import shutil
 
 class HistoricalDataFeeds(ZMQ):
     
@@ -86,7 +88,8 @@ class HistoricalDataFeeds(ZMQ):
                 self._send(SERVICES.python_engine, 'data_finish', dumps(finish_params))
                 break
             else:
-                await asyncio.sleep(1)
+                print("Error. Not all of the data has been downloaded, exiting")
+                self._stop()
 
     def data_downloaded(self, full_data_to_download):
         files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
@@ -159,11 +162,43 @@ class HistoricalDataFeeds(ZMQ):
         klines = self.client.get_historical_klines(instrument, binance_interval, time_start, time_stop)
         df = pd.DataFrame(klines).iloc[:, [0,1]]
         self._log('BINANCE DATA LEN', len(df))
+        df = self.validate_dataframe_timestamps(df)
         df.to_csv(join(self.downloaded_data_path, instrument_file_name), index=False, header=False)
 
     def _download_ducascopy_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
         print('_download_ducascopy_data')
-        pass
+        """
+        documentation: 
+        https://github.com/Leo4815162342/dukascopy-node
+        """
+        interval = self.__get_ducascopy_interval(interval)
+        from_param = datetime.fromtimestamp(time_start//1000.0).strftime("%Y-%m-%d")
+        to_param = datetime.fromtimestamp(time_stop//1000.0).strftime("%Y-%m-%d")
+        string_params = [
+            ' -i '+ instrument,
+            ' -from '+ from_param,
+            ' -to '+ to_param,
+            ' -s',
+            ' -t ' + interval,
+            ' -fl', 
+            ' -f csv',
+            ' -dir ./cache' 
+        ]
+        command = 'npx dukascopy-node'
+        for param in string_params:
+            command += param
+        print('running command command', command)
+        system(command)
+        name_of_created_file = instrument+'-'+interval+'-bid-'+from_param+'-'+to_param+'.csv'
+        shutil.move('./cache/'+name_of_created_file, join(self.downloaded_data_path, instrument_file_name))
+        df = pd.read_csv(join(self.downloaded_data_path, instrument_file_name), index_col=None, header=None)
+        df = df.iloc[:, [0,1]]
+        self._log('DUCASCOPY DATA LEN', len(df))
+        remove(join(self.downloaded_data_path, instrument_file_name))
+        df = self.validate_dataframe_timestamps(df)
+        df.to_csv(join(self.downloaded_data_path, instrument_file_name), index=False, header=False)
+        
+        
 
     def _download_rb30_disk_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
         # TODO
@@ -208,10 +243,19 @@ class HistoricalDataFeeds(ZMQ):
         if interval == 'minute30': return Client.KLINE_INTERVAL_30MINUTE
         if interval == 'hour': return Client.KLINE_INTERVAL_1HOUR
         if interval == 'day': return Client.KLINE_INTERVAL_1DAY
-        if interval == 'week': return Client.KLINE_INTERVAL_1WEEK
+        # if interval == 'week': return Client.KLINE_INTERVAL_1WEEK
         if interval == 'month': return Client.KLINE_INTERVAL_1MONTH
+    
+    def __get_ducascopy_interval(self, interval: STRATEGY_INTERVALS):
+        if interval == 'minute': return 'm1'
+        if interval == 'minute15': return 'm15'
+        if interval == 'minute30': return 'm30'
+        if interval == 'hour': return 'h1'
+        if interval == 'day': return 'd1'
+        # if interval == 'week': return 'm1'
+        if interval == 'month': return 'mn1'
 
-    def _trigger_event(self, event):
+    def validate_dataframe_timestamps(df: pd.DataFrame):
         pass
 
     # COMMANDS

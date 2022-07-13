@@ -8,23 +8,13 @@ data={
     'backtest_date_stop': datetime(2022,6,1),
     'data':[
         {
-            'symbol': 'BTCUSDT',
-            'historical_data_source': HISTORICAL_SOURCES.binance,
-            'main': False
-        },
-        {
-            'symbol': 'ETHUSDT',
-            'historical_data_source': HISTORICAL_SOURCES.binance,
-            'main': False,
-        },
-        {
             'symbol': 'LTCUSDT',
             'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': True,
         },
         {
-            'symbol': 'TRXUSDT',
-            'historical_data_source': HISTORICAL_SOURCES.binance,
+            'symbol': 'eurusd',
+            'historical_data_source': HISTORICAL_SOURCES.ducascopy,
             'main': False,
         }
     ]
