@@ -1,11 +1,19 @@
 # Engine-RB30
 
+# Description
+
+Engine-RB30 is a framework to backtest and run live your market strategies.
+
 # Quick start
 
 1. provide .env file with name of strategy existing in strategies folder like:
-strategy=name_of_folder_including_strategy
+strategy="folder name with strategy"
+binance_api_secret="binance api secret"
+binance_api_key="binance api key"
 
-2. run with command: "python3 run_all.py"
+1. One time run bash install_dependencies_locally.sh
+
+2. Run local backtest with command: "python3 run_all.py"
 
 # Strategy implementation using python engine
 
@@ -94,21 +102,19 @@ Your communication interfaces include in "libs/interfaces" folder.
 
 # Microservice implementation
 
-3. #TODO all run files are the same. 
-
 1. Add your folder with microservice named as your microservice name.
 2. Add your microservice to libs/list_of_services enum.
 3. Add your microservice in run.sh
 
 Scheme of run file:
-4. ~~~
-5. #TODO
-6. ~~~
+~~~
+#TODO
+~~~
 
 Scheme of service file:
-4. ~~~
-5. #TODO
-6. ~~~
+~~~
+#TODO
+~~~
 
 # Features TODO
 

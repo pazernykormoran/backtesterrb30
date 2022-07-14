@@ -126,10 +126,6 @@ else:
 
 # TODO list
 """
-
-- something is wrong with concating dfs in df validation in historical data feeds. somethink with concated data shape
-- implement validate_dataframe_timestamps in histroical feeds, still problems. task is to run only with utc dates
-- wgile loading one year frame, implement function checking all data lenghts are equal
 - interfaces for all functions
 - add checking dependencies while running without docker.
 - make all other functions inpossible to use and override in model and executor class.
@@ -137,5 +133,5 @@ else:
 - what with strategies that wants to play on  many instruments? every instrument will be required to flag as main   
     and the trade function must be overriten for this case and getting one more argument which is instrument.
 - add clean cache command
-- something is using time zone. dont know how to fix it.
+-Define that credentials are necessery. For example you dont need to pass binance credentials if you not using it.
 """

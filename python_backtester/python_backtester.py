@@ -1,8 +1,5 @@
 
 import asyncio
-from typing import List
-
-from pyparsing import col
 from libs.zmq.zmq import ZMQ
 from libs.interfaces.python_backtester.trade import Trade
 from libs.interfaces.python_backtester.money_state import MoneyState
