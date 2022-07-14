@@ -11,15 +11,18 @@ strategy="folder name with strategy"
 binance_api_secret="binance api secret"
 binance_api_key="binance api key"
 
-1. One time run bash install_dependencies_locally.sh
+1. To install dependencies locally run: "bash install_dependencies_locally.sh"
 
 2. Run local backtest with command: "python3 run_all.py"
 
 # Strategy implementation using python engine
 
-In folder strategies add folder with your strategy and create three files: "data_schema.py", "executor.py", "model.py"
+In folder "strategies" add folder with your strategy name and create three files: "data_schema.py", "executor.py", "model.py"
 
-In "data_schema.py" configure your input data schema and strategy interval using "DataSchema" interface and list of avaliable instruments avaliable in #TODO
+In "data_schema.py" configure your input data schema and strategy interval using "DataSchema" interface and list of avaliable instruments avaliable in adequate data source.
+Avaliable data sources: 
+- [ binance ] avaliable instruments: run "python3 get_binance_avaliable_instruments.py"
+- [ ducascopy ] avaliable instruments in "https://github.com/Leo4815162342/dukascopy-node"
 ~~~
 from libs.necessery_imports.data_imports import *
 

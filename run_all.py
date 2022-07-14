@@ -124,8 +124,8 @@ else:
 # system('sudo docker-compose up --build --remove-orphans')
 
 
-# TODO list
 """
+- zrobic validacje gludosci danych również przy wczytywanieu.
 - interfaces for all functions
 - add checking dependencies while running without docker.
 - make all other functions inpossible to use and override in model and executor class.

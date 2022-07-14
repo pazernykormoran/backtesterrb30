@@ -21,8 +21,9 @@
 # klasa2_obj = Klasa2()
 # klasa2_obj.klasa2_func1()
 
-import os
-os.system('npm install dukascopy-node --save')
+# import os
+# os.system('npm install dukascopy-node --save')
 
-os.system('npx dukascopy-node -i btcusd -from 2018-01-01 -to 2019-01-14 -t d1 -f csv -s')
-os.system('npx dukascopy-node -i btcusd -from 2018-01-20 -to 2019-01-30 -t d1 -f csv -s')
+# os.system('npx dukascopy-node -i btcusd -from 2018-01-01 -to 2019-01-14 -t d1 -f csv -s')
+# os.system('npx dukascopy-node -i btcusd -from 2018-01-20 -to 2019-01-30 -t d1 -f csv -s')
+
