@@ -61,9 +61,9 @@ class Backtester(ZMQ):
 
     def __print_charts(self, finish_params):
         main_instrument_name = [element.symbol for element in self.data_schema.data if element.main == True][0]
-        print('main instrument name', main_instrument_name)
+        # print('main instrument name', main_instrument_name)
         files = [f for f in finish_params["file_names"] if main_instrument_name in f]
-        print('files', files)
+        # print('files', files)
         dfs = []
         for file in files:
             df = pd.read_csv(join(self.downloaded_data_path, file), index_col=None, header=None, names=['timestamp', 'price'])
@@ -108,7 +108,7 @@ class Backtester(ZMQ):
         else:
             self.sell_summary_cost += trade.quantity * trade.price
         local_income =  - self.buy_summary_cost - self.sell_summary_cost + self.number_of_actions * trade.price
-        print('lodal income', local_income)
+        # print('lodal income', local_income)
         self.cumulated_money_chart.append([trade.timestamp, local_income])
 
         self._send(SERVICES.python_executor, 'set_number_of_actions', dumps(self.number_of_actions))

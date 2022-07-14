@@ -2,6 +2,7 @@ from enum import Enum
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from datetime import timezone
 
 class STRATEGY_INTERVALS(Enum):
     tick='tick'
@@ -29,6 +30,12 @@ class DataSchema(BaseModel):
     backtest_date_start: datetime
     backtest_date_stop: datetime
     data: List[DataSymbol]
+
+def validate_config(config: dict):
+    cfg = DataSchema(**config)
+    cfg.backtest_date_start = cfg.backtest_date_start.replace(tzinfo=timezone.utc)
+    cfg.backtest_date_stop = cfg.backtest_date_stop.replace(tzinfo=timezone.utc)
+    return cfg
 
 """
 example of data:

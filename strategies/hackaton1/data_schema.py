@@ -19,4 +19,4 @@ data={
         }
     ]
 }
-DATA = DataSchema(**data)
+DATA = validate_config(data)

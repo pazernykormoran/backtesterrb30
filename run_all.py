@@ -70,7 +70,16 @@ def create_port_configurations():
         
         
 def validate_strategy(strategy_name):
-    data_schema: DataSchema = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
+    try:
+        data_schema: DataSchema = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
+        model_module = importlib.import_module('strategies.'+strategy_name+'.model')
+        executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
+    except Exception as e:
+        print('Excepted: ', e)
+        print('Error. Excepted while loading modules. Check if all necessery files are in your strategy')
+        print('Your strategy in folder strategies/'+strategy_name+'should contain files: "data_schema.py", "executor.py", "model.py"' )
+        print('Read more in readme file')
+        exit()
     if backtest_state:
         if data_schema.backtest_date_start == None:
             print('Error. You must provide "backtest_date_start" field in data_schema file while you are backtesting your strategy')
@@ -81,6 +90,7 @@ def validate_strategy(strategy_name):
         if data_schema.interval.value == STRATEGY_INTERVALS.tick.value: 
             print('Error. Tick interval is not implemented yet ')
             exit()
+
         number_of_mains = 0
         for data in data_schema.data:
             if data.historical_data_source.value not in (HISTORICAL_SOURCES.binance.value, HISTORICAL_SOURCES.ducascopy.value): 
@@ -91,8 +101,7 @@ def validate_strategy(strategy_name):
         if number_of_mains != 1:
             print('Error. Yout "data_schema.py" must have one main instrument')
             exit()
-    model_module = importlib.import_module('strategies.'+strategy_name+'.model')
-    executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
+
     class Asd:
         name = "test",
         strategy_name = strategy_name
@@ -118,7 +127,8 @@ else:
 # TODO list
 """
 
-- implement validate_dataframe_timestamps in histroical feeds
+- something is wrong with concating dfs in df validation in historical data feeds. somethink with concated data shape
+- implement validate_dataframe_timestamps in histroical feeds, still problems. task is to run only with utc dates
 - wgile loading one year frame, implement function checking all data lenghts are equal
 - interfaces for all functions
 - add checking dependencies while running without docker.
@@ -126,5 +136,6 @@ else:
 - add own interval and own data range for all the insruments in dataschema. it requires an inteligent data integration.
 - what with strategies that wants to play on  many instruments? every instrument will be required to flag as main   
     and the trade function must be overriten for this case and getting one more argument which is instrument.
-
+- add clean cache command
+- something is using time zone. dont know how to fix it.
 """

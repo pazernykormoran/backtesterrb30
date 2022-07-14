@@ -14,8 +14,9 @@ class Model(Engine):
     def on_feed(self, data: list):
         
         if self.counter % 300 == 0:
-            self._log('feed received', self.counter)
-            self._log('data len', len(data))
+            # self._log('feed received', self.counter)
+            # self._log('data last element')
+            # self._log(data[-1])
             quant = randint(-2,2)
             if quant != 0:
                 message = {

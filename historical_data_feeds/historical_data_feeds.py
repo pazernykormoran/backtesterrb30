@@ -8,7 +8,7 @@ from libs.data_feeds.data_feeds import STRATEGY_INTERVALS, HISTORICAL_SOURCES, D
 from libs.interfaces.config import Config
 from importlib import import_module
 from json import dumps
-from datetime import datetime
+from datetime import datetime, timezone
 from os import path, mkdir, getenv
 from os import listdir
 from os.path import isfile, join
@@ -16,6 +16,7 @@ from binance import Client, AsyncClient
 import pandas as pd
 from os import system, remove
 import shutil
+
 
 class HistoricalDataFeeds(ZMQ):
     
@@ -61,11 +62,12 @@ class HistoricalDataFeeds(ZMQ):
         await asyncio.sleep(0.5)
         while True:
             if self.data_downloaded(self.data_to_download): 
-                self._log('All data has been downloaded!')
+                self._log('All data has been downloaded')
                 # timestamp = datetime.timestamp(self.data_schema.backtest_date_start)
                 # step_timestamp = self.__get_interval_step_seconds(self.data_schema.interval)
                 data_parts = self.prepare_loading_data_structure(self.file_names_to_load)
                 sending_counter = 0
+                self._log('Starting data loop')
                 for time, array in data_parts.items():
 
                     data_part = self.__load_data_frame(array)
@@ -78,9 +80,9 @@ class HistoricalDataFeeds(ZMQ):
                             self._send(SERVICES.python_engine, 'historical_sending_locked')
                             while self.sending_locked:
                                 await asyncio.sleep(0.01)
-                            self._log('historical sendig unlocked')
+                            # self._log('historical sendig unlocked')
 
-                self._log('sending stop params')
+                self._log('Data has finished')
                 
                 finish_params = {
                     'file_names': self.file_names_to_load
@@ -119,11 +121,11 @@ class HistoricalDataFeeds(ZMQ):
         file_names: List[str] = []
         if data_schema.backtest_date_start.year < data_schema.backtest_date_stop.year:
             date_from_date_to.append(str(int(round(datetime.timestamp(data_schema.backtest_date_start) * 1000))) + "__"
-                                    + str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year,12,31)) * 1000))))
+                                    + str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year+1,1,1, tzinfo=timezone.utc)) * 1000))))
             for i in range(data_schema.backtest_date_stop.year - data_schema.backtest_date_start.year - 1):
-                date_from_date_to.append(str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year + i + 1, 1, 1)) * 1000))) + "__" 
-                                    + str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year + i + 1, 12, 31)) * 1000))))
-            date_from_date_to.append(str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_stop.year,1,1)) * 1000))) + "__" 
+                date_from_date_to.append(str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year + i + 1, 1, 1, tzinfo=timezone.utc)) * 1000))) + "__" 
+                                    + str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year + i + 2, 1, 1, tzinfo=timezone.utc)) * 1000))))
+            date_from_date_to.append(str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_stop.year,1,1, tzinfo=timezone.utc)) * 1000))) + "__" 
                                     + str(int(round(datetime.timestamp(data_schema.backtest_date_stop) * 1000))))
         else:
             date_from_date_to.append(str(int(round(datetime.timestamp(data_schema.backtest_date_start) * 1000))) + "__" 
@@ -157,21 +159,23 @@ class HistoricalDataFeeds(ZMQ):
 
 
     def _download_binance_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
-        self._log('downloading binance data')
+        self._log('downloading binance data', instrument_file_name)
         binance_interval = self.__get_binance_interval(interval)
         klines = self.client.get_historical_klines(instrument, binance_interval, time_start, time_stop)
-        df = pd.DataFrame(klines).iloc[:, [0,1]]
-        self._log('BINANCE DATA LEN', len(df))
-        df = self.validate_dataframe_timestamps(df)
+        df = pd.DataFrame(klines).iloc[:-1, [0,1]]
+        self._log('downloaded data length', df.shape[0])
+        df = self.validate_dataframe_timestamps(df, interval, time_start, time_stop)
+        self._log('data length after validation', df.shape[0])
         df.to_csv(join(self.downloaded_data_path, instrument_file_name), index=False, header=False)
 
+
     def _download_ducascopy_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
-        print('_download_ducascopy_data')
+        self._log('_download_ducascopy_data', instrument_file_name)
         """
         documentation: 
         https://github.com/Leo4815162342/dukascopy-node
         """
-        interval = self.__get_ducascopy_interval(interval)
+        duca_interval = self.__get_ducascopy_interval(interval)
         from_param = datetime.fromtimestamp(time_start//1000.0).strftime("%Y-%m-%d")
         to_param = datetime.fromtimestamp(time_stop//1000.0).strftime("%Y-%m-%d")
         string_params = [
@@ -179,7 +183,7 @@ class HistoricalDataFeeds(ZMQ):
             ' -from '+ from_param,
             ' -to '+ to_param,
             ' -s',
-            ' -t ' + interval,
+            ' -t ' + duca_interval,
             ' -fl', 
             ' -f csv',
             ' -dir ./cache' 
@@ -187,17 +191,17 @@ class HistoricalDataFeeds(ZMQ):
         command = 'npx dukascopy-node'
         for param in string_params:
             command += param
-        print('running command command', command)
+        print('running command', command)
         system(command)
-        name_of_created_file = instrument+'-'+interval+'-bid-'+from_param+'-'+to_param+'.csv'
+        name_of_created_file = instrument+'-'+duca_interval+'-bid-'+from_param+'-'+to_param+'.csv'
         shutil.move('./cache/'+name_of_created_file, join(self.downloaded_data_path, instrument_file_name))
         df = pd.read_csv(join(self.downloaded_data_path, instrument_file_name), index_col=None, header=None)
-        df = df.iloc[:, [0,1]]
-        self._log('DUCASCOPY DATA LEN', len(df))
+        df = df.iloc[1:, [0,1]]
+        self._log('downloaded data length', df.shape[0])
         remove(join(self.downloaded_data_path, instrument_file_name))
-        df = self.validate_dataframe_timestamps(df)
+        df = self.validate_dataframe_timestamps(df, interval, time_start, time_stop)
+        self._log('data length after validation', df.shape[0])
         df.to_csv(join(self.downloaded_data_path, instrument_file_name), index=False, header=False)
-        
         
 
     def _download_rb30_disk_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
@@ -215,7 +219,8 @@ class HistoricalDataFeeds(ZMQ):
                 files_collection[time_start] = []
             files_collection[time_start].append([instrument, instrument_file_name])
         return files_collection
-            
+
+
     def __load_data_frame(self, files_array: list):
         array_of_arrays = pd.DataFrame()
         for file in files_array:
@@ -223,21 +228,25 @@ class HistoricalDataFeeds(ZMQ):
             if len(array_of_arrays) == 0:
                 array_of_arrays = df
             else:
-                array_of_arrays[file[0]] = df.iloc[:, [1]]
+                if(array_of_arrays.shape[0] == df.shape[0]):
+                    array_of_arrays[file[0]] = df.iloc[:, [1]]
+                else:
+                    self._log('Error! Length of loading data parts is not equal. Name of file:', file[1])
+                    self._stop()
         return array_of_arrays
         
 
-    # def __get_interval_step_seconds(self, interval: STRATEGY_INTERVALS):
-    #     if interval == STRATEGY_INTERVALS.tick: return 9999999999
-    #     if interval == STRATEGY_INTERVALS.minute: return 60
-    #     if interval == STRATEGY_INTERVALS.minute15: return 60*15
-    #     if interval == STRATEGY_INTERVALS.minute30: return 60*30
-    #     if interval == STRATEGY_INTERVALS.hour: return 60*60
-    #     if interval == STRATEGY_INTERVALS.day: return 60*60*24
-    #     if interval == STRATEGY_INTERVALS.week: return 60*60*24*7
-    #     if interval == STRATEGY_INTERVALS.month: return 60*60*24*7*30
+    def __get_interval_step_miliseconds(self, interval: str):
+        if interval == STRATEGY_INTERVALS.minute.value: return 60*1000
+        if interval == STRATEGY_INTERVALS.minute15.value: return 60*15*1000
+        if interval == STRATEGY_INTERVALS.minute30.value: return 60*30*1000
+        if interval == STRATEGY_INTERVALS.hour.value: return 60*60*1000
+        if interval == STRATEGY_INTERVALS.day.value: return 60*60*24*1000
+        # if interval == 'minute15': return 60*60*24*7
+        if interval == STRATEGY_INTERVALS.month.value: return 60*60*24*7*30*1000
  
-    def __get_binance_interval(self, interval: STRATEGY_INTERVALS):
+
+    def __get_binance_interval(self, interval: str):
         if interval == 'minute': return Client.KLINE_INTERVAL_1MINUTE
         if interval == 'minute15': return Client.KLINE_INTERVAL_15MINUTE
         if interval == 'minute30': return Client.KLINE_INTERVAL_30MINUTE
@@ -245,8 +254,9 @@ class HistoricalDataFeeds(ZMQ):
         if interval == 'day': return Client.KLINE_INTERVAL_1DAY
         # if interval == 'week': return Client.KLINE_INTERVAL_1WEEK
         if interval == 'month': return Client.KLINE_INTERVAL_1MONTH
-    
-    def __get_ducascopy_interval(self, interval: STRATEGY_INTERVALS):
+
+
+    def __get_ducascopy_interval(self, interval: str):
         if interval == 'minute': return 'm1'
         if interval == 'minute15': return 'm15'
         if interval == 'minute30': return 'm30'
@@ -255,10 +265,41 @@ class HistoricalDataFeeds(ZMQ):
         # if interval == 'week': return 'm1'
         if interval == 'month': return 'mn1'
 
-    def validate_dataframe_timestamps(df: pd.DataFrame):
-        pass
+
+    def validate_dataframe_timestamps(self, df: pd.DataFrame, interval: str, time_start: int, time_stop: int):
+        # print('starting validation: ', 'interval',interval , 'time_start',time_start , 'time_stop', time_stop)
+        # print('-start in file name', datetime.fromtimestamp(time_start / 1000))
+        # print('-stop in file name', datetime.fromtimestamp(time_stop / 1000))
+        # print('is dividable???' ,( time_stop - time_start )/ timestamp_interval)
+        # print('list timestamps first: ', list_timestamps[0], 'last: ', list_timestamps[-1])
+        # print('-start in list', datetime.fromtimestamp(list_timestamps[0] / 1000))
+        # print('-stop in list', datetime.fromtimestamp(list_timestamps[-1] / 1000))
+        # print('proper len', len(list_timestamps))
+        # print('head', df.head(2))
+        # print('tail', df.tail(2))
+        # print(df.dtypes)
+        # print('iterating------')
+        timestamp_interval = self.__get_interval_step_miliseconds(interval)
+        list_timestamps = range(time_start, time_stop, timestamp_interval)
+        for i, timestamp in enumerate(list_timestamps):
+            count = 0
+            while int(df.iloc[i][0]) != int(timestamp):
+                count+= 1
+                df = pd.concat([df.iloc[:i],df.iloc[i-1:i],df.iloc[i:]], ignore_index=True)
+                df.iloc[i,0] = int(timestamp)
+
+        for i, timestamp in enumerate(list_timestamps):
+            if int(df.iloc[i][0]) != int(timestamp):
+                self._log('Error during second validation of data. Timestamps are not equal. Stopping')
+                self._stop()
+
+        if df.shape[0] != len(list_timestamps):
+            self._log('Error. Data frame length is not proper after validation. Check "validate_dataframe_timestamps" function')
+            self._stop()
+        return df
+
 
     # COMMANDS
-
+    
     def __unlock_historical_sending(self):
         self.sending_locked = False

@@ -109,3 +109,11 @@ Scheme of service file:
 4. ~~~
 5. #TODO
 6. ~~~
+
+# Features TODO
+
+1. Live data feeds. Necessery is integration with fix api and real broker.
+2. Trades executor with real broker. 
+3. Possibility to trade in more than one instrument
+4. Different intervals and time scopes for added to strategy instruments
+5. Add more data sources 
