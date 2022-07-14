@@ -1,5 +1,7 @@
 from binance.client import Client
 from os import getenv
+from dotenv import load_dotenv
+load_dotenv()
 
 api_secret=getenv("binance_api_secret")
 api_key=getenv("binance_api_key")

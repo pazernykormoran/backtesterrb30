@@ -125,7 +125,10 @@ else:
 
 
 """
-- zrobic validacje gludosci danych również przy wczytywanieu.
+- handle situation when both dates start and stop are the same
+- handle better checking avaliable times than in 'historical_data_feeds/temporary_ducascopy_list.json'
+- handle scenario when your data is too big length
+zrobic validacje gludosci danych również przy wczytywanieu.
 - interfaces for all functions
 - add checking dependencies while running without docker.
 - make all other functions inpossible to use and override in model and executor class.

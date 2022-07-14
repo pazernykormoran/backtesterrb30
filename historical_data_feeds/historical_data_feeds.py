@@ -7,17 +7,15 @@ from libs.list_of_services.list_of_services import SERVICES
 from libs.data_feeds.data_feeds import STRATEGY_INTERVALS, HISTORICAL_SOURCES, DataSchema
 from libs.interfaces.config import Config
 from importlib import import_module
-from json import dumps
+from json import dumps, load
 from datetime import datetime, timezone
 from os import path, mkdir, getenv
 from os import listdir
 from os.path import isfile, join
 from binance import Client, AsyncClient
 import pandas as pd
-from os import system, remove
+from os import system, remove, mkdir
 import shutil
-
-
 class HistoricalDataFeeds(ZMQ):
     
     downloaded_data_path = '/var/opt/data_historical_downloaded'
@@ -25,12 +23,17 @@ class HistoricalDataFeeds(ZMQ):
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
         self.data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
-        
+        try:
+            mkdir(self.downloaded_data_path)
+        except:
+            self._log('Download data directory already exists')
         binance_api_secret=getenv("binance_api_secret")
         binance_api_key=getenv("binance_api_key")
         self.client = Client(binance_api_key, binance_api_secret)
         self.sending_locked = False
-    
+        if not self.validate_data_schema_period(self.data_schema): 
+            self._stop()
+        # time.sleep(10)
         self.register("unlock_historical_sending", self.__unlock_historical_sending)
 
     # override
@@ -92,6 +95,41 @@ class HistoricalDataFeeds(ZMQ):
             else:
                 print("Error. Not all of the data has been downloaded, exiting")
                 self._stop()
+
+    def validate_data_schema_period(self, data_schema: DataSchema):
+        data_valid = True
+        for data in data_schema.data:
+            if data.historical_data_source == HISTORICAL_SOURCES.binance:
+                if not self.validate_period_binance(data.symbol, data_schema.backtest_date_start, data_schema.interval):
+                    data_valid = False
+            elif data.historical_data_source == HISTORICAL_SOURCES.ducascopy:
+                if not self.validate_period_ducascopy(data.symbol, data_schema.backtest_date_start): 
+                    data_valid = False
+        return data_valid
+
+
+    def validate_period_binance(self, instrument: str, from_datetime: datetime, interval: STRATEGY_INTERVALS):
+        from_datetime_timestamp = int(round(datetime.timestamp(from_datetime) * 1000))
+        binance_interval = self.__get_binance_interval(interval.value)
+        first_timestamp = self.client._get_earliest_valid_timestamp(instrument, binance_interval)
+        if first_timestamp > from_datetime_timestamp:
+            self._log("Error. First avaliable date of " , instrument, "is" , datetime.fromtimestamp(first_timestamp/1000.0))
+            return False
+        return True
+
+    def validate_period_ducascopy(self, instrument: str, from_datetime: datetime):
+        # https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/master/src/utils/instrument-meta-data/generated/raw-meta-data-2022-04-23.json
+        # response = requests.get("http://api.open-notify.org/astros.json")
+        from_datetime_timestamp = int(round(datetime.timestamp(from_datetime) * 1000))
+        f = open('historical_data_feeds/temporary_ducascopy_list.json')
+        instruments = load(f)['instruments']
+        for k, v in instruments.items():
+            if v["historical_filename"] == instrument.upper():
+                first_timestamp = int(v["history_start_day"])
+                if first_timestamp > from_datetime_timestamp:
+                    self._log("Error. First avaliable date of " , instrument, "is" , datetime.fromtimestamp(first_timestamp/1000.0))
+                    return False
+        return True
 
     def data_downloaded(self, full_data_to_download):
         files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
