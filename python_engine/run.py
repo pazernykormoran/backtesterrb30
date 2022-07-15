@@ -3,7 +3,8 @@ strategy_name = getenv('STRATEGY_NAME')
 # microservice_name = getenv('NAME')
 microservice_name = 'python_engine'
 sub_ports = [int(p) for p in getenv(microservice_name+'_subs').split(',')]
-pub_ports = [int(p) for p in getenv(microservice_name+'_pubs').split(',')]
+pub_port = int(getenv(microservice_name+'_pubs'))
+
 backtest_state = getenv('backtest_state')
 
 import importlib
@@ -19,12 +20,12 @@ config = {
         "port": p
         } for p in sub_ports
     ],
-    "pub": [
+    "pub": 
         {
-            "topic": 'pub_'+str(p),
-            "port": p
-        } for p in pub_ports
-    ],
+            "topic": 'pub_'+str(pub_port),
+            "port": pub_port
+        } 
+    ,
     "backtest": True if backtest_state == 'true' else False,
     "strategy_name": strategy_name
 }

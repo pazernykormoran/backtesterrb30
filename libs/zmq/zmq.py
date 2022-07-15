@@ -25,7 +25,7 @@ class ZMQ(Service, ABC):
         self._is_running = False
         self._is_active = False
 
-        self._pubs = {}
+        self._pub = None
         self._subs = []
         
 
@@ -40,28 +40,15 @@ class ZMQ(Service, ABC):
         self._is_active = True
         super().run()
 
-    def __find_publisher(self, service):
-        # TODO you can map it in start of microservice instead of calculating every time.
-        port = ''
-        service_sub_ports = [int(p) for p in getenv(service+'_subs').split(',')]
-        for port in service_sub_ports:
-            for pub in self.config.pub:
-                if pub.port == port:
-                    return 'pub_'+str(port)
-
     # override
     def _send(self, service: SERVICES, msg: dict or BaseModel, *args):
         if isinstance(msg,BaseModel):
             msg = msg.dict()
-        topic = self.__find_publisher(service.value)
-        if not topic:
-            self._log('Cannot send message to this micro service. Check port configuration')
-            return
         if self._is_active:
             data = [service.value.encode('utf-8'), msg.encode('utf-8')]
             for arg in args:
                 data.append(arg.encode('utf-8'))
-            self._pubs[topic].send_multipart(data)
+            self._pub.send_multipart(data)
 
     @abstractmethod
     def _handle_zmq_message(self, msg: str):
@@ -70,12 +57,10 @@ class ZMQ(Service, ABC):
     def _init_sockets(self, config: Config):
         sub_context = zmq.asyncio.Context()
         pub_context = zmq.Context()
-        # self._sub = sub_socket(sub_context, 'tcp://' + config['ip'] + ':' + str(config['sub']['port']), config['sub']['topic'])
         for sub in config.sub:
             s = sub_socket(sub_context, 'tcp://' + config.ip + ':' + str(sub.port), sub.topic)
             self._subs.append(s)
-        for pub in config.pub:
-             self._pubs['pub_'+str(pub.port)] = pub_socket(pub_context, 'tcp://*:' + str(pub.port))
+        self._pub = pub_socket(pub_context, 'tcp://*:' + str(config.pub.port))
 
 
     def _create_listeners(self, loop:AbstractEventLoop):
@@ -93,9 +78,6 @@ class ZMQ(Service, ABC):
                     self._handle(data)
             else:
                 await asyncio.sleep(0.01)
-
-
-
         self._deinit()
 
     def _handle(self, data):

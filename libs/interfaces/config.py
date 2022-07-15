@@ -10,6 +10,6 @@ class Config(BaseModel):
     name: str
     ip: str
     sub: List[NetInfo]
-    pub: List[NetInfo]
+    pub: NetInfo
     backtest: bool
     strategy_name: str
