@@ -21,7 +21,7 @@ In folder "strategies" add folder with your strategy name and create three files
 
 In "data_schema.py" configure your input data schema and strategy interval using "DataSchema" interface and list of avaliable instruments avaliable in adequate data source.
 Avaliable data sources: 
-- [ binance ] avaliable instruments: run "python3 get_binance_avaliable_instruments.py"
+- [ binance ] avaliable instruments in "historical_data_feeds/binance_instruments.txt"
 - [ ducascopy ] avaliable instruments in "https://github.com/Leo4815162342/dukascopy-node"
 ~~~
 from libs.necessery_imports.data_imports import *

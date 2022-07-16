@@ -28,8 +28,9 @@ class Backtester(ZMQ):
         self.buy_summary_cost = 0
         self.sell_summary_cost = 0
 
-        self.register("trade", self.__trade)
-        self.register("data_finish", self.__data_finish)
+        self.register("trade", self.__trade_event)
+        self.register("data_finish", self.__data_finish_event)
+        self.register("close_all_trades", self.__close_all_trades_event)
 
     # override
     def _loop(self):
@@ -76,9 +77,23 @@ class Backtester(ZMQ):
 
         plt.show()
 
+    def __trade(self, trade: Trade):
+        self.trades.append([trade.timestamp, trade.price, trade.quantity])
+        self.number_of_actions += trade.quantity
+        if trade.quantity > 0: 
+            self.buy_summary_cost += trade.quantity * trade.price
+        else:
+            self.sell_summary_cost += trade.quantity * trade.price
+        local_income =  - self.buy_summary_cost - self.sell_summary_cost + self.number_of_actions * trade.price
+        # print('lodal income', local_income)
+        self.cumulated_money_chart.append([trade.timestamp, local_income])
+
+        self._send(SERVICES.python_executor, 'set_number_of_actions', dumps(self.number_of_actions))
+
+
     # COMMANDS
 
-    def __data_finish(self, finish_params):
+    def __data_finish_event(self, finish_params):
         finish_params = loads(finish_params)
         self._log('')
         self._log('========================================================')
@@ -95,18 +110,16 @@ class Backtester(ZMQ):
         self.__print_charts(finish_params)
         self.__stop_all_services()
 
-    def __trade(self, msg):
+    def __trade_event(self, msg):
         trade: Trade = Trade(**loads(msg))
         self._log(f"Received trade: {trade}")
-        self.trades.append([trade.timestamp, trade.price, trade.quantity])
-        self.number_of_actions += trade.quantity
-        if trade.quantity > 0: 
-            self.buy_summary_cost += trade.quantity * trade.price
-        else:
-            self.sell_summary_cost += trade.quantity * trade.price
-        local_income =  - self.buy_summary_cost - self.sell_summary_cost + self.number_of_actions * trade.price
-        # print('lodal income', local_income)
-        self.cumulated_money_chart.append([trade.timestamp, local_income])
+        self.__trade(trade)
 
-        self._send(SERVICES.python_executor, 'set_number_of_actions', dumps(self.number_of_actions))
+    def __close_all_trades_event(self, msg):
+        self._log(f"Received close all trades command")
+        msg = loads(msg)
+        msg["quantity"] = -self.number_of_actions
+        trade: Trade = Trade(**msg)
+        self.__trade(trade)
+
 

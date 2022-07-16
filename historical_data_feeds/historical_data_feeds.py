@@ -31,10 +31,10 @@ class HistoricalDataFeeds(ZMQ):
         binance_api_key=getenv("binance_api_key")
         self.client = Client(binance_api_key, binance_api_secret)
         self.sending_locked = False
-        if not self.validate_data_schema_period(self.data_schema): 
+        if not self.validate_data_schema_instruments(self.data_schema): 
             self._stop()
-        # time.sleep(10)
-        self.register("unlock_historical_sending", self.__unlock_historical_sending)
+        
+        self.register("unlock_historical_sending", self.__unlock_historical_sending_event)
 
     # override
     def run(self):
@@ -96,19 +96,26 @@ class HistoricalDataFeeds(ZMQ):
                 print("Error. Not all of the data has been downloaded, exiting")
                 self._stop()
 
-    def validate_data_schema_period(self, data_schema: DataSchema):
+
+    def validate_data_schema_instruments(self, data_schema: DataSchema):
         data_valid = True
         for data in data_schema.data:
             if data.historical_data_source == HISTORICAL_SOURCES.binance:
-                if not self.validate_period_binance(data.symbol, data_schema.backtest_date_start, data_schema.interval):
+                if not self.validate_binance_instrument(data.symbol, data_schema.backtest_date_start, data_schema.interval):
                     data_valid = False
             elif data.historical_data_source == HISTORICAL_SOURCES.ducascopy:
-                if not self.validate_period_ducascopy(data.symbol, data_schema.backtest_date_start): 
+                if not self.validate_ducascopy_instrument(data.symbol, data_schema.backtest_date_start): 
                     data_valid = False
         return data_valid
 
 
-    def validate_period_binance(self, instrument: str, from_datetime: datetime, interval: STRATEGY_INTERVALS):
+    def validate_binance_instrument(self, instrument: str, from_datetime: datetime, interval: STRATEGY_INTERVALS):
+        #validate if instrument exists:
+        exchange_info = self.client.get_exchange_info()
+        if instrument not in [s['symbol'] for s in exchange_info['symbols']]:
+            self._log('Error. Instrument "'+instrument+'" does not exists on binance.')
+            return False
+        #validate it timestamps perios is right:
         from_datetime_timestamp = int(round(datetime.timestamp(from_datetime) * 1000))
         binance_interval = self.__get_binance_interval(interval.value)
         first_timestamp = self.client._get_earliest_valid_timestamp(instrument, binance_interval)
@@ -117,13 +124,19 @@ class HistoricalDataFeeds(ZMQ):
             return False
         return True
 
-    def validate_period_ducascopy(self, instrument: str, from_datetime: datetime):
+    def validate_ducascopy_instrument(self, instrument: str, from_datetime: datetime):
         # https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/master/src/utils/instrument-meta-data/generated/raw-meta-data-2022-04-23.json
         # response = requests.get("http://api.open-notify.org/astros.json")
         from_datetime_timestamp = int(round(datetime.timestamp(from_datetime) * 1000))
         f = open('historical_data_feeds/temporary_ducascopy_list.json')
-        instruments = load(f)['instruments']
-        for k, v in instruments.items():
+        instrument_list = load(f)['instruments']
+        #validate if instrument exists:
+        if instrument.upper() not in [v['historical_filename'] for k, v in instrument_list.items()]:
+            self._log('Error. Instrument "'+instrument+'" does not exists on ducascopy.')
+            return False
+
+        #validate it timestamps perios is right:
+        for k, v in instrument_list.items():
             if v["historical_filename"] == instrument.upper():
                 first_timestamp = int(v["history_start_day"])
                 if first_timestamp > from_datetime_timestamp:
@@ -269,7 +282,7 @@ class HistoricalDataFeeds(ZMQ):
                 if(array_of_arrays.shape[0] == df.shape[0]):
                     array_of_arrays[file[0]] = df.iloc[:, [1]]
                 else:
-                    self._log('Error! Length of loading data parts is not equal. Name of file:', file[1])
+                    self._log('Error! Length of loading data parts is not equal. Name of file:', file[1], str(array_of_arrays.shape[0]) , "!=", str(df.shape[0]))
                     self._stop()
         return array_of_arrays
         
@@ -339,5 +352,5 @@ class HistoricalDataFeeds(ZMQ):
 
     # COMMANDS
     
-    def __unlock_historical_sending(self):
+    def __unlock_historical_sending_event(self):
         self.sending_locked = False

@@ -22,9 +22,9 @@ class Engine(ZMQ):
         self.__data_buffer = []
         self.__buffer_length = 100
 
-        self.register("data_feed", self.__data_feed)
-        self.register("historical_sending_locked", self.__historical_sending_locked)
-        self.register("data_finish", self.__data_finish)
+        self.register("data_feed", self.__data_feed_event)
+        self.register("historical_sending_locked", self.__historical_sending_locked_event)
+        self.register("data_finish", self.__data_finish_event)
 
     @abstractmethod
     def on_feed(self, data):
@@ -74,7 +74,7 @@ class Engine(ZMQ):
     #     self.__data_buffer.append({k:v for k, v in zip(new_data_row, self.__columns)}, ignore_index=True)
     #     self.on_feed(self.__data_buffer)
 
-    def __data_feed(self, new_data_row):
+    def __data_feed_event(self, new_data_row):
         new_data_row = loads(new_data_row)
         self.__data_buffer.append(new_data_row)
         if len(self.__data_buffer)>self.__buffer_length:
@@ -82,12 +82,12 @@ class Engine(ZMQ):
             self.on_feed(self.__data_buffer)
         
         
-    def __historical_sending_locked(self):
+    def __historical_sending_locked_event(self):
         # self._log('sending unlocked to historical data feeds')
         self._send(SERVICES.historical_data_feeds,'unlock_historical_sending')
 
     
-    def __data_finish(self, finish_params):
+    def __data_finish_event(self, finish_params):
         self.on_data_finish()
         finish_params = loads(finish_params)
         finish_params['main_instrument_price']= self.__get_main_intrument_price()

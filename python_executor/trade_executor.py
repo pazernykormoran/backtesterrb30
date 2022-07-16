@@ -16,8 +16,8 @@ class Executor(ZMQ):
         self.__event_price = 0
         self.__number_of_actions = 0
 
-        self.register("event", self.__event)
-        self.register("set_number_of_actions", self.__set_number_of_actions)
+        self.register("event", self.__event_event)
+        self.register("set_number_of_actions", self.__set_number_of_actions_event)
 
 
     @abstractmethod
@@ -47,30 +47,37 @@ class Executor(ZMQ):
             # self._send(SERVICES.python_engine,'message from trade executor')
 
     def _trade(self, trade_quantity: float):
-        trade_params = {
-            'quantity': trade_quantity,
-            'price': self.__event_price,
-            'timestamp': time.time()
-        }
         if self.config.backtest == True:
+            trade_params = {
+                'quantity': trade_quantity,
+                'price': self.__event_price,
+                'timestamp': time.time()
+            }
             self._send(SERVICES.python_backtester, 'trade', json.dumps(trade_params))
         else:
             # TODO trade in real broker
             pass
 
     def _close_all_trades(self):
-        pass
+        if self.config.backtest == True:
+            trade_params = {
+                'price': self.__event_price,
+                'timestamp': time.time()
+            }
+            self._send(SERVICES.python_backtester, 'close_all_trades', json.dumps(trade_params))
+        else:
+            # TODO trade in real broker
+            pass
 
     def _get_number_of_actions(self):
         return self.__number_of_actions
 
     #COMMANDS
 
-    def __event(self, data):
+    def __event_event(self, data):
         msg = json.loads(data)
         self.__event_price = msg['price']
         self.on_event(msg['message'])
-        pass
 
-    def __set_number_of_actions(self, number: int):
+    def __set_number_of_actions_event(self, number: int):
         self.__number_of_actions = number
