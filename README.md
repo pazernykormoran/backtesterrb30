@@ -7,10 +7,11 @@ Engine-RB30 is a framework to backtest and run live your market strategies.
 # Quick start
 
 1. provide .env file with name of strategy existing in strategies folder like:
+~~~
 strategy="folder name with strategy"
 binance_api_secret="binance api secret"
 binance_api_key="binance api key"
-
+~~~
 1. To install dependencies locally run: "bash install_dependencies_locally.sh"
 
 2. Run local backtest with command: "python3 run_all.py"
