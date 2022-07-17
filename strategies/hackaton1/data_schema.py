@@ -13,12 +13,12 @@ data={
             'main': True,
         },
         {
-            'symbol': 'BTGETH',
+            'symbol': 'IOTAETH',
             'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': False,
         },
         {
-            'symbol': 'IOTAETH',
+            'symbol': 'ADABTC',
             'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': False,
         },

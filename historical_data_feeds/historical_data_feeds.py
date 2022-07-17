@@ -16,6 +16,8 @@ from binance import Client, AsyncClient
 import pandas as pd
 from os import system, remove, mkdir
 import shutil
+import time as tm
+
 class HistoricalDataFeeds(ZMQ):
     
     downloaded_data_path = '/var/opt/data_historical_downloaded'
@@ -26,20 +28,16 @@ class HistoricalDataFeeds(ZMQ):
         try:
             mkdir(self.downloaded_data_path)
         except:
-            self._log('Download data directory already exists')
-        binance_api_secret=getenv("binance_api_secret")
-        binance_api_key=getenv("binance_api_key")
-        self.client = Client(binance_api_key, binance_api_secret)
+            pass
+        if HISTORICAL_SOURCES.binance in [data.historical_data_source for data in self.data_schema.data]:
+            binance_api_secret=getenv("binance_api_secret")
+            binance_api_key=getenv("binance_api_key")
+            self.client = Client(binance_api_key, binance_api_secret)
         self.sending_locked = False
         if not self.validate_data_schema_instruments(self.data_schema): 
             self._stop()
         
         self.register("unlock_historical_sending", self.__unlock_historical_sending_event)
-
-    # override
-    def run(self):
-        
-        super().run()
 
     # override
     def _loop(self):
@@ -71,6 +69,7 @@ class HistoricalDataFeeds(ZMQ):
                 data_parts = self.prepare_loading_data_structure(self.file_names_to_load)
                 sending_counter = 0
                 self._log('Starting data loop')
+                start_time = tm.time()
                 for time, array in data_parts.items():
 
                     data_part = self.__load_data_frame(array)
@@ -88,7 +87,8 @@ class HistoricalDataFeeds(ZMQ):
                 self._log('Data has finished')
                 
                 finish_params = {
-                    'file_names': self.file_names_to_load
+                    'file_names': self.file_names_to_load,
+                    'start_time': start_time
                 }
                 self._send(SERVICES.python_engine, 'data_finish', dumps(finish_params))
                 break
@@ -98,6 +98,7 @@ class HistoricalDataFeeds(ZMQ):
 
 
     def validate_data_schema_instruments(self, data_schema: DataSchema):
+        self._log('Data_schema validation')
         data_valid = True
         for data in data_schema.data:
             if data.historical_data_source == HISTORICAL_SOURCES.binance:
@@ -110,6 +111,7 @@ class HistoricalDataFeeds(ZMQ):
 
 
     def validate_binance_instrument(self, instrument: str, from_datetime: datetime, interval: STRATEGY_INTERVALS):
+        # print('validation instrment', instrument, 'from_datetime', from_datetime, 'interval',interval)
         #validate if instrument exists:
         exchange_info = self.client.get_exchange_info()
         if instrument not in [s['symbol'] for s in exchange_info['symbols']]:
@@ -213,6 +215,9 @@ class HistoricalDataFeeds(ZMQ):
         self._log('downloading binance data', instrument_file_name)
         binance_interval = self.__get_binance_interval(interval)
         klines = self.client.get_historical_klines(instrument, binance_interval, time_start, time_stop)
+        if len(klines) == 0:
+            self._log('Error. Klines downloaded has len = 0. Check if',instrument,'has not been deleted from the exachange.')
+            self._stop()
         df = pd.DataFrame(klines).iloc[:-1, [0,1]]
         self._log('downloaded data length', df.shape[0])
         df = self.validate_dataframe_timestamps(df, interval, time_start, time_stop)

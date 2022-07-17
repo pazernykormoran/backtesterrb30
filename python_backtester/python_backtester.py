@@ -10,6 +10,7 @@ from libs.list_of_services.list_of_services import SERVICES, SERVICES_ARRAY
 import pandas as pd
 from os.path import join
 import matplotlib.pyplot as plt
+import time as tm
 
 class Backtester(ZMQ):
     
@@ -95,9 +96,12 @@ class Backtester(ZMQ):
 
     def __data_finish_event(self, finish_params):
         finish_params = loads(finish_params)
+        finish_time = tm.time()
+        time_of_backtest = finish_time - finish_params['start_time']
         self._log('')
         self._log('========================================================')
         self._log('BACKTEST FINISHED!!')
+        self._log('time of backtest:', round(time_of_backtest,2), '[s]')
         self._log('number of trades:', len(self.trades))
         self._log('buy_summary_cost:', self.buy_summary_cost)
         self._log('sell_summary_cost:', self.sell_summary_cost)

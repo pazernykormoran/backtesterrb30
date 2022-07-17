@@ -1,5 +1,5 @@
 from abc import abstractmethod, ABC
-from typing import Callable, Dict, List
+from typing import Callable, Dict
 from asyncio import AbstractEventLoop
 import zmq
 import zmq.asyncio
@@ -7,9 +7,8 @@ import asyncio
 from libs.list_of_services.list_of_services import SERVICES
 from libs.zmq.service import Service
 from libs.interfaces.config import Config
-from os import getenv, _exit
+from os import _exit
 from pydantic import BaseModel
-from json import dumps, loads
 
 class ZMQ(Service, ABC):
 

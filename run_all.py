@@ -133,55 +133,13 @@ else:
 
 """
 - handle better checking avaliable times than in 'historical_data_feeds/temporary_ducascopy_list.json'
-- handle scenario when your data is too big length
+- handle scenario when your data is too big interval
 zrobic validacje gludosci danych również przy wczytywanieu.
 - interfaces for all functions
-- add checking dependencies while running without docker.
 - make all other functions inpossible to use and override in model and executor class.
 - add own interval and own data range for all the insruments in dataschema. it requires an inteligent data integration.
 - what with strategies that wants to play on  many instruments? every instrument will be required to flag as main   
     and the trade function must be overriten for this case and getting one more argument which is instrument.
 - add clean cache command
 -Define that credentials are necessery. For example you dont need to pass binance credentials if you not using it.
-"""
-
-"""
-2022-07-16 16:12:17.194730 [    historical_data_feeds] downloading binance data binance__BTGETH__hour__1590969600000__1609459200000.csv
-Traceback (most recent call last):
-  File "serve.py", line 9, in <module>
-    import_module(microservice_name + '.run')
-  File "/usr/lib/python3.8/importlib/__init__.py", line 127, in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-  File "<frozen importlib._bootstrap>", line 1014, in _gcd_import
-  File "<frozen importlib._bootstrap>", line 991, in _find_and_load
-  File "<frozen importlib._bootstrap>", line 975, in _find_and_load_unlocked
-  File "<frozen importlib._bootstrap>", line 671, in _load_unlocked
-  File "<frozen importlib._bootstrap_external>", line 783, in exec_module
-  File "<frozen importlib._bootstrap>", line 219, in _call_with_frames_removed
-  File "/home/george/workspace/project/Retire-Before-30/Engine-RB30/historical_data_feeds/run.py", line 29, in <module>
-    service.run()
-  File "/home/george/workspace/project/Retire-Before-30/Engine-RB30/historical_data_feeds/historical_data_feeds.py", line 42, in run
-    super().run()
-  File "/home/george/workspace/project/Retire-Before-30/Engine-RB30/libs/zmq/zmq.py", line 41, in run
-    super().run()
-  File "/home/george/workspace/project/Retire-Before-30/Engine-RB30/libs/zmq/service.py", line 15, in run
-    self._loop()
-  File "/home/george/workspace/project/Retire-Before-30/Engine-RB30/historical_data_feeds/historical_data_feeds.py", line 52, in _loop
-    self.download_data(self.data_to_download, loop)
-  File "/home/george/workspace/project/Retire-Before-30/Engine-RB30/historical_data_feeds/historical_data_feeds.py", line 203, in download_data
-    self._download_binance_data(instrument_file_name, instrment, interval, int(time_start), int(time_stop))
-  File "/home/george/workspace/project/Retire-Before-30/Engine-RB30/historical_data_feeds/historical_data_feeds.py", line 216, in _download_binance_data
-    df = pd.DataFrame(klines).iloc[:-1, [0,1]]
-  File "/usr/local/lib/python3.8/dist-packages/pandas/core/indexing.py", line 961, in __getitem__
-    return self._getitem_tuple(key)
-  File "/usr/local/lib/python3.8/dist-packages/pandas/core/indexing.py", line 1458, in _getitem_tuple
-    tup = self._validate_tuple_indexer(tup)
-  File "/usr/local/lib/python3.8/dist-packages/pandas/core/indexing.py", line 769, in _validate_tuple_indexer
-    self._validate_key(k, i)
-  File "/usr/local/lib/python3.8/dist-packages/pandas/core/indexing.py", line 1376, in _validate_key
-    raise IndexError("positional indexers are out-of-bounds")
-IndexError: positional indexers are out-of-bounds
-^C** Trapped CTRL-C
-Terminated
-
 """

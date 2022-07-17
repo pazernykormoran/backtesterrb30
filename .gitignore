@@ -1,4 +1,3 @@
-**.json
 **/.env
 **/__pycache__
 .additional_configs
@@ -6,3 +5,5 @@
 cache
 node_modules
 download
+package-lock.json
+package.json

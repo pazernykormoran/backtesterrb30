@@ -18,7 +18,7 @@ class Engine(ZMQ):
         super().__init__(config, logger)
         self.__data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
-        # self.__data_buffer = pd.DataFrame(self.__columns)
+        self.__data_buffer_pandas = pd.DataFrame(columns=self.__columns)
         self.__data_buffer = []
         self.__buffer_length = 100
 
@@ -65,14 +65,20 @@ class Engine(ZMQ):
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
         return self.__data_buffer[-1][num+1]
 
+    # def __get_main_intrument_price_2(self):
+    #     num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
+    #     return self.__data_buffer_pandas.iloc[-1, num+1]
+
     #COMMANDS
-    # def __data_feed(self, new_data_row):
+    # def __data_feed_event_2(self, new_data_row):
+    #     # using this function everythink runs 10 time slower.
     #     new_data_row = loads(new_data_row)
-    #     if self.__data_buffer.shape[0]>self.__buffer_length:
-    #         self.__data_buffer.drop(self.__data_buffer.head(1).index,inplace=True)
-    #     # self.__data_buffer.loc[self.__data_buffer.shape[0]]=new_data_row
-    #     self.__data_buffer.append({k:v for k, v in zip(new_data_row, self.__columns)}, ignore_index=True)
-    #     self.on_feed(self.__data_buffer)
+    #     if self.__data_buffer_pandas.shape[0]>self.__buffer_length:
+    #         self.__data_buffer_pandas.drop(self.__data_buffer_pandas.head(1).index,inplace=True)
+    #     new_data_df = pd.DataFrame([new_data_row], columns=self.__columns)
+    #     # print('shape of new df, ', new_data_df.shape)
+    #     self.__data_buffer_pandas = pd.concat([self.__data_buffer_pandas, new_data_df])
+    #     self.on_feed(self.__data_buffer_pandas)
 
     def __data_feed_event(self, new_data_row):
         new_data_row = loads(new_data_row)
