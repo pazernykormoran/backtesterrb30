@@ -100,7 +100,7 @@ class Backtester(ZMQ):
         time_of_backtest = finish_time - finish_params['start_time']
         self._log('')
         self._log('========================================================')
-        self._log('BACKTEST FINISHED!!')
+        self._log('BACKTEST FINISHED')
         self._log('time of backtest:', round(time_of_backtest,2), '[s]')
         self._log('number of trades:', len(self.trades))
         self._log('buy_summary_cost:', self.buy_summary_cost)
