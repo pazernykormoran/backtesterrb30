@@ -1,0 +1,46 @@
+version: '3.4'
+services:
+
+  historical_data_feeds:
+    network_mode: host
+    build: 
+      context: ./
+      dockerfile: ./historical_data_feeds/Dockerfile
+    env_file:
+      - .env
+      - .additional_configs
+    volumes:
+      - /var/opt/data_historical_downloaded:/var/opt/data_historical_downloaded
+
+  python_backtester:
+    network_mode: host
+    build: 
+      context: ./
+      dockerfile: ./python_backtester/Dockerfile
+    env_file:
+      - .env
+      - .additional_configs
+    volumes:
+      - /var/opt/data_historical_downloaded:/var/opt/data_historical_downloaded
+
+  python_engine:
+    network_mode: host
+    build:
+      context: ./
+      dockerfile: ./python_engine/Dockerfile
+    env_file:
+      - .env
+      - .additional_configs
+    volumes:
+      - /var/opt/data_historical_downloaded:/var/opt/data_historical_downloaded
+
+  python_executor:
+    network_mode: host
+    build: 
+      context: ./
+      dockerfile: ./python_executor/Dockerfile
+    env_file:
+      - .env
+      - .additional_configs
+    volumes:
+      - /var/opt/data_historical_downloaded:/var/opt/data_historical_downloaded

@@ -1,0 +1,9 @@
+**/.env
+**/__pycache__
+.additional_configs
+**/data_historical_downloaded
+cache
+node_modules
+download
+package-lock.json
+package.json
