@@ -7,3 +7,4 @@ node_modules
 download
 package-lock.json
 package.json
+.vscode

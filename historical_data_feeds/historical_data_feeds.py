@@ -4,7 +4,7 @@ import asyncio
 from typing import Callable, List
 from libs.zmq.zmq import ZMQ
 from libs.list_of_services.list_of_services import SERVICES
-from libs.data_feeds.data_feeds import STRATEGY_INTERVALS, HISTORICAL_SOURCES, DataSchema
+from libs.data_feeds.data_feeds import STRATEGY_INTERVALS, HISTORICAL_SOURCES, DataSchemaTicks, DataSymbolTicks
 from libs.interfaces.config import Config
 from importlib import import_module
 from json import dumps, load
@@ -24,7 +24,7 @@ class HistoricalDataFeeds(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
+        self.data_schema: DataSchemaTicks = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
         try:
             mkdir(self.downloaded_data_path)
         except:
@@ -34,8 +34,7 @@ class HistoricalDataFeeds(ZMQ):
             binance_api_key=getenv("binance_api_key")
             self.client = Client(binance_api_key, binance_api_secret)
         self.sending_locked = False
-        if not self.validate_data_schema_instruments(self.data_schema): 
-            self._stop()
+
         
         self.register("unlock_historical_sending", self.__unlock_historical_sending_event)
 
@@ -43,14 +42,15 @@ class HistoricalDataFeeds(ZMQ):
     def _loop(self):
         loop = asyncio.get_event_loop()
 
-        # bofero starting loop you need to validate histroical data files
+        if not self.validate_data_schema_instruments(self.data_schema): 
+            self._stop()
         self.validate_downloaded_data_folder()
         self.file_names_to_load, self.data_to_download =  self.check_if_all_data_exists(self.data_schema)
         if len(self.data_to_download) > 0:
-            self.download_data(self.data_to_download, loop)
+            self.download_data(self.data_to_download)
         self._create_listeners(loop)
         # loop.create_task(self._listen_zmq())
-        loop.create_task(self.__historical_data_loop())
+        loop.create_task(self.__historical_data_loop_ticks())
         loop.run_forever()
         loop.close()
 
@@ -58,7 +58,45 @@ class HistoricalDataFeeds(ZMQ):
     def _handle_zmq_message(self, message):
         pass
 
-    async def __historical_data_loop(self):
+    # async def __historical_data_loop(self):
+    #     self._log('waiting for all ports starts up')
+    #     await asyncio.sleep(0.5)
+    #     while True:
+    #         if self.data_downloaded(self.data_to_download): 
+    #             self._log('All data has been downloaded')
+    #             # timestamp = datetime.timestamp(self.data_schema.backtest_date_start)
+    #             # step_timestamp = self.__get_interval_step_seconds(self.data_schema.interval)
+    #             data_parts = self.prepare_loading_data_structure(self.file_names_to_load)
+    #             sending_counter = 0
+    #             self._log('Starting data loop')
+    #             start_time = tm.time()
+    #             for time, array in data_parts.items():
+
+    #                 data_part = self.__load_data_frame(array)
+    #                 for index, row in data_part.iterrows():
+
+    #                     self._send(SERVICES.python_engine,'data_feed',dumps(list(row)))
+    #                     sending_counter += 1
+    #                     if sending_counter % 1000 == 0:
+    #                         self.sending_locked = True
+    #                         self._send(SERVICES.python_engine, 'historical_sending_locked')
+    #                         while self.sending_locked:
+    #                             await asyncio.sleep(0.01)
+    #                         # self._log('historical sendig unlocked')
+
+    #             self._log('Data has finished')
+                
+    #             finish_params = {
+    #                 'file_names': self.file_names_to_load,
+    #                 'start_time': start_time
+    #             }
+    #             self._send(SERVICES.python_engine, 'data_finish', dumps(finish_params))
+    #             break
+    #         else:
+    #             print("Error. Not all of the data has been downloaded, exiting")
+    #             self._stop()
+
+    async def __historical_data_loop_ticks(self):
         self._log('waiting for all ports starts up')
         await asyncio.sleep(0.5)
         while True:
@@ -70,12 +108,13 @@ class HistoricalDataFeeds(ZMQ):
                 sending_counter = 0
                 self._log('Starting data loop')
                 start_time = tm.time()
+                last_row = []
                 for time, array in data_parts.items():
 
-                    data_part = self.__load_data_frame(array)
+                    data_part = self.__load_data_frame_ticks(last_row, array)
                     for index, row in data_part.iterrows():
-
-                        self._send(SERVICES.python_engine,'data_feed',dumps(list(row)))
+                        last_row = row
+                        self._send(SERVICES.python_engine,'data_feed',dumps(list(last_row)))
                         sending_counter += 1
                         if sending_counter % 1000 == 0:
                             self.sending_locked = True
@@ -96,16 +135,15 @@ class HistoricalDataFeeds(ZMQ):
                 print("Error. Not all of the data has been downloaded, exiting")
                 self._stop()
 
-
-    def validate_data_schema_instruments(self, data_schema: DataSchema):
+    def validate_data_schema_instruments(self, data_schema: DataSchemaTicks):
         self._log('Data_schema validation')
         data_valid = True
         for data in data_schema.data:
             if data.historical_data_source == HISTORICAL_SOURCES.binance:
-                if not self.validate_binance_instrument(data.symbol, data_schema.backtest_date_start, data_schema.interval):
+                if not self.validate_binance_instrument(data.symbol, data.backtest_date_start, data.interval):
                     data_valid = False
             elif data.historical_data_source == HISTORICAL_SOURCES.ducascopy:
-                if not self.validate_ducascopy_instrument(data.symbol, data_schema.backtest_date_start): 
+                if not self.validate_ducascopy_instrument(data.symbol, data.backtest_date_start): 
                     data_valid = False
         return data_valid
 
@@ -157,46 +195,29 @@ class HistoricalDataFeeds(ZMQ):
             mkdir(self.downloaded_data_path)
 
     def get_next_value(self):
-        pass
+        return False
 
     def validate_loaded_data(self):
         pass
     
-    def check_if_all_data_exists(self, data_schema: DataSchema):
+    def check_if_all_data_exists(self, data_schema: DataSchemaTicks):
         """
         data scheme
         <instrument>__<source>__<interval>__<date-from>__<date-to>
         all instruments are downloaded in year files.
-
-        #TODO write tests
         """
-        date_from_date_to: List[str] = []
         file_names: List[str] = []
-        if data_schema.backtest_date_start.year < data_schema.backtest_date_stop.year:
-            date_from_date_to.append(str(int(round(datetime.timestamp(data_schema.backtest_date_start) * 1000))) + "__"
-                                    + str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year+1,1,1, tzinfo=timezone.utc)) * 1000))))
-            for i in range(data_schema.backtest_date_stop.year - data_schema.backtest_date_start.year - 1):
-                date_from_date_to.append(str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year + i + 1, 1, 1, tzinfo=timezone.utc)) * 1000))) + "__" 
-                                    + str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year + i + 2, 1, 1, tzinfo=timezone.utc)) * 1000))))
-            date_from_date_to.append(str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_stop.year,1,1, tzinfo=timezone.utc)) * 1000))) + "__" 
-                                    + str(int(round(datetime.timestamp(data_schema.backtest_date_stop) * 1000))))
-        else:
-            date_from_date_to.append(str(int(round(datetime.timestamp(data_schema.backtest_date_start) * 1000))) + "__" 
-                                    + str(int(round(datetime.timestamp(data_schema.backtest_date_stop) * 1000))))
+        loading_structure = []
         for instrument in data_schema.data:
-            for dates in date_from_date_to:
-                file_names.append(instrument.historical_data_source.value + "__" 
-                                    + instrument.symbol + "__" 
-                                    + data_schema.interval.value + "__" 
-                                    + dates + '.csv')
-        # print('file_names', file_names)
+            files = self.__get_file_names(instrument)
+            loading_structure.append(file_names)
+            file_names = file_names+files
+        print('file names', file_names)
         files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
-        # print('files_in_directory',files_in_directory)
         files_to_download = list(set(file_names) - set(files_in_directory))
-        # print('files_to_download', files_to_download)
         return file_names, files_to_download
 
-    def download_data(self, data_to_download, loop: asyncio.AbstractEventLoop):
+    def download_data(self, data_to_download):
         for instrument_file_name in data_to_download:
             data_instrument = instrument_file_name[:-4]
             source, instrment, interval, time_start, time_stop = tuple(data_instrument.split('__'))
@@ -210,6 +231,27 @@ class HistoricalDataFeeds(ZMQ):
 
         # if tick: get_aggregate_trades
 
+    def __get_file_names(self, symbol: DataSymbolTicks) -> List[str]:
+        date_from_date_to: List[str] = []
+        file_names: List[str] = []
+        if symbol.backtest_date_start.year < symbol.backtest_date_stop.year:
+            date_from_date_to.append(str(int(round(datetime.timestamp(symbol.backtest_date_start) * 1000))) + "__"
+                                    + str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year+1,1,1, tzinfo=timezone.utc)) * 1000))))
+            for i in range(symbol.backtest_date_stop.year - symbol.backtest_date_start.year - 1):
+                date_from_date_to.append(str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year + i + 1, 1, 1, tzinfo=timezone.utc)) * 1000))) + "__" 
+                                    + str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year + i + 2, 1, 1, tzinfo=timezone.utc)) * 1000))))
+            date_from_date_to.append(str(int(round(datetime.timestamp(datetime(symbol.backtest_date_stop.year,1,1, tzinfo=timezone.utc)) * 1000))) + "__" 
+                                    + str(int(round(datetime.timestamp(symbol.backtest_date_stop) * 1000))))
+        else:
+            date_from_date_to.append(str(int(round(datetime.timestamp(symbol.backtest_date_start) * 1000))) + "__" 
+                                    + str(int(round(datetime.timestamp(symbol.backtest_date_stop) * 1000))))
+
+        for dates in date_from_date_to:
+            file_names.append(symbol.historical_data_source.value + "__" 
+                                + symbol.symbol + "__" 
+                                + symbol.interval.value + "__" 
+                                + dates + '.csv')
+        return file_names
 
     def _download_binance_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
         self._log('downloading binance data', instrument_file_name)
@@ -273,7 +315,14 @@ class HistoricalDataFeeds(ZMQ):
             source, instrument, interval, time_start, time_stop = tuple(data_instrument.split('__'))
             if not time_start in files_collection:
                 files_collection[time_start] = []
-            files_collection[time_start].append([instrument, instrument_file_name])
+            for symbol in self.data_schema.data:
+                if instrument == symbol.symbol:
+                    trigger_feed = symbol.trigger_feed
+                    if trigger_feed == None:
+                        trigger_feed = False
+                    files_collection[time_start].append([instrument, instrument_file_name, trigger_feed])
+                    break
+        print('lading files collection', files_collection)
         return files_collection
 
 
@@ -291,6 +340,63 @@ class HistoricalDataFeeds(ZMQ):
                     self._stop()
         return array_of_arrays
         
+    def __load_data_frame_ticks(self, last_row: list, files_array: list):
+        array_of_arrays = pd.DataFrame()
+        list_of_dfs = []
+        # load dfs
+        for i, file in enumerate(files_array):
+            df = pd.read_csv(join(self.downloaded_data_path, file[1]), index_col=None, header=None, names=['timestamp', file[0]])
+            loading_index = 0
+            # append last raw it if exists
+            if last_row != []:
+                pd.concat([last_row, df], axis=0, ignore_index=True)
+                loading_index = 1
+
+            list_of_dfs.append({
+                "loading_index": loading_index,
+                "trigger_feed": file[2],
+                "df": df
+            })
+
+        print('list of dfsh len', len(list_of_dfs))
+
+        data_finish = False
+        rows = []
+        while data_finish == False:
+            arr = []
+            
+            # find lowest next timestamp
+            min_timestamp = min([df['df'].iloc[df['loading_index'], 0] for df in list_of_dfs if (df['trigger_feed'] == True and not df['df'].empty)]) 
+            arr.append(min_timestamp)
+            for df_obj in list_of_dfs:
+                number_of_finished_arrays = 0
+                if df_obj['df'].empty:
+                    #handle if all frame is empty.
+                    arr.append(0)
+                    continue
+                if df_obj['df'].shape[0] == df_obj['loading_index']:
+                    #handle if loading_index od next frame is in the end of dataframe.
+                    arr.append(df_obj['df'].iloc[df_obj['loading_index'], 1])
+                    number_of_finished_arrays += 1
+                    if number_of_finished_arrays == len(list_of_dfs):
+                        data_finish = True
+                    continue
+                if min_timestamp== df_obj['df'].iloc[df_obj['loading_index'], 0]:
+                    #handle if new timestamp of next frame equals minimal next timestamp.
+                    arr.append(df_obj['df'].iloc[df_obj['loading_index'], 1])
+                    df_obj['loading_index'] += 1
+                else:
+                    #handle if next timestamp is not equal (bigger) than minimal timestamp.
+                    if df_obj['loading_index'] == 0:
+                        # situation where previous data not exists.
+                        arr.append(0)
+                        continue
+                    arr.append(df_obj['df'].iloc[df_obj['loading_index']-1, 1])
+                    df_obj['loading_index'] += 1
+            print('row: ', arr)
+            rows.append(arr)
+
+            #TODO
 
     def __get_interval_step_miliseconds(self, interval: str):
         if interval == STRATEGY_INTERVALS.minute.value: return 60*1000
