@@ -46,12 +46,12 @@ class Executor(ZMQ):
             # self._log('trade executor sending some message')
             # self._send(SERVICES.python_engine,'message from trade executor')
 
-    def _trade(self, trade_quantity: float):
+    def _trade(self, trade_quantity: float, timestamp):
         if self.config.backtest == True:
             trade_params = {
                 'quantity': trade_quantity,
                 'price': self.__event_price,
-                'timestamp': time.time()
+                'timestamp': timestamp
             }
             self._send(SERVICES.python_backtester, 'trade', json.dumps(trade_params))
         else:

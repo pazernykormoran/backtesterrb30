@@ -11,6 +11,7 @@ import pandas as pd
 from os.path import join
 import matplotlib.pyplot as plt
 import time as tm
+import numpy as np
 
 class Backtester(ZMQ):
     
@@ -70,13 +71,36 @@ class Backtester(ZMQ):
         self.main_instrument_chart = pd.concat(dfs)
 
         #plot trades chart
-        self.main_instrument_chart.plot(x ='timestamp', y='price', kind = 'line')	
+        fig,(ax1,ax2) = plt.subplots(nrows=2, ncols=1, sharex = True)
+        ax = self.main_instrument_chart.plot(x ='timestamp', y='price', kind = 'line', ax=ax1)	
 
+
+        normalized_quants = self.__normalize([abs(trade[2]) for trade in self.trades], (5,15))
+
+            
+        for trade, quant in zip(self.trades, normalized_quants):
+            ax.plot(trade[0], trade[1], '.g' if trade[2]>0 else '.r', ms=quant)
+        # self.trades.append([trade.timestamp, trade.price, trade.quantity])
+        
         #plot money chart
         money_df = pd.DataFrame(self.cumulated_money_chart, columns=['timestamp', 'income'])
-        money_df.plot(x ='timestamp', y='income', kind = 'line',)
+        money_df.plot(x ='timestamp', y='income', kind = 'line', ax=ax2, sharex = ax)
 
-        plt.show()
+        plt.ion()
+        plt.show(block = True)
+        
+        print('Finish breakpoint')
+
+    def __normalize(self, x, newRange=(0, 1)): #x is an array. Default range is between zero and one
+        xmin, xmax = np.min(x), np.max(x) #get max and min from input array
+        norm = (x - xmin)/(xmax - xmin) # scale between zero and one
+        
+        if newRange == (0, 1):
+            return(norm) # wanted range is the same as norm
+        elif newRange != (0, 1):
+            return norm * (newRange[1] - newRange[0]) + newRange[0] #scale to a different range.    
+        #add other conditions here. For example, an error messag
+
 
     def __trade(self, trade: Trade):
         self.trades.append([trade.timestamp, trade.price, trade.quantity])

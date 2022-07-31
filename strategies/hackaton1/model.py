@@ -22,10 +22,11 @@ class Model(Engine):
             #     print('len d', len(d))
             #     print(d)
 
-            quant = randint(-2,2)
+            quant = randint(-4,4)
             if quant != 0:
                 message = {
-                    'value': quant
+                    'value': quant,
+                    'trade_timestamp': data[0][-1]
                 }
                 self._trigger_event(message)
             # for d in data:
