@@ -169,4 +169,5 @@ zrobic validacje gludosci danych również przy wczytywanieu.
     and the trade function must be overriten for this case and getting one more argument which is instrument.
 - add clean cache command
 -Define that credentials are necessery. For example you dont need to pass binance credentials if you not using it.
+apply validate_dataframe_timestamps function to fill holes in data
 """

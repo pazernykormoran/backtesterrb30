@@ -9,7 +9,7 @@ data={
     'data':[
         {
             'interval': BINANCE_INTERVALS.hour,
-            'backtest_date_start': datetime(2020,6,1),
+            'backtest_date_start': datetime(2021,6,1),
             'backtest_date_stop': datetime(2022,6,1),
             'symbol': 'LTCUSDT',
             'historical_data_source': HISTORICAL_SOURCES.binance,
@@ -20,7 +20,7 @@ data={
             'interval': DUKASCOPY_INTERVALS.hour,
             'backtest_date_start': datetime(2020,6,1),
             'backtest_date_stop': datetime(2022,6,1),
-            'symbol': '0291hkhkd',
+            'symbol': 'BTCUSDT',
             'historical_data_source': HISTORICAL_SOURCES.ducascopy,
             'main': False,
         }
