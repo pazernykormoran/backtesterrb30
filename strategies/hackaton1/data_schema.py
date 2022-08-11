@@ -3,42 +3,42 @@ from libs.necessery_imports.data_imports import *
 # configure data feed =====================================
 
 data={
-    'interval':STRATEGY_INTERVALS.hour,
+    'interval':STRATEGY_INTERVALS.minute15,
     'backtest_date_start': datetime(2020,6,1),
     'backtest_date_stop': datetime(2022,6,1),
     'data':[
         {
-            'symbol': 'LTCUSDT',
+            'symbol': 'BTCUSDT',
+            'historical_data_source': HISTORICAL_SOURCES.binance,
+            'main': False,
+        },
+        {
+            'symbol': 'ETHUSDT',
             'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': True,
         },
         {
-            'symbol': 'IOTAETH',
+            'symbol': 'XRPUSDT',
             'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': False,
         },
         {
-            'symbol': 'ADABTC',
+            'symbol': 'BNBUSDT',
             'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': False,
         },
         {
-            'symbol': 'saffreur',
+            'symbol': 'iefususd',
             'historical_data_source': HISTORICAL_SOURCES.ducascopy,
             'main': False,
         },
         {
-            'symbol': 'adsdeeur',
+            'symbol': 'iveususd',
             'historical_data_source': HISTORICAL_SOURCES.ducascopy,
             'main': False,
         },
         {
-            'symbol': 'bmwdeeur',
-            'historical_data_source': HISTORICAL_SOURCES.ducascopy,
-            'main': False,
-        },
-        {
-            'symbol': '0291hkhkd',
+            'symbol': 'xauusd',
             'historical_data_source': HISTORICAL_SOURCES.ducascopy,
             'main': False,
         }

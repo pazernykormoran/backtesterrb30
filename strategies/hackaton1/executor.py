@@ -11,7 +11,7 @@ class TradeExecutor(Executor):
     def on_event(self, message):
         # self._log('handling on event method in executor', message)
         self.trade_counter += 1
-        if self.trade_counter == 17:
-            self._close_all_trades()
+        # if self.trade_counter == 17:
+        #     self._close_all_trades()
         self._trade(message['value'], message['trade_timestamp'])
 

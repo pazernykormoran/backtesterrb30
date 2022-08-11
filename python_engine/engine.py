@@ -18,6 +18,7 @@ class Engine(ZMQ):
         super().__init__(config, logger)
         self.__data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
+        self.columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__data_buffer_dict = [ [] for col in self.__columns]
 
         self.__data_buffer_pandas = pd.DataFrame(columns=self.__columns)
