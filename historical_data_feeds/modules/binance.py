@@ -7,11 +7,19 @@ from os.path import join
 
 def _get_binance_interval(interval: str):
     if interval == 'minute': return Client.KLINE_INTERVAL_1MINUTE
+    if interval == 'minute3': return Client.KLINE_INTERVAL_3MINUTE
+    if interval == 'minute5': return Client.KLINE_INTERVAL_5MINUTE
     if interval == 'minute15': return Client.KLINE_INTERVAL_15MINUTE
     if interval == 'minute30': return Client.KLINE_INTERVAL_30MINUTE
     if interval == 'hour': return Client.KLINE_INTERVAL_1HOUR
+    if interval == 'hour2': return Client.KLINE_INTERVAL_2HOUR
+    if interval == 'hour4': return Client.KLINE_INTERVAL_4HOUR
+    if interval == 'hour6': return Client.KLINE_INTERVAL_6HOUR
+    if interval == 'hour8': return Client.KLINE_INTERVAL_8HOUR
+    if interval == 'hour12': return Client.KLINE_INTERVAL_12HOUR
     if interval == 'day': return Client.KLINE_INTERVAL_1DAY
-    # if interval == 'week': return Client.KLINE_INTERVAL_1WEEK
+    if interval == 'day3': return Client.KLINE_INTERVAL_3DAY
+    if interval == 'week': return Client.KLINE_INTERVAL_1WEEK
     if interval == 'month': return Client.KLINE_INTERVAL_1MONTH
 
 

@@ -7,19 +7,30 @@ from datetime import timezone
 class DUKASCOPY_INTERVALS(Enum):
     tick='tick'
     minute='minute'
+    minute5='minute5'
     minute15='minute15'
     minute30='minute30'
     hour='hour'
+    hour4='hour4'
     day='day'
     month='month'
 
 class BINANCE_INTERVALS(Enum):
     tick='tick'
     minute='minute'
+    minute3='minute3'
+    minute5='minute5'
     minute15='minute15'
     minute30='minute30'
     hour='hour'
+    hour2='hour2'
+    hour4='hour4'
+    hour6='hour6'
+    hour8='hour8'
+    hour12='hour12'
     day='day'
+    day3='day3'
+    week='week'
     month='month'
 
 class STRATEGY_INTERVALS(Enum):

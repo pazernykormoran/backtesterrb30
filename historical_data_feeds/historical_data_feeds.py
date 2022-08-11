@@ -3,7 +3,7 @@ from abc import abstractmethod
 import asyncio
 from typing import List
 from libs.zmq.zmq import ZMQ
-from libs.list_of_services.list_of_services import SERVICES
+from libs.list_of_services.list_of_services import SERVICES, SERVICES_ARRAY
 from libs.data_feeds.data_feeds import STRATEGY_INTERVALS, HISTORICAL_SOURCES, DataSchemaTicks, DataSymbolTicks
 from historical_data_feeds.modules.binance import *
 from historical_data_feeds.modules.dukascopy import *
@@ -18,6 +18,7 @@ from os.path import isfile, join
 from binance import Client
 import pandas as pd
 from os import mkdir
+import time
 
 import time as tm
 
@@ -34,9 +35,10 @@ class HistoricalDataFeeds(ZMQ):
             binance_api_secret=getenv("binance_api_secret")
             binance_api_key=getenv("binance_api_key")
             self.__client = Client(binance_api_key, binance_api_secret)
+            
         self.sending_locked = False
-        if not self.__validate_data_schema_instruments(self.__data_schema): 
-            self._stop()
+        if not self.__validate_data_schema_instruments(self.__data_schema.data): 
+            self.__stop_all_services()
         self.__validate_downloaded_data_folder()
         self.file_names_to_load, self.data_to_download =  self.__check_if_all_data_exists(self.__data_schema.data)
         if len(self.data_to_download) > 0:
@@ -71,15 +73,17 @@ class HistoricalDataFeeds(ZMQ):
             last_row = []
             for _, one_year_array in self.data_parts.items():
                 data_part = self.__load_data_frame_ticks(self.downloaded_data_path, last_row, one_year_array)
+                self._log('=================== datapart has finished')
+
                 for row in data_part:
                     last_row = row
-                    self._send(SERVICES.python_engine,'data_feed',dumps(list(last_row)))
-                    sending_counter += 1
-                    if sending_counter % 1000 == 0:
-                        self.sending_locked = True
-                        self._send(SERVICES.python_engine, 'historical_sending_locked')
-                        while self.sending_locked:
-                            await asyncio.sleep(0.01)
+                    # self._send(SERVICES.python_engine,'data_feed',dumps(list(last_row)))
+                    # sending_counter += 1
+                    # if sending_counter % 1000 == 0:
+                    #     self.sending_locked = True
+                    #     self._send(SERVICES.python_engine, 'historical_sending_locked')
+                    #     while self.sending_locked:
+                    #         await asyncio.sleep(0.01)
 
             self._log('Data has finished')
             
@@ -90,12 +94,14 @@ class HistoricalDataFeeds(ZMQ):
             self._send(SERVICES.python_engine, 'data_finish', dumps(finish_params))
 
         else:
-            print("Error. Not all of the data has been downloaded, exiting")
+            self._log("Error. Not all of the data has been downloaded, exiting")
             self._stop()
 
     def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbolTicks]):
         self._log('Data_schema validation')
         data_valid = True
+        number_of_mains = 0
+        number_of_trigger_feeders = 0
         for data in data_symbol_array:
             if data.historical_data_source == HISTORICAL_SOURCES.binance:
                 if not validate_binance_instrument(self.__client, data.symbol, data.backtest_date_start, data.interval):
@@ -103,6 +109,33 @@ class HistoricalDataFeeds(ZMQ):
             elif data.historical_data_source == HISTORICAL_SOURCES.ducascopy:
                 if not validate_ducascopy_instrument(data.symbol, data.backtest_date_start): 
                     data_valid = False
+            if data.backtest_date_start == None:
+                self._log('Error. You must provide "backtest_date_start" field in data_schema file while you are backtesting your strategy')
+                data_valid = False
+            if data.backtest_date_start >= data.backtest_date_stop: 
+                self._log('Error. You have provided "backtest_date_start" is equal or bigger than "backtest_date_start" ')
+                data_valid = False
+            if [data.backtest_date_start.hour,
+                data.backtest_date_start.minute,
+                data.backtest_date_start.second,
+                data.backtest_date_start.microsecond] != [0,0,0,0]:
+                self._log('Error. Provide your "backtest_date_start" and "backtest_date_stop" in a day accuracy like: "backtest_date_start": datetime(2020,6,1)')
+                data_valid = False
+            if data.historical_data_source.value not in (HISTORICAL_SOURCES.binance.value, HISTORICAL_SOURCES.ducascopy.value): 
+                self._log('Error. This historical_data_source not implemented yet')
+                data_valid = False
+            if data.main == True:
+                number_of_mains += 1
+            if data.trigger_feed == True:
+                number_of_trigger_feeders += 1
+
+        if number_of_mains != 1:
+            self._log('Error. Your "data_schema.py" must have one main instrument')
+            data_valid = False
+        if number_of_trigger_feeders < 1:
+            self._log('Error. Your "data_schema.py" must have at least one instrument that triggers feeds')
+            data_valid = False
+
         return data_valid
 
 
@@ -184,6 +217,11 @@ class HistoricalDataFeeds(ZMQ):
                 }) 
         return files_collection
 
+    def __stop_all_services(self):
+        for service in SERVICES_ARRAY:
+            if service != self.name:
+                self._send(getattr(SERVICES, service), 'stop')
+        self._stop()
 
     def __map_raw_to_instruments(self, raw: list, instruments: list):
         last_raw_obj = {}
@@ -195,16 +233,10 @@ class HistoricalDataFeeds(ZMQ):
 
         
     def __load_data_frame_ticks(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[list]:
+        print('last raw loading', last_row)
         """
-        Function is geting files array from one year or less period that are going to be loaded. 
+        Function is geting files array from one period that are going to be loaded. 
         Function returns synchronized data in list of lists which are ready to send to engine.
-
-        test scenarios:
-        1. h1/2020-2021, m15/2019-2021
-        2. tick/2020-2021, m1/2020-2021
-        3. tick/2020-2021, week/2020-2021
-        4. tick/2020-2021, m1/2019-2021
-        5. tick/2020-2021, m1/2019-2021
 
         """
         list_of_dfs = []
@@ -216,11 +248,11 @@ class HistoricalDataFeeds(ZMQ):
                 if data_element.symbol == element['instrument']:
                     file_name = element['instrument_file_name']
             if file_name == 'none':
-                # if there is no file. set empty dataframe 
+                # No file in this period for this instrument. Set empty dataframe.
                 df = pd.DataFrame([], columns=columns)
             else:
-                # if file exists, load it to dataframe
-                df = pd.read_csv(join(downloaded_data_path, element["instrument_file_name"]), index_col=None, header=None, names=columns)
+                # File exists. Load dataframe.
+                df = pd.read_csv(join(downloaded_data_path, file_name), index_col=None, header=None, names=columns)
                 # append last raw it if exists
                 if last_row != []:
                     last_raw_mapped = self.__map_raw_to_instruments(last_row, self.__columns)
@@ -234,43 +266,54 @@ class HistoricalDataFeeds(ZMQ):
             })
 
 
-        self._log('list of dfsh len', len(list_of_dfs))
+        self._log('list of dfs len', len(list_of_dfs))
+        print( list_of_dfs)
 
         data_finish = False
         rows = []
         while data_finish == False:
-            arr = []
-            
-            # find lowest next timestamp
-            min_timestamp = min([df['df'].iloc[df['loading_index'], 0] for df in list_of_dfs if (df['trigger_feed'] == True and not df['df'].empty)]) 
-            arr.append(min_timestamp)
+            time.sleep(0.1)
+            row = [] 
+            number_of_finished_arrays = 0
+            # Finding lowest next timestamp. This is going to be the timestamp of new row
+            feeding_next_timestamps = [df['df'].iloc[df['loading_index'], 0] for df in list_of_dfs if (df['trigger_feed'] == True and not df['df'].empty)]
+            if len(feeding_next_timestamps) == 0:
+                break
+            min_timestamp = min(feeding_next_timestamps) 
+            row.append(min_timestamp)
             for df_obj in list_of_dfs:
-                number_of_finished_arrays = 0
+                if not df_obj['df'].empty:
+                    print('timestamp', df_obj['df'].iloc[df_obj['loading_index'], 0])
                 if df_obj['df'].empty:
-                    #handle if all frame is empty.
-                    arr.append(0)
+                    # Frame is empty.
+                    self._log('empty')
+                    row.append(0)
                     continue
-                if df_obj['df'].shape[0] == df_obj['loading_index']:
-                    #handle if loading_index od next frame is in the end of dataframe.
-                    arr.append(df_obj['df'].iloc[df_obj['loading_index'], 1])
+                if df_obj['df'].shape[0] - 1 == df_obj['loading_index']:
+                    # Loading_index od next frame is in the end of dataframe, 
+                    # that means data in this dataframe has finished.
+                    row.append(df_obj['df'].iloc[df_obj['loading_index'], 1])
                     number_of_finished_arrays += 1
-                    if number_of_finished_arrays == len(list_of_dfs):
+                    if number_of_finished_arrays == len([df for df in list_of_dfs if df['trigger_feed'] == True]):
+                        # Data in all dataframes that trigers feed has finished.
                         data_finish = True
                     continue
-                if min_timestamp== df_obj['df'].iloc[df_obj['loading_index'], 0]:
-                    #handle if new timestamp of next frame equals minimal next timestamp.
-                    arr.append(df_obj['df'].iloc[df_obj['loading_index'], 1])
+                if min_timestamp == df_obj['df'].iloc[df_obj['loading_index'], 0]:
+                    # Value with calculated timestamp exists in this dataframe.
+                    row.append(df_obj['df'].iloc[df_obj['loading_index'], 1])
                     df_obj['loading_index'] += 1
                 else:
-                    #handle if next timestamp is not equal (bigger) than minimal timestamp.
+                    # Value with calculated timestamp not exists in this dataframe. It's bigger.
                     if df_obj['loading_index'] == 0:
-                        # situation where previous data not exists.
-                        arr.append(0)
+                        # Previous data in this dataframe does not exists.
+                        row.append(0)
                         continue
-                    arr.append(df_obj['df'].iloc[df_obj['loading_index']-1, 1])
-                    df_obj['loading_index'] += 1
-            print('row: ', arr)
-            rows.append(arr)
+                    else:
+                        # Append previous value
+                        row.append(df_obj['df'].iloc[df_obj['loading_index']-1, 1])
+                        df_obj['loading_index'] += 1
+            print('row: ', row)
+            rows.append(row)
         return rows
 
 
