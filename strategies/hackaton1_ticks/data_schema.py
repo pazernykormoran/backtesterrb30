@@ -43,4 +43,4 @@ data={
         }
     ]
 }
-DATA = validate_config_ticks(data)
+DATA = validate_config(data)

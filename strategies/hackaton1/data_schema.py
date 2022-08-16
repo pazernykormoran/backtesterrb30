@@ -1,7 +1,5 @@
 from libs.necessery_imports.data_imports import *
 
-# configure data feed =====================================
-
 data={
     'data':[
         {
@@ -69,4 +67,4 @@ data={
         }
     ]
 }
-DATA = validate_config_ticks(data)
+DATA = validate_config(data)

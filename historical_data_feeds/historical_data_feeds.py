@@ -4,7 +4,7 @@ import asyncio
 from typing import List
 from libs.zmq.zmq import ZMQ
 from libs.list_of_services.list_of_services import SERVICES, SERVICES_ARRAY
-from libs.data_feeds.data_feeds import HISTORICAL_SOURCES, DataSchemaTicks, DataSymbolTicks
+from libs.data_feeds.data_feeds import HISTORICAL_SOURCES, DataSchema, DataSymbol
 from historical_data_feeds.modules.binance import *
 from historical_data_feeds.modules.dukascopy import *
 from historical_data_feeds.modules.rb30_disk import *
@@ -28,7 +28,7 @@ class HistoricalDataFeeds(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.__data_schema: DataSchemaTicks = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
+        self.__data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
 
         if HISTORICAL_SOURCES.binance in [data.historical_data_source for data in self.__data_schema.data]:
@@ -96,7 +96,7 @@ class HistoricalDataFeeds(ZMQ):
             self._log("Error. Not all of the data has been downloaded, exiting")
             self._stop()
 
-    def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbolTicks]):
+    def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbol]):
         self._log('Data_schema validation')
         data_valid = True
         number_of_mains = 0
@@ -148,7 +148,7 @@ class HistoricalDataFeeds(ZMQ):
         if not path.exists(self.downloaded_data_path):
             mkdir(self.downloaded_data_path)
     
-    def __check_if_all_data_exists(self, data_symbol_array: DataSymbolTicks):
+    def __check_if_all_data_exists(self, data_symbol_array: DataSymbol):
         """
         data scheme
         <instrument>__<source>__<interval>__<date-from>__<date-to>
@@ -166,7 +166,7 @@ class HistoricalDataFeeds(ZMQ):
         return file_names, files_to_download
 
 
-    def __get_file_names(self, symbol: DataSymbolTicks) -> List[str]:
+    def __get_file_names(self, symbol: DataSymbol) -> List[str]:
         date_from_date_to: List[str] = []
         file_names: List[str] = []
         if symbol.backtest_date_start.year < symbol.backtest_date_stop.year:

@@ -4,7 +4,7 @@ from libs.zmq.zmq import ZMQ
 from libs.interfaces.python_backtester.trade import Trade
 from libs.interfaces.python_backtester.money_state import MoneyState
 from json import loads, dumps
-from libs.data_feeds.data_feeds import DataSchemaTicks
+from libs.data_feeds.data_feeds import DataSchema
 from importlib import import_module
 from libs.list_of_services.list_of_services import SERVICES, SERVICES_ARRAY
 import pandas as pd
@@ -19,7 +19,7 @@ class Backtester(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.data_schema: DataSchemaTicks = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
+        self.data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
         
         self.main_instrument_chart = []
         # self.cumulated_money_chart: List[MoneyState] = []

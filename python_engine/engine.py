@@ -6,7 +6,7 @@ from typing import Callable, List
 from libs.zmq.zmq import ZMQ
 from libs.list_of_services.list_of_services import SERVICES
 import pandas as pd
-from libs.data_feeds.data_feeds import DataSchemaTicks
+from libs.data_feeds.data_feeds import DataSchema
 from importlib import import_module
 from libs.interfaces.utils import JSONSerializable
 
@@ -16,7 +16,7 @@ class Engine(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.__data_schema: DataSchemaTicks = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
+        self.__data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__data_buffer_dict = [ [] for col in self.__columns]
@@ -53,6 +53,9 @@ class Engine(ZMQ):
     # override
     def _handle_zmq_message(self, message):
         pass
+
+    def _get_columns(self):
+        return self.__columns
 
     def _set_buffer_length(self, length: int):
         self.__buffer_length = length
