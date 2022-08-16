@@ -19,12 +19,13 @@ class Model(Engine):
         self.counter = 0
         self._set_buffer_length(49)
         self.csv = pd.DataFrame([], columns=self.columns)
-        self.model = load_model('models/test_model.h5')
-        self.scaler = joblib.load('models/scaler.gz')
+        self.model = load_model('strategies/'+self.config.strategy_name+'/models/test_model.h5')
+        self.scaler = joblib.load('strategies/'+self.config.strategy_name+'/models/scaler.gz')
 
     #override
     def on_feed(self, data: list):
         if self.counter % 300 == 0:
+            
             df = pd.DataFrame(np.array(data).T, columns=self.columns)
             df[df.columns[1:]] = df[df.columns[1:]].diff()
             df.dropna(inplace=True)
@@ -33,8 +34,7 @@ class Model(Engine):
                 quant = int(pred.sum())
                 if quant != 0:
                     message = {
-                        'value': quant,
-                        'trade_timestamp': data[0][-1]
+                        'value': quant
                     }
                     self._trigger_event(message)
         #self.csv.loc[len(self.csv)] = np.array(data)[:, -1]

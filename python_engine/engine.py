@@ -60,6 +60,7 @@ class Engine(ZMQ):
     def _trigger_event(self, event: JSONSerializable):
         msg = {
             'price': self.__get_main_intrument_price_3(),
+            'timestamp': self.__data_buffer_dict[0][-1],
             'message': event
         }
         self._send(SERVICES.python_executor,'event', dumps(msg))
