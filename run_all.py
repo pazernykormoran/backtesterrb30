@@ -8,7 +8,7 @@ from sys import argv
 from pydantic import BaseModel
 import time
 from libs.list_of_services.list_of_services import SERVICES_ARRAY
-from libs.data_feeds.data_feeds import DataSchema, HISTORICAL_SOURCES, STRATEGY_INTERVALS
+from libs.data_feeds.data_feeds import DataSchemaTicks
 from datetime import datetime
 
 #TODO hardcoded backtest mode: 
@@ -71,7 +71,7 @@ def create_port_configurations():
         
 def validate_strategy(strategy_name):
     # try:
-    data_schema: DataSchema = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
+    data_schema: DataSchemaTicks = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
     model_module = importlib.import_module('strategies.'+strategy_name+'.model')
     executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
     # except Exception as e:

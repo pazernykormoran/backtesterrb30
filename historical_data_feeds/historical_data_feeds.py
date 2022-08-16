@@ -4,7 +4,7 @@ import asyncio
 from typing import List
 from libs.zmq.zmq import ZMQ
 from libs.list_of_services.list_of_services import SERVICES, SERVICES_ARRAY
-from libs.data_feeds.data_feeds import STRATEGY_INTERVALS, HISTORICAL_SOURCES, DataSchemaTicks, DataSymbolTicks
+from libs.data_feeds.data_feeds import HISTORICAL_SOURCES, DataSchemaTicks, DataSymbolTicks
 from historical_data_feeds.modules.binance import *
 from historical_data_feeds.modules.dukascopy import *
 from historical_data_feeds.modules.rb30_disk import *
@@ -103,7 +103,7 @@ class HistoricalDataFeeds(ZMQ):
         number_of_trigger_feeders = 0
         for data in data_symbol_array:
             if data.historical_data_source == HISTORICAL_SOURCES.binance:
-                if not validate_binance_instrument(self.__client, data.symbol, data.backtest_date_start, data.interval):
+                if not validate_binance_instrument(self.__client, data.symbol):
                     data_valid = False
             elif data.historical_data_source == HISTORICAL_SOURCES.ducascopy:
                 if not validate_ducascopy_instrument(data.symbol, data.backtest_date_start): 

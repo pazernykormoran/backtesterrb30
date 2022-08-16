@@ -1,6 +1,5 @@
 from binance import Client
 from datetime import datetime
-from libs.data_feeds.data_feeds import STRATEGY_INTERVALS
 import pandas as pd
 from os.path import join
 # from historical_data_feeds.modules.utils import validate_dataframe_timestamps
@@ -23,7 +22,7 @@ def _get_binance_interval(interval: str):
     if interval == 'month': return Client.KLINE_INTERVAL_1MONTH
 
 
-def validate_binance_instrument(client: Client, instrument: str, from_datetime: datetime, interval: STRATEGY_INTERVALS):
+def validate_binance_instrument(client: Client, instrument: str):
     # print('validation instrment', instrument, 'from_datetime', from_datetime, 'interval',interval)
     #validate if instrument exists:
     exchange_info = client.get_exchange_info()

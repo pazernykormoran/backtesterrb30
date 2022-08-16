@@ -33,32 +33,32 @@ class BINANCE_INTERVALS(Enum):
     week='week'
     month='month'
 
-class STRATEGY_INTERVALS(Enum):
-    tick='tick'
-    minute='minute'
-    minute15='minute15'
-    minute30='minute30'
-    hour='hour'
-    day='day'
-    month='month'
+# class STRATEGY_INTERVALS(Enum):
+#     tick='tick'
+#     minute='minute'
+#     minute15='minute15'
+#     minute30='minute30'
+#     hour='hour'
+#     day='day'
+#     month='month'
 
 class HISTORICAL_SOURCES(Enum):
     binance='binance'
     ducascopy='ducascopy'
     rb30disk='rb30disk'
 
-class DataSymbol(BaseModel):
-    symbol: str
-    historical_data_source: HISTORICAL_SOURCES
-    trigger_feed: Optional[bool]
-    main: bool
+# class DataSymbol(BaseModel):
+#     symbol: str
+#     historical_data_source: HISTORICAL_SOURCES
+#     trigger_feed: Optional[bool]
+#     main: bool
 
 
-class DataSchema(BaseModel):
-    interval: STRATEGY_INTERVALS
-    backtest_date_start: datetime
-    backtest_date_stop: datetime
-    data: List[DataSymbol]
+# class DataSchema(BaseModel):
+#     interval: STRATEGY_INTERVALS
+#     backtest_date_start: datetime
+#     backtest_date_stop: datetime
+#     data: List[DataSymbol]
 
 
 class DataSymbolTicks(BaseModel):
@@ -75,11 +75,11 @@ class DataSchemaTicks(BaseModel):
     data: List[DataSymbolTicks]
 
 
-def validate_config(config: dict):
-    cfg = DataSchema(**config)
-    cfg.backtest_date_start = cfg.backtest_date_start.replace(tzinfo=timezone.utc)
-    cfg.backtest_date_stop = cfg.backtest_date_stop.replace(tzinfo=timezone.utc)
-    return cfg
+# def validate_config(config: dict):
+#     cfg = DataSchema(**config)
+#     cfg.backtest_date_start = cfg.backtest_date_start.replace(tzinfo=timezone.utc)
+#     cfg.backtest_date_stop = cfg.backtest_date_stop.replace(tzinfo=timezone.utc)
+#     return cfg
 
 def validate_config_ticks(config: dict):
     cfg = DataSchemaTicks(**config)

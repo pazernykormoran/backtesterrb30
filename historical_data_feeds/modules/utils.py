@@ -1,14 +1,7 @@
-from libs.data_feeds.data_feeds import STRATEGY_INTERVALS
 import pandas as pd
 
 def get_interval_step_miliseconds(interval: str):
-    if interval == STRATEGY_INTERVALS.minute.value: return 60*1000
-    if interval == STRATEGY_INTERVALS.minute15.value: return 60*15*1000
-    if interval == STRATEGY_INTERVALS.minute30.value: return 60*30*1000
-    if interval == STRATEGY_INTERVALS.hour.value: return 60*60*1000
-    if interval == STRATEGY_INTERVALS.day.value: return 60*60*24*1000
-    # if interval == 'minute15': return 60*60*24*7
-    if interval == STRATEGY_INTERVALS.month.value: return 60*60*24*7*30*1000
+    print('ERROR, THIS FUNCTION IS NOT IMPLEMENTED')
 
 
 def validate_dataframe_timestamps(df: pd.DataFrame, interval: str, time_start: int, time_stop: int):
