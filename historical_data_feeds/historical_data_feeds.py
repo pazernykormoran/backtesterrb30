@@ -73,17 +73,16 @@ class HistoricalDataFeeds(ZMQ):
             last_row = []
             for _, one_year_array in self.data_parts.items():
                 data_part = self.__load_data_frame_ticks(self.downloaded_data_path, last_row, one_year_array)
-                self._log('=================== datapart has finished')
-
                 for row in data_part:
                     last_row = row
-                    # self._send(SERVICES.python_engine,'data_feed',dumps(list(last_row)))
-                    # sending_counter += 1
-                    # if sending_counter % 1000 == 0:
-                    #     self.sending_locked = True
-                    #     self._send(SERVICES.python_engine, 'historical_sending_locked')
-                    #     while self.sending_locked:
-                    #         await asyncio.sleep(0.01)
+                    self._send(SERVICES.python_engine,'data_feed',dumps(list(last_row)))
+                    sending_counter += 1
+                    if sending_counter % 1000 == 0:
+                        self.sending_locked = True
+                        self._send(SERVICES.python_engine, 'historical_sending_locked')
+                        while self.sending_locked:
+                            await asyncio.sleep(0.01)
+                self._log('=================== datapart has finished')
 
             self._log('Data has finished')
             
@@ -225,25 +224,19 @@ class HistoricalDataFeeds(ZMQ):
 
     def __map_raw_to_instruments(self, raw: list, instruments: list):
         last_raw_obj = {}
-        if len(raw) != len(instrument):
+        if len(raw) != len(instruments):
             self._log('Error in map_raw_to_instruments. Lengths of raw and list of instruments are not equal')
             self._stop()
         for value, instrument in zip(raw, instruments):
             last_raw_obj[instrument] = value
+        return last_raw_obj
 
-        
-    def __load_data_frame_ticks(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[list]:
-        print('last raw loading', last_row)
-        """
-        Function is geting files array from one period that are going to be loaded. 
-        Function returns synchronized data in list of lists which are ready to send to engine.
-
-        """
+    def __prepare_dataframes_to_synchronize(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[dict]:
         list_of_dfs = []
         for data_element in self.__data_schema.data:
             columns = ['timestamp', data_element.symbol]
             file_name = 'none'
-            loading_index = 0
+            actual_raw = [0,0]
             for element in files_array:
                 if data_element.symbol == element['instrument']:
                     file_name = element['instrument_file_name']
@@ -255,65 +248,67 @@ class HistoricalDataFeeds(ZMQ):
                 df = pd.read_csv(join(downloaded_data_path, file_name), index_col=None, header=None, names=columns)
                 # append last raw it if exists
                 if last_row != []:
+                    # self._log('appending last row')
                     last_raw_mapped = self.__map_raw_to_instruments(last_row, self.__columns)
-                    last_raw_df = pd.DataFrame([last_raw_mapped["timestamp"], last_raw_mapped[data_element.symbol]], columns = columns)
-                    pd.concat([last_raw_df, df], axis=0, ignore_index=True)
-                    loading_index = 1
-            list_of_dfs.append({
-                "loading_index": loading_index,
+                    actual_raw[0] = last_raw_mapped["timestamp"]
+                    actual_raw[1] = last_raw_mapped[data_element.symbol]
+            obj = {
                 "trigger_feed": data_element.trigger_feed,
-                "df": df
-            })
+                "rows_iterator": df.iterrows(),
+                "actual_raw": actual_raw,
+                "consumed": False
+            }            
+            #prepare to load:
+            if obj['actual_raw'][0] == 0:
+                try:
+                    i, v = next(obj['rows_iterator'])
+                    obj['actual_raw'] = list(v)
+                except StopIteration:
+                    obj['consumed'] = True
+            list_of_dfs.append(obj)
+        return list_of_dfs
 
-
-        self._log('list of dfs len', len(list_of_dfs))
-        print( list_of_dfs)
-
-        data_finish = False
+    def __synchronize_dataframes(self, list_of_dfs: List[dict], last_row: list) -> List[list]:
         rows = []
-        while data_finish == False:
-            time.sleep(0.1)
+        while True:
             row = [] 
-            number_of_finished_arrays = 0
-            # Finding lowest next timestamp. This is going to be the timestamp of new row
-            feeding_next_timestamps = [df['df'].iloc[df['loading_index'], 0] for df in list_of_dfs if (df['trigger_feed'] == True and not df['df'].empty)]
+            feeding_next_timestamps = [df['actual_raw'][0] for df in list_of_dfs if df['trigger_feed'] == True and not df['consumed']]
             if len(feeding_next_timestamps) == 0:
                 break
             min_timestamp = min(feeding_next_timestamps) 
-            row.append(min_timestamp)
+            row.append(int(min_timestamp))
             for df_obj in list_of_dfs:
-                if not df_obj['df'].empty:
-                    print('timestamp', df_obj['df'].iloc[df_obj['loading_index'], 0])
-                if df_obj['df'].empty:
-                    # Frame is empty.
-                    self._log('empty')
-                    row.append(0)
-                    continue
-                if df_obj['df'].shape[0] - 1 == df_obj['loading_index']:
-                    # Loading_index od next frame is in the end of dataframe, 
-                    # that means data in this dataframe has finished.
-                    row.append(df_obj['df'].iloc[df_obj['loading_index'], 1])
-                    number_of_finished_arrays += 1
-                    if number_of_finished_arrays == len([df for df in list_of_dfs if df['trigger_feed'] == True]):
-                        # Data in all dataframes that trigers feed has finished.
-                        data_finish = True
-                    continue
-                if min_timestamp == df_obj['df'].iloc[df_obj['loading_index'], 0]:
-                    # Value with calculated timestamp exists in this dataframe.
-                    row.append(df_obj['df'].iloc[df_obj['loading_index'], 1])
-                    df_obj['loading_index'] += 1
-                else:
-                    # Value with calculated timestamp not exists in this dataframe. It's bigger.
-                    if df_obj['loading_index'] == 0:
-                        # Previous data in this dataframe does not exists.
-                        row.append(0)
-                        continue
-                    else:
-                        # Append previous value
-                        row.append(df_obj['df'].iloc[df_obj['loading_index']-1, 1])
-                        df_obj['loading_index'] += 1
-            print('row: ', row)
-            rows.append(row)
+                while True:
+                    if df_obj['actual_raw'][0] > min_timestamp:
+                        row.append(df_obj['actual_raw'][1])
+                        break
+                    elif df_obj['actual_raw'][0] == min_timestamp:
+                        row.append(df_obj['actual_raw'][1])
+                        try:
+                            i, v = next(df_obj['rows_iterator'])
+                            df_obj['actual_raw'] = list(v)
+                        except StopIteration:
+                            df_obj['consumed'] = True
+                        break
+                    else: 
+                        try:
+                            i, v = next(df_obj['rows_iterator'])
+                            df_obj['actual_raw'] = list(v)
+                        except StopIteration:
+                            row.append(df_obj['actual_raw'][1])
+                            df_obj['consumed'] = True
+                            break
+            if len(last_row) == 0 or row[0] != last_row[0]:
+                rows.append(row)
+        return rows
+        
+    def __load_data_frame_ticks(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[list]:
+        """
+        Function is geting files array from one period that are going to be loaded. 
+        Function returns synchronized data in list of lists which are ready to send to engine.
+        """
+        list_of_dfs = self.__prepare_dataframes_to_synchronize(downloaded_data_path, last_row, files_array)
+        rows = self.__synchronize_dataframes(list_of_dfs, last_row)
         return rows
 
 

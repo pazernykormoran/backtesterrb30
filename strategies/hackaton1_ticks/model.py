@@ -13,7 +13,7 @@ class Model(Engine):
     #override
     def on_feed(self, data: list):
         
-        if self.counter % 300 == 0:
+        if self.counter % 30 == 0:
             # self._log('feed received', self.counter)
             # print('')
             # print('')
