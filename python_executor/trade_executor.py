@@ -47,14 +47,17 @@ class Executor(ZMQ):
             # self._log('trade executor sending some message')
             # self._send(SERVICES.python_engine,'message from trade executor')
 
-    def _trade(self, trade_quantity: float):
+    def _trade(self, trade_quantity: float, price = None, timestamp = None) -> bool:
+        if price == None: price = self.__event_price
+        if timestamp == None: timestamp = self.__event_timestamp
         if self.config.backtest == True:
             trade_params = {
                 'quantity': trade_quantity,
-                'price': self.__event_price,
-                'timestamp': self.__event_timestamp
+                'price': price,
+                'timestamp': timestamp
             }
             self._send(SERVICES.python_backtester, 'trade', json.dumps(trade_params))
+            return True
         else:
             # TODO trade in real broker
             pass

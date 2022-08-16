@@ -65,6 +65,10 @@ class Engine(ZMQ):
         }
         self._send(SERVICES.python_executor,'event', dumps(msg))
 
+    def _get_main_intrument_number(self):
+        num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
+        return num + 1
+
     def __get_main_intrument_price(self):
          # first function
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
@@ -74,9 +78,9 @@ class Engine(ZMQ):
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
         return self.__data_buffer_pandas.iloc[-1, num+1]
 
-    def __get_main_intrument_price_3(self):
+    def __get_main_intrument_price_3(self, price_delay_steps = -1):
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
-        return self.__data_buffer_dict[num+1][-1]
+        return self.__data_buffer_dict[num+1][price_delay_steps]
 
     #COMMANDS
     def __data_feed_event_2(self, new_data_row):

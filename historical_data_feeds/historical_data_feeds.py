@@ -242,7 +242,9 @@ class HistoricalDataFeeds(ZMQ):
             ' -t ' + duca_interval,
             ' -fl', 
             ' -f csv',
-            ' -dir ./cache' 
+            ' -dir ./cache' ,
+            ' -r 2',
+            ' -rp 2000'
         ]
         command = 'npx dukascopy-node'
         for param in string_params:

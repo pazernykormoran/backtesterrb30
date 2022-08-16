@@ -4,8 +4,8 @@ from libs.necessery_imports.data_imports import *
 
 data={
     'interval':STRATEGY_INTERVALS.minute15,
-    'backtest_date_start': datetime(2020,6,1),
-    'backtest_date_stop': datetime(2022,6,1),
+    'backtest_date_start': datetime(2022,6,1),
+    'backtest_date_stop': datetime(2022,8,1),
     'data':[
         {
             'symbol': 'BTCUSDT',
