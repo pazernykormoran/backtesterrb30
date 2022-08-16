@@ -1,5 +1,3 @@
-
-from libs.data_feeds.data_feeds import BINANCE_INTERVALS, DUKASCOPY_INTERVALS
 from libs.necessery_imports.data_imports import *
 
 # configure data feed =====================================

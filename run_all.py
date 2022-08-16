@@ -70,16 +70,16 @@ def create_port_configurations():
         
         
 def validate_strategy(strategy_name):
-    try:
-        data_schema: DataSchema = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
-        model_module = importlib.import_module('strategies.'+strategy_name+'.model')
-        executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
-    except Exception as e:
-        print('Excepted: ', e)
-        print('Error. Excepted while loading modules. Check if all necessery files are in your strategy')
-        print('Your strategy in folder strategies/'+strategy_name+'should contain files: "data_schema.py", "executor.py", "model.py"' )
-        print('Read more in readme file')
-        exit()
+    # try:
+    data_schema: DataSchema = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
+    model_module = importlib.import_module('strategies.'+strategy_name+'.model')
+    executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
+    # except Exception as e:
+    #     print('Excepted: ', e)
+    #     print('Error. Excepted while loading modules. Check if all necessery files are in your strategy')
+    #     print('Your strategy in folder strategies/'+strategy_name+'should contain files: "data_schema.py", "executor.py", "model.py"' )
+    #     print('Read more in readme file')
+    #     exit()
 
     class Asd:
         name = "test",
