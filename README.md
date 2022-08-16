@@ -9,6 +9,7 @@ Engine-RB30 is a framework to backtest and run live your market strategies.
 1. provide .env file with name of strategy existing in strategies folder like:
 ~~~
 strategy="folder name with strategy"
+# if you are going to use binance historical data:
 binance_api_secret="binance api secret"
 binance_api_key="binance api key"
 ~~~

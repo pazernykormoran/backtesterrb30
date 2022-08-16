@@ -9,3 +9,4 @@ sudo pip3 install matplotlib
 
 sudo apt install -y nodejs
 sudo apt install -y npm
+sudo npm install dukascopy-node --save

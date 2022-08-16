@@ -80,34 +80,6 @@ def validate_strategy(strategy_name):
         print('Your strategy in folder strategies/'+strategy_name+'should contain files: "data_schema.py", "executor.py", "model.py"' )
         print('Read more in readme file')
         exit()
-    if backtest_state:
-        if data_schema.backtest_date_start == None:
-            print('Error. You must provide "backtest_date_start" field in data_schema file while you are backtesting your strategy')
-            exit()
-        if data_schema.backtest_date_start >= data_schema.backtest_date_stop: 
-            print('Error. You have provided "backtest_date_start" is equal or bigger than "backtest_date_start" ')
-            exit()
-        if data_schema.interval.value == STRATEGY_INTERVALS.tick.value: 
-            print('Error. Tick interval is not implemented yet ')
-            exit()
-
-        if [data_schema.backtest_date_start.hour,
-            data_schema.backtest_date_start.minute,
-            data_schema.backtest_date_start.second,
-            data_schema.backtest_date_start.microsecond] != [0,0,0,0]:
-            print('Error. Provide your "backtest_date_start" and "backtest_date_stop" in a day accuracy like: "backtest_date_start": datetime(2020,6,1)')
-            exit()
-
-        number_of_mains = 0
-        for data in data_schema.data:
-            if data.historical_data_source.value not in (HISTORICAL_SOURCES.binance.value, HISTORICAL_SOURCES.ducascopy.value): 
-                print('Error. This historical_data_source not implemented yet')
-                exit()
-            if data.main == True:
-                number_of_mains += 1
-        if number_of_mains != 1:
-            print('Error. Yout "data_schema.py" must have one main instrument')
-            exit()
 
     class Asd:
         name = "test",
@@ -132,6 +104,33 @@ else:
 
 
 """
+
+-sources:  
+    - implement nasdaq api? https://blog.data.nasdaq.com/getting-started-with-the-nasdaq-data-link-api
+                https://data.nasdaq.com/tools/python
+    - yachoo finance - only day data od slower
+    - 
+- make tick data working.
+ZROBIC DATA LOADER który: 
+najpierw każde aktywo ma ustawiany swoja czestotliwość oraz parametr trigger feed. Jak czestotliwość w jakimkolwiek parametrze 
+jest inna niż w reszcie to musisz pamiętać. że będzie ona uzupełnina. 
+- jak danych jeszcze nie ma to zerami
+- jak jakaś dana już była to tą właśnie daną. 
+LODING DANYCH:
+1. dla każdego okresu: 
+    1.1 dla każdego aktwa z data_schema:
+        1.1.1 pobierz dane w danym okresie. Jeśli nic nie pobrało. Zapisz pusty plik.
+WCZYTYWANIE:   
+2. dla każdego okresu:
+    2.1 dla każdego aktywa z data schema:
+        2.1.1 wczytaj wszystkie ramki do dataframeów. Jeśli nie ma jakiegokolwiek pliku to zwróć błąd.
+        2.1.2 po kolei synchronizuj ramki i od razu wysyłaj aby oszczędzić pamięć.
+            2.1.2.1 każdy kolejny najmniejszy timestamp spośród aktywów które mają trigger_feed = true.
+
+- add checking if symbols are not duplicated in data_schema
+- add checking in data_schema if historical source fits to the interval source.
+- checking if all necessery keys are provoded in .env
+- prepare ability to every chart has different time rane. 
 - handle better checking avaliable times than in 'historical_data_feeds/temporary_ducascopy_list.json'
 - handle scenario when your data is too big interval
 zrobic validacje gludosci danych również przy wczytywanieu.
@@ -142,4 +141,6 @@ zrobic validacje gludosci danych również przy wczytywanieu.
     and the trade function must be overriten for this case and getting one more argument which is instrument.
 - add clean cache command
 -Define that credentials are necessery. For example you dont need to pass binance credentials if you not using it.
+apply validate_dataframe_timestamps function to fill holes in data
+add warning that first avaliable data will be this earliest feeding data. 
 """
