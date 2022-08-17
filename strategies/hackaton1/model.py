@@ -20,7 +20,7 @@ class Model(Engine):
         super().__init__(config)
         self.counter = 0
         self._set_buffer_length(59)
-        self.csv = pd.DataFrame([], columns=self.columns)
+        self.csv = pd.DataFrame([], columns=self._get_columns())
         self.model = load_model('strategies/'+self.config.strategy_name+'/models/test_model.h5')
         self.scaler = joblib.load('strategies/'+self.config.strategy_name+'/models/scaler.gz')
 
@@ -30,7 +30,7 @@ class Model(Engine):
             transposed = np.array(data).T
             # cut frame to 49/8 size but leave some space (10 frames) for closing trades.
             cut_frame = transposed[:-10]
-            df = pd.DataFrame(cut_frame, columns=self.columns)
+            df = pd.DataFrame(cut_frame, columns=self._get_columns())
             df[df.columns[1:]] = df[df.columns[1:]].diff()
             df.dropna(inplace=True)
             pred = self.model.predict(np.array([self.scaler.transform(df)]), verbose=0)

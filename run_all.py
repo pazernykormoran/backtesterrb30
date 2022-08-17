@@ -104,49 +104,25 @@ else:
 
 
 """
-
--sources:  
+- add data sources:  
     - implement nasdaq api? https://blog.data.nasdaq.com/getting-started-with-the-nasdaq-data-link-api
                 https://data.nasdaq.com/tools/python
     - yachoo finance - only day data od slower
-    - 
-- make tick data working.
-ZROBIC DATA LOADER który: 
-najpierw każde aktywo ma ustawiany swoja czestotliwość oraz parametr trigger feed. Jak czestotliwość w jakimkolwiek parametrze 
-jest inna niż w reszcie to musisz pamiętać. że będzie ona uzupełnina. 
-- jak danych jeszcze nie ma to zerami
-- jak jakaś dana już była to tą właśnie daną. 
-LODING DANYCH:
-1. dla każdego okresu: 
-    1.1 dla każdego aktwa z data_schema:
-        1.1.1 pobierz dane w danym okresie. Jeśli nic nie pobrało. Zapisz pusty plik.
-WCZYTYWANIE:   
-2. dla każdego okresu:
-    2.1 dla każdego aktywa z data schema:
-        2.1.1 wczytaj wszystkie ramki do dataframeów. Jeśli nie ma jakiegokolwiek pliku to zwróć błąd.
-        2.1.2 po kolei synchronizuj ramki i od razu wysyłaj aby oszczędzić pamięć.
-            2.1.2.1 każdy kolejny najmniejszy timestamp spośród aktywów które mają trigger_feed = true.
-
 - add checking if symbols are not duplicated in data_schema
 - add checking in data_schema if historical source fits to the interval source.
 - checking if all necessery keys are provoded in .env
-- prepare ability to every chart has different time rane. 
 - handle better checking avaliable times than in 'historical_data_feeds/temporary_ducascopy_list.json'
-- handle scenario when your data is too big interval
-zrobic validacje gludosci danych również przy wczytywanieu.
 - interfaces for all functions
 - make all other functions inpossible to use and override in model and executor class.
-- add own interval and own data range for all the insruments in dataschema. it requires an inteligent data integration.
 - what with strategies that wants to play on  many instruments? every instrument will be required to flag as main   
     and the trade function must be overriten for this case and getting one more argument which is instrument.
 - add clean cache command
--Define that credentials are necessery. For example you dont need to pass binance credentials if you not using it.
-apply validate_dataframe_timestamps function to fill holes in data
-add warning that first avaliable data will be this earliest feeding data. 
-
-
-
-make sure charts are printed well when timeframes are not the same in all backtest.
-download data with frames lower than 1 hour in month csv-s.
-pomysl o dodaniu wywalania wartości ceny w tickach ktore są takie same. czesto sie powtarzaja, moznaby odchudzic dane o 80%.
+- Define that credentials are necessery. For example you dont need to pass binance credentials if you not using it.
+- add warning that first avaliable data will be this earliest feeding data. 
+- make sure charts are printed well when timeframes are not the same in all backtest.
+- pomysl o dodaniu wywalania wartości ceny w tickach ktore są takie same. czesto sie powtarzaja, moznaby odchudzic dane o 80%.
+- tick tada in day csv-s
+- minute data in month csv-s
+- think about requirements that strategies has. all strategy has to has requirements file? what with tensorflow that 
+    sometimes needs more commands?
 """
