@@ -1,6 +1,6 @@
 from datetime import datetime
 from json import load
-from os import system, remove
+from os import system, remove, walk
 from os.path import join
 import shutil
 import pandas as pd
@@ -8,12 +8,12 @@ import pandas as pd
 # from historical_data_feeds.modules.utils import validate_dataframe_timestamps
 
 def _get_ducascopy_interval(interval: str):
+    if interval == 'tick': return 'tick'
     if interval == 'minute': return 'm1'
     if interval == 'minute15': return 'm15'
     if interval == 'minute30': return 'm30'
     if interval == 'hour': return 'h1'
     if interval == 'day': return 'd1'
-    # if interval == 'week': return 'm1'
     if interval == 'month': return 'mn1'
 
 
@@ -44,31 +44,40 @@ def download_ducascopy_data(downloaded_data_path: str, instrument_file_name:str,
     documentation: 
     https://github.com/Leo4815162342/dukascopy-node
     """
-    duca_interval = _get_ducascopy_interval(interval)
-    from_param = datetime.fromtimestamp(time_start//1000.0).strftime("%Y-%m-%d")
-    to_param = datetime.fromtimestamp(time_stop//1000.0).strftime("%Y-%m-%d")
-    string_params = [
-        ' -i '+ instrument,
-        ' -from '+ from_param,
-        ' -to '+ to_param,
-        ' -s',
-        ' -t ' + duca_interval,
-        ' -fl', 
-        ' -f csv',
-        ' -dir ./cache' 
-    ]
-    command = 'npx dukascopy-node'
-    for param in string_params:
-        command += param
-    print('running command', command)
-    system(command)
-    name_of_created_file = instrument+'-'+duca_interval+'-bid-'+from_param+'-'+to_param+'.csv'
-    shutil.move('./cache/'+name_of_created_file, join(downloaded_data_path, instrument_file_name))
-    df = pd.read_csv(join(downloaded_data_path, instrument_file_name), index_col=None, header=None)
-    df = df.iloc[1:, [0,1]]
-    # self._log('downloaded data length', df.shape[0])
-    remove(join(downloaded_data_path, instrument_file_name))
-    # if interval != STRATEGY_INTERVALS.tick.value:
-    #     df = validate_dataframe_timestamps(df, interval, time_start, time_stop)
-    # self._log('data length after validation', df.shape[0])
-    df.to_csv(join(downloaded_data_path, instrument_file_name), index=False, header=False)
+    try:
+        duca_interval = _get_ducascopy_interval(interval)
+        from_param = datetime.fromtimestamp(time_start//1000.0).strftime("%Y-%m-%d")
+        to_param = datetime.fromtimestamp(time_stop//1000.0).strftime("%Y-%m-%d")
+        cache_path = './cache_ducascopy'
+        system('rm -r ' + cache_path)
+        string_params = [
+            ' -i '+ instrument,
+            ' -from '+ from_param,
+            ' -to '+ to_param,
+            ' -s',
+            ' -t ' + duca_interval,
+            ' -fl', 
+            ' -f csv',
+            ' -dir '+ cache_path,
+            ' -p bid'
+        ]
+        command = 'npx dukascopy-node'
+        for param in string_params:
+            command += param
+        print('running command', command)
+        system(command)
+        name_of_created_file = next(walk(cache_path), (None, None, []))[2][0]  
+        df = pd.read_csv(join(cache_path, name_of_created_file), index_col=None, header=None)
+        if duca_interval == 'tick': 
+            df = df.iloc[1:, [0,2]]
+        else:
+            df = df.iloc[1:, [0,1]]
+        remove(join(cache_path, name_of_created_file))
+        # if interval != STRATEGY_INTERVALS.tick.value:
+        #     df = validate_dataframe_timestamps(df, interval, time_start, time_stop)
+        print('asd')
+        df.to_csv(join(downloaded_data_path, instrument_file_name), index=False, header=False)
+    except Exception as e: 
+        print('Excepted', e)
+        return False
+    return True

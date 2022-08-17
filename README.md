@@ -22,11 +22,21 @@ binance_api_key="binance api key"
 # Strategy implementation using python engine
 
 In folder "strategies" add folder with your strategy name and create three files: "data_schema.py", "executor.py", "model.py"
+All the data related to your strategy like models, 
 
 In "data_schema.py" configure your input data schema and strategy intervals using "DataSchema" interface and list of avaliable instruments avaliable in adequate data source.
 Avaliable data sources: 
 - [ binance ] avaliable instruments in "historical_data_feeds/binance_instruments.txt"
 - [ ducascopy ] avaliable instruments in "https://github.com/Leo4815162342/dukascopy-node"
+
+Variables in data elements explanation: 
+- [ symbol ] - string representing one of instruments from provided data source.
+- [ historical_data_source ] - HISTORICAL_SOURCES enum element.
+- [ main ] - instrument on which transactions are made on. Only one instrument must have main set on True.
+- [ backtest_date_start ] - start of historical data
+- [ backtest_date_stop ] - end of historical data
+- [ trigger_feed ] - Decision if this data feeds triggers on_feed function in your model with new buffer update. At least one instrument must have trigger_feed set on True.
+- [ interval ] - Element of intervals enum corresponding to provided historical data source.
 ~~~
 from libs.necessery_imports.data_imports import *
 
@@ -61,9 +71,11 @@ Override "on_feed" function which is triggered every interval you have choosen.
 In this class, you can use "_trigger_event" function inheritet from Engine class. This function triggers your "on_event" method in executor file.
 In this class, you can use "_set_buffer_length" which sets buffer length that is provided to on_feed method.
 
-All avaliable methods: 
+Avaliable methods to overload: 
 - "of_feed"
 - "on_data_finish"
+
+Avaliable methods to use: 
 - "_get_main_intrument_number"
 - "_get_columns"
 - "_set_buffer_length"
@@ -97,7 +109,10 @@ class Model(Engine):
 In "executor.py" configure your trade executor class named TradeExecutor inheriting from Executor.
 Override "on_event" triggered while your implemented model returns event. In this class, you can use "_trade" function inheritet from Executor class.
 
-All avaliable methods: 
+All avaliable methods to overload: 
+- "on_event"
+
+Avaliable methods to use: 
 - "_trade"
 - "_close_all_trades"
 - "_get_number_of_actions"
@@ -123,6 +138,11 @@ class TradeExecutor(Executor):
 If you are implementing piece of code that can be usefull in other strategies, use "libs" folder. It will be avaliable to import in other strategies or notebooks.
 Your communication interfaces include in "libs/interfaces" folder.
 
+# Data source implementation
+1. In "libs/data_feeds.py add your source to HISTORICAL_SOURCES enum and add enum class with your avaliable intervals by analogy to BINANCE_INTERVALS.
+2. Add file handling your download process, saving process and validation process in "historical_data_feeds/modules" folder.
+3. In "historical_data_feeds/historical_data_feeds.py" edit function "__download_data" and "__validate_data_schema_instruments" properly. 
+
 # Microservice implementation
 
 1. Add your folder with microservice named as your microservice name.
@@ -144,5 +164,4 @@ Scheme of service file:
 1. Live data feeds. Necessery is integration with fix api and real broker.
 2. Trades executor with real broker. 
 3. Possibility to trade in more than one instrument
-4. Different intervals and time scopes for added to strategy instruments
-5. Add more data sources 
+4. Add more data sources 

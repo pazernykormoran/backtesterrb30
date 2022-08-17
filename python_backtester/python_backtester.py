@@ -83,15 +83,18 @@ class Backtester(ZMQ):
         # self.trades.append([trade.timestamp, trade.price, trade.quantity])
         
         #plot money chart
-        money_df = pd.DataFrame(self.cumulated_money_chart, columns=['timestamp', 'income'])
-        money_df.plot(x ='timestamp', y='income', kind = 'line', ax=ax2, sharex = ax)
+        if len(self.cumulated_money_chart) > 0:
+            money_df = pd.DataFrame(self.cumulated_money_chart, columns=['timestamp', 'income'])
+            money_df.plot(x ='timestamp', y='income', kind = 'line', ax=ax2, sharex = ax)
 
-        plt.ion()
-        plt.show(block = True)
+            plt.ion()
+            plt.show(block = True)
         
         print('Finish breakpoint')
 
     def __normalize(self, x, newRange=(0, 1)): #x is an array. Default range is between zero and one
+        if len(x) == 0:
+            return []
         xmin, xmax = np.min(x), np.max(x) #get max and min from input array
         norm = (x - xmin)/(xmax - xmin) # scale between zero and one
         

@@ -124,6 +124,10 @@ class Engine(ZMQ):
     def __data_finish_event(self, finish_params):
         self.on_data_finish()
         finish_params = loads(finish_params)
-        finish_params['main_instrument_price']= self.__get_main_intrument_price_3()
+        if len(self.__data_buffer_dict[0]) == 0: 
+            self._log('No data has received')
+            finish_params['main_instrument_price'] = 0
+        else:
+            finish_params['main_instrument_price'] = self.__get_main_intrument_price_3()
         
         self._send(SERVICES.python_backtester, 'data_finish', dumps(finish_params))

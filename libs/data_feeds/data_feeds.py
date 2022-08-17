@@ -15,6 +15,12 @@ class DUKASCOPY_INTERVALS(Enum):
     day='day'
     month='month'
 
+    @classmethod
+    def get_small_intervals(cls):
+        return [cls.tick,
+                cls.minute,
+               cls.minute5]
+
 class BINANCE_INTERVALS(Enum):
     tick='tick'
     minute='minute'
@@ -32,6 +38,13 @@ class BINANCE_INTERVALS(Enum):
     day3='day3'
     week='week'
     month='month'
+
+    @classmethod
+    def get_small_intervals(cls):
+        return [cls.tick,
+                cls.minute,
+               cls.minute3,
+               cls.minute5]
 
 
 class HISTORICAL_SOURCES(Enum):

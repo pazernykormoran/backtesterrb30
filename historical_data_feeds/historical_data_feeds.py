@@ -42,7 +42,9 @@ class HistoricalDataFeeds(ZMQ):
         self.__validate_downloaded_data_folder()
         self.file_names_to_load, self.data_to_download =  self.__check_if_all_data_exists(self.__data_schema.data)
         if len(self.data_to_download) > 0:
-            self.__download_data(self.data_to_download)
+            if not self.__download_data(self.data_to_download):
+                self._log('Error while downloading')
+                self.__stop_all_services()
         self.data_parts = self.__prepare_loading_data_structure(self.file_names_to_load)
 
         # register commands
@@ -151,16 +153,16 @@ class HistoricalDataFeeds(ZMQ):
     def __check_if_all_data_exists(self, data_symbol_array: DataSymbol):
         """
         data scheme
-        <instrument>__<source>__<interval>__<date-from>__<date-to>
+        <symbol>__<source>__<interval>__<date-from>__<date-to>
         all instruments are downloaded in year files.
         """
         file_names: List[str] = []
         loading_structure = []
-        for instrument in data_symbol_array:
-            files = self.__get_file_names(instrument)
+        for symbol in data_symbol_array:
+            files = self.__get_file_names(symbol)
             loading_structure.append(file_names)
             file_names = file_names+files
-        print('file names', file_names)
+        self._log('file names', file_names)
         files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
         files_to_download = list(set(file_names) - set(files_in_directory))
         return file_names, files_to_download
@@ -189,19 +191,21 @@ class HistoricalDataFeeds(ZMQ):
         return file_names
 
 
-    def __download_data(self, data_to_download):
+    def __download_data(self, data_to_download) -> bool:
         for instrument_file_name in data_to_download:
             data_instrument = instrument_file_name[:-4]
             source, instrment, interval, time_start, time_stop = tuple(data_instrument.split('__'))
-            # print('data_splitted', source, instrment, interval, time_start, time_stop )
+            print('interval', interval)
             if source == HISTORICAL_SOURCES.binance.value: 
-                download_binance_data(self.__client, self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                v = download_binance_data(self.__client, self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                if v == False: return False
             if source == HISTORICAL_SOURCES.ducascopy.value: 
-                download_ducascopy_data(self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                v = download_ducascopy_data(self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                if v == False: return False
             if source == HISTORICAL_SOURCES.rb30disk.value: 
-                download_rb30_disk_data(self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
-        # if tick: get_aggregate_trades
-
+                v = download_rb30_disk_data(self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                if v == False: return False
+        return True
 
     def __prepare_loading_data_structure(self, file_names_to_load) -> dict:
         files_collection = {}
@@ -237,6 +241,7 @@ class HistoricalDataFeeds(ZMQ):
             columns = ['timestamp', data_element.symbol]
             file_name = 'none'
             actual_raw = [0,0]
+            prev_raw = [0,0]
             for element in files_array:
                 if data_element.symbol == element['instrument']:
                     file_name = element['instrument_file_name']
@@ -250,12 +255,13 @@ class HistoricalDataFeeds(ZMQ):
                 if last_row != []:
                     # self._log('appending last row')
                     last_raw_mapped = self.__map_raw_to_instruments(last_row, self.__columns)
-                    actual_raw[0] = last_raw_mapped["timestamp"]
-                    actual_raw[1] = last_raw_mapped[data_element.symbol]
+                    prev_raw[0] = last_raw_mapped["timestamp"]
+                    prev_raw[1] = last_raw_mapped[data_element.symbol]
             obj = {
                 "trigger_feed": data_element.trigger_feed,
                 "rows_iterator": df.iterrows(),
                 "actual_raw": actual_raw,
+                "prev_raw": prev_raw,
                 "consumed": False
             }            
             #prepare to load:
@@ -270,7 +276,9 @@ class HistoricalDataFeeds(ZMQ):
 
     def __synchronize_dataframes(self, list_of_dfs: List[dict], last_row: list) -> List[list]:
         rows = []
+        c = 0
         while True:
+            c += 1
             row = [] 
             feeding_next_timestamps = [df['actual_raw'][0] for df in list_of_dfs if df['trigger_feed'] == True and not df['consumed']]
             if len(feeding_next_timestamps) == 0:
@@ -280,11 +288,12 @@ class HistoricalDataFeeds(ZMQ):
             for df_obj in list_of_dfs:
                 while True:
                     if df_obj['actual_raw'][0] > min_timestamp:
-                        row.append(df_obj['actual_raw'][1])
+                        row.append(df_obj['prev_raw'][1])
                         break
                     elif df_obj['actual_raw'][0] == min_timestamp:
                         row.append(df_obj['actual_raw'][1])
                         try:
+                            df_obj['prev_raw'] = df_obj['actual_raw']
                             i, v = next(df_obj['rows_iterator'])
                             df_obj['actual_raw'] = list(v)
                         except StopIteration:
@@ -292,6 +301,7 @@ class HistoricalDataFeeds(ZMQ):
                         break
                     else: 
                         try:
+                            df_obj['prev_raw'] = df_obj['actual_raw']
                             i, v = next(df_obj['rows_iterator'])
                             df_obj['actual_raw'] = list(v)
                         except StopIteration:

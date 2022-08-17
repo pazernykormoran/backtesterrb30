@@ -143,4 +143,9 @@ zrobic validacje gludosci danych również przy wczytywanieu.
 -Define that credentials are necessery. For example you dont need to pass binance credentials if you not using it.
 apply validate_dataframe_timestamps function to fill holes in data
 add warning that first avaliable data will be this earliest feeding data. 
+
+
+
+make sure charts are printed well when timeframes are not the same in all backtest.
+download data with frames lower than 1 hour in month csv-s.
 """

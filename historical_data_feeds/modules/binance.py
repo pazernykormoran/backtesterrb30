@@ -38,13 +38,34 @@ def validate_binance_instrument(client: Client, instrument: str):
     #     return False
     return True
 
-def download_binance_data(client: Client, downloaded_data_path: str, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
+def download_binance_data(client: Client, downloaded_data_path: str, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int) -> bool:
     print('downloading binance data', instrument_file_name)
-    binance_interval = _get_binance_interval(interval)
-    klines = client.get_historical_klines(instrument, binance_interval, time_start, time_stop)
-    df = pd.DataFrame(klines).iloc[:-1, [0,1]]
-    print('downloaded data length', df.shape[0])
-    # if interval != STRATEGY_INTERVALS.tick.value:
-    #     df = validate_dataframe_timestamps(df, interval, time_start, time_stop)
-    print('data length after validation', df.shape[0])
-    df.to_csv(join(downloaded_data_path, instrument_file_name), index=False, header=False)
+    try:
+        if interval == 'tick': 
+
+            interval_timestamp = 1000*60*60
+            trades_arr = []
+            start_hour = time_start
+            stop_hour = start_hour + interval_timestamp
+            while stop_hour < time_stop:
+                trades = client.get_aggregate_trades(symbol=instrument, startTime=start_hour, endTime=stop_hour)
+                # print('trades', trades)
+                trades_arr = trades_arr + trades
+                start_hour += interval_timestamp
+                stop_hour += interval_timestamp
+            df = pd.DataFrame(trades_arr)
+            df = df[['T','p']]
+        else:
+            binance_interval = _get_binance_interval(interval)
+            klines = client.get_historical_klines(instrument, binance_interval, time_start, time_stop)
+            df = pd.DataFrame(klines).iloc[:-1, [0,1]]
+            # if interval != STRATEGY_INTERVALS.tick.value:
+            #     df = validate_dataframe_timestamps(df, interval, time_start, time_stop)
+
+        df.to_csv(join(downloaded_data_path, instrument_file_name), index=False, header=False)
+
+    except Exception as e: 
+        print('Excepted', e)
+        return False
+
+    return True
