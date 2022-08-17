@@ -75,7 +75,6 @@ def download_ducascopy_data(downloaded_data_path: str, instrument_file_name:str,
         remove(join(cache_path, name_of_created_file))
         # if interval != STRATEGY_INTERVALS.tick.value:
         #     df = validate_dataframe_timestamps(df, interval, time_start, time_stop)
-        print('asd')
         df.to_csv(join(downloaded_data_path, instrument_file_name), index=False, header=False)
     except Exception as e: 
         print('Excepted', e)

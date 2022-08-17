@@ -148,4 +148,5 @@ add warning that first avaliable data will be this earliest feeding data.
 
 make sure charts are printed well when timeframes are not the same in all backtest.
 download data with frames lower than 1 hour in month csv-s.
+pomysl o dodaniu wywalania wartości ceny w tickach ktore są takie same. czesto sie powtarzaja, moznaby odchudzic dane o 80%.
 """

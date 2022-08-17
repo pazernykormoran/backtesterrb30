@@ -74,6 +74,7 @@ class HistoricalDataFeeds(ZMQ):
             start_time = tm.time()
             last_row = []
             for _, one_year_array in self.data_parts.items():
+                self._log('Synchronizing part of data')
                 data_part = self.__load_data_frame_ticks(self.downloaded_data_path, last_row, one_year_array)
                 for row in data_part:
                     last_row = row
@@ -85,8 +86,7 @@ class HistoricalDataFeeds(ZMQ):
                         while self.sending_locked:
                             await asyncio.sleep(0.01)
                 self._log('=================== datapart has finished')
-
-            self._log('Data has finished')
+            self._log('=================== Historical data has finished')
             
             finish_params = {
                 'file_names': self.file_names_to_load,
@@ -310,6 +310,7 @@ class HistoricalDataFeeds(ZMQ):
                             break
             if len(last_row) == 0 or row[0] != last_row[0]:
                 rows.append(row)
+                # print(row)
         return rows
         
     def __load_data_frame_ticks(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[list]:
