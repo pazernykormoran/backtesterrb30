@@ -89,20 +89,22 @@ class Backtester(ZMQ):
 
             plt.ion()
             plt.show(block = True)
-        
+
         print('Finish breakpoint')
 
     def __normalize(self, x, newRange=(0, 1)): #x is an array. Default range is between zero and one
         if len(x) == 0:
             return []
         xmin, xmax = np.min(x), np.max(x) #get max and min from input array
-        norm = (x - xmin)/(xmax - xmin) # scale between zero and one
-        
-        if newRange == (0, 1):
-            return(norm) # wanted range is the same as norm
-        elif newRange != (0, 1):
-            return norm * (newRange[1] - newRange[0]) + newRange[0] #scale to a different range.    
-        #add other conditions here. For example, an error messag
+        if xmin != xmax:
+            norm = (x - xmin)/(xmax - xmin) # scale between zero and one
+
+            if newRange == (0, 1):
+                return(norm) # wanted range is the same as norm
+            elif newRange != (0, 1):
+                return norm * (newRange[1] - newRange[0]) + newRange[0] #scale to a different range.
+            #add other conditions here. For example, an error messag
+        return np.ones_like(x) * 15
 
 
     def __trade(self, trade: Trade):
