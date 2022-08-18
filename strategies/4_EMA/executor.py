@@ -12,5 +12,5 @@ class TradeExecutor(Executor):
         # self.trade_counter += 1
         # if self.trade_counter == 17:
         #     self._close_all_trades()
-        self._trade(message['value'], message['price'], message['timestamp'])
+        self._trade(message['value'])
 

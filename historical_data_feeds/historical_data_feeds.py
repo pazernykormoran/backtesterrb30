@@ -1,21 +1,25 @@
 
 from abc import abstractmethod
 import asyncio
-from typing import Callable, List
+from typing import List
 from libs.zmq.zmq import ZMQ
-from libs.list_of_services.list_of_services import SERVICES
-from libs.data_feeds.data_feeds import STRATEGY_INTERVALS, HISTORICAL_SOURCES, DataSchema
+from libs.list_of_services.list_of_services import SERVICES, SERVICES_ARRAY
+from libs.data_feeds.data_feeds import HISTORICAL_SOURCES, DataSchema, DataSymbol
+from historical_data_feeds.modules.binance import *
+from historical_data_feeds.modules.dukascopy import *
+from historical_data_feeds.modules.rb30_disk import *
 from libs.interfaces.config import Config
 from importlib import import_module
-from json import dumps, load
+from json import dumps
 from datetime import datetime, timezone
 from os import path, mkdir, getenv
 from os import listdir
 from os.path import isfile, join
-from binance import Client, AsyncClient
+from binance import Client
 import pandas as pd
-from os import system, remove, mkdir
-import shutil
+from os import mkdir
+import time
+
 import time as tm
 
 class HistoricalDataFeeds(ZMQ):
@@ -24,33 +28,33 @@ class HistoricalDataFeeds(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
-        try:
-            mkdir(self.downloaded_data_path)
-        except:
-            pass
-        if HISTORICAL_SOURCES.binance in [data.historical_data_source for data in self.data_schema.data]:
+        self.__data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
+        self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
+
+        if HISTORICAL_SOURCES.binance in [data.historical_data_source for data in self.__data_schema.data]:
             binance_api_secret=getenv("binance_api_secret")
             binance_api_key=getenv("binance_api_key")
-            self.client = Client(binance_api_key, binance_api_secret)
+            self.__client = Client(binance_api_key, binance_api_secret)
+            
         self.sending_locked = False
-        if not self.validate_data_schema_instruments(self.data_schema): 
-            self._stop()
-        
+        if not self.__validate_data_schema_instruments(self.__data_schema.data): 
+            self.__stop_all_services()
+        self.__validate_downloaded_data_folder()
+        self.file_names_to_load, self.data_to_download =  self.__check_if_all_data_exists(self.__data_schema.data)
+        if len(self.data_to_download) > 0:
+            if not self.__download_data(self.data_to_download):
+                self._log('Error while downloading')
+                self.__stop_all_services()
+        self.data_parts = self.__prepare_loading_data_structure(self.file_names_to_load)
+
+        # register commands
         self.register("unlock_historical_sending", self.__unlock_historical_sending_event)
 
     # override
     def _loop(self):
         loop = asyncio.get_event_loop()
-
-        # bofero starting loop you need to validate histroical data files
-        self.validate_downloaded_data_folder()
-        self.file_names_to_load, self.data_to_download =  self.check_if_all_data_exists(self.data_schema)
-        if len(self.data_to_download) > 0:
-            self.download_data(self.data_to_download, loop)
         self._create_listeners(loop)
-        # loop.create_task(self._listen_zmq())
-        loop.create_task(self.__historical_data_loop())
+        loop.create_task(self.__historical_data_loop_ticks())
         loop.run_forever()
         loop.close()
 
@@ -58,301 +62,265 @@ class HistoricalDataFeeds(ZMQ):
     def _handle_zmq_message(self, message):
         pass
 
-    async def __historical_data_loop(self):
+    async def __historical_data_loop_ticks(self):
         self._log('waiting for all ports starts up')
         await asyncio.sleep(0.5)
-        while True:
-            if self.data_downloaded(self.data_to_download): 
-                self._log('All data has been downloaded')
-                # timestamp = datetime.timestamp(self.data_schema.backtest_date_start)
-                # step_timestamp = self.__get_interval_step_seconds(self.data_schema.interval)
-                data_parts = self.prepare_loading_data_structure(self.file_names_to_load)
-                sending_counter = 0
-                self._log('Starting data loop')
-                start_time = tm.time()
-                for time, array in data_parts.items():
 
-                    data_part = self.__load_data_frame(array)
-                    for index, row in data_part.iterrows():
+        if self.__data_downloaded(self.data_to_download): 
+            self._log('All data has been downloaded')
+            
+            sending_counter = 0
+            self._log('Starting data loop')
+            start_time = tm.time()
+            last_row = []
+            for _, one_year_array in self.data_parts.items():
+                self._log('Synchronizing part of data')
+                data_part = self.__load_data_frame_ticks(self.downloaded_data_path, last_row, one_year_array)
+                for row in data_part:
+                    last_row = row
+                    self._send(SERVICES.python_engine,'data_feed',dumps(list(last_row)))
+                    sending_counter += 1
+                    if sending_counter % 1000 == 0:
+                        self.sending_locked = True
+                        self._send(SERVICES.python_engine, 'historical_sending_locked')
+                        while self.sending_locked:
+                            await asyncio.sleep(0.01)
+                self._log('=================== datapart has finished')
+            self._log('=================== Historical data has finished')
+            
+            finish_params = {
+                'file_names': self.file_names_to_load,
+                'start_time': start_time
+            }
+            self._send(SERVICES.python_engine, 'data_finish', dumps(finish_params))
 
-                        self._send(SERVICES.python_engine,'data_feed',dumps(list(row)))
-                        sending_counter += 1
-                        if sending_counter % 1000 == 0:
-                            self.sending_locked = True
-                            self._send(SERVICES.python_engine, 'historical_sending_locked')
-                            while self.sending_locked:
-                                await asyncio.sleep(0.01)
-                            # self._log('historical sendig unlocked')
+        else:
+            self._log("Error. Not all of the data has been downloaded, exiting")
+            self._stop()
 
-                self._log('Data has finished')
-                
-                finish_params = {
-                    'file_names': self.file_names_to_load,
-                    'start_time': start_time
-                }
-                self._send(SERVICES.python_engine, 'data_finish', dumps(finish_params))
-                break
-            else:
-                print("Error. Not all of the data has been downloaded, exiting")
-                self._stop()
-
-
-    def validate_data_schema_instruments(self, data_schema: DataSchema):
+    def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbol]):
         self._log('Data_schema validation')
         data_valid = True
-        for data in data_schema.data:
+        number_of_mains = 0
+        number_of_trigger_feeders = 0
+        for data in data_symbol_array:
             if data.historical_data_source == HISTORICAL_SOURCES.binance:
-                if not self.validate_binance_instrument(data.symbol, data_schema.backtest_date_start, data_schema.interval):
+                if not validate_binance_instrument(self.__client, data.symbol):
                     data_valid = False
             elif data.historical_data_source == HISTORICAL_SOURCES.ducascopy:
-                if not self.validate_ducascopy_instrument(data.symbol, data_schema.backtest_date_start): 
+                if not validate_ducascopy_instrument(data.symbol, data.backtest_date_start): 
                     data_valid = False
+            if data.backtest_date_start == None:
+                self._log('Error. You must provide "backtest_date_start" field in data_schema file while you are backtesting your strategy')
+                data_valid = False
+            if data.backtest_date_start >= data.backtest_date_stop: 
+                self._log('Error. You have provided "backtest_date_start" is equal or bigger than "backtest_date_start" ')
+                data_valid = False
+            if [data.backtest_date_start.hour,
+                data.backtest_date_start.minute,
+                data.backtest_date_start.second,
+                data.backtest_date_start.microsecond] != [0,0,0,0]:
+                self._log('Error. Provide your "backtest_date_start" and "backtest_date_stop" in a day accuracy like: "backtest_date_start": datetime(2020,6,1)')
+                data_valid = False
+            if data.historical_data_source.value not in (HISTORICAL_SOURCES.binance.value, HISTORICAL_SOURCES.ducascopy.value): 
+                self._log('Error. This historical_data_source not implemented yet')
+                data_valid = False
+            if data.main == True:
+                number_of_mains += 1
+            if data.trigger_feed == True:
+                number_of_trigger_feeders += 1
+
+        if number_of_mains != 1:
+            self._log('Error. Your "data_schema.py" must have one main instrument')
+            data_valid = False
+        if number_of_trigger_feeders < 1:
+            self._log('Error. Your "data_schema.py" must have at least one instrument that triggers feeds')
+            data_valid = False
+
         return data_valid
 
 
-    def validate_binance_instrument(self, instrument: str, from_datetime: datetime, interval: STRATEGY_INTERVALS):
-        # print('validation instrment', instrument, 'from_datetime', from_datetime, 'interval',interval)
-        #validate if instrument exists:
-        exchange_info = self.client.get_exchange_info()
-        if instrument not in [s['symbol'] for s in exchange_info['symbols']]:
-            self._log('Error. Instrument "'+instrument+'" does not exists on binance.')
-            return False
-        #validate it timestamps perios is right:
-        from_datetime_timestamp = int(round(datetime.timestamp(from_datetime) * 1000))
-        binance_interval = self.__get_binance_interval(interval.value)
-        first_timestamp = self.client._get_earliest_valid_timestamp(instrument, binance_interval)
-        if first_timestamp > from_datetime_timestamp:
-            self._log("Error. First avaliable date of " , instrument, "is" , datetime.fromtimestamp(first_timestamp/1000.0))
-            return False
-        return True
-
-    def validate_ducascopy_instrument(self, instrument: str, from_datetime: datetime):
-        # https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/master/src/utils/instrument-meta-data/generated/raw-meta-data-2022-04-23.json
-        # response = requests.get("http://api.open-notify.org/astros.json")
-        from_datetime_timestamp = int(round(datetime.timestamp(from_datetime) * 1000))
-        f = open('historical_data_feeds/temporary_ducascopy_list.json')
-        instrument_list = load(f)['instruments']
-        #validate if instrument exists:
-        if instrument.upper() not in [v['historical_filename'] for k, v in instrument_list.items()]:
-            self._log('Error. Instrument "'+instrument+'" does not exists on ducascopy.')
-            return False
-
-        #validate it timestamps perios is right:
-        for k, v in instrument_list.items():
-            if v["historical_filename"] == instrument.upper():
-                first_timestamp = int(v["history_start_day"])
-                if first_timestamp > from_datetime_timestamp:
-                    self._log("Error. First avaliable date of " , instrument, "is" , datetime.fromtimestamp(first_timestamp/1000.0))
-                    return False
-        return True
-
-    def data_downloaded(self, full_data_to_download):
+    def __data_downloaded(self, full_data_to_download):
         files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
         data_to_download = list(set(full_data_to_download) - set(files_in_directory))
         # self._log('Data is being downloaded ...', str( (len(full_data_to_download) - len(data_to_download) ) / len(full_data_to_download) * 100 )+'%')
         return data_to_download == []
 
-    def validate_downloaded_data_folder(self):
+    def __validate_downloaded_data_folder(self):
         if not path.exists(self.downloaded_data_path):
             mkdir(self.downloaded_data_path)
-
-    def get_next_value(self):
-        pass
-
-    def validate_loaded_data(self):
-        pass
     
-    def check_if_all_data_exists(self, data_schema: DataSchema):
+    def __check_if_all_data_exists(self, data_symbol_array: DataSymbol):
         """
         data scheme
-        <instrument>__<source>__<interval>__<date-from>__<date-to>
+        <symbol>__<source>__<interval>__<date-from>__<date-to>
         all instruments are downloaded in year files.
-
-        #TODO write tests
         """
-        date_from_date_to: List[str] = []
         file_names: List[str] = []
-        if data_schema.backtest_date_start.year < data_schema.backtest_date_stop.year:
-            date_from_date_to.append(str(int(round(datetime.timestamp(data_schema.backtest_date_start) * 1000))) + "__"
-                                    + str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year+1,1,1, tzinfo=timezone.utc)) * 1000))))
-            for i in range(data_schema.backtest_date_stop.year - data_schema.backtest_date_start.year - 1):
-                date_from_date_to.append(str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year + i + 1, 1, 1, tzinfo=timezone.utc)) * 1000))) + "__" 
-                                    + str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_start.year + i + 2, 1, 1, tzinfo=timezone.utc)) * 1000))))
-            date_from_date_to.append(str(int(round(datetime.timestamp(datetime(data_schema.backtest_date_stop.year,1,1, tzinfo=timezone.utc)) * 1000))) + "__" 
-                                    + str(int(round(datetime.timestamp(data_schema.backtest_date_stop) * 1000))))
-        else:
-            date_from_date_to.append(str(int(round(datetime.timestamp(data_schema.backtest_date_start) * 1000))) + "__" 
-                                    + str(int(round(datetime.timestamp(data_schema.backtest_date_stop) * 1000))))
-        for instrument in data_schema.data:
-            for dates in date_from_date_to:
-                file_names.append(instrument.historical_data_source.value + "__" 
-                                    + instrument.symbol + "__" 
-                                    + data_schema.interval.value + "__" 
-                                    + dates + '.csv')
-        # print('file_names', file_names)
+        loading_structure = []
+        for symbol in data_symbol_array:
+            files = self.__get_file_names(symbol)
+            loading_structure.append(file_names)
+            file_names = file_names+files
+        self._log('file names', file_names)
         files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
-        # print('files_in_directory',files_in_directory)
         files_to_download = list(set(file_names) - set(files_in_directory))
-        # print('files_to_download', files_to_download)
         return file_names, files_to_download
 
-    def download_data(self, data_to_download, loop: asyncio.AbstractEventLoop):
+
+    def __get_file_names(self, symbol: DataSymbol) -> List[str]:
+        date_from_date_to: List[str] = []
+        file_names: List[str] = []
+        if symbol.backtest_date_start.year < symbol.backtest_date_stop.year:
+            date_from_date_to.append(str(int(round(datetime.timestamp(symbol.backtest_date_start) * 1000))) + "__"
+                                    + str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year+1,1,1, tzinfo=timezone.utc)) * 1000))))
+            for i in range(symbol.backtest_date_stop.year - symbol.backtest_date_start.year - 1):
+                date_from_date_to.append(str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year + i + 1, 1, 1, tzinfo=timezone.utc)) * 1000))) + "__" 
+                                    + str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year + i + 2, 1, 1, tzinfo=timezone.utc)) * 1000))))
+            date_from_date_to.append(str(int(round(datetime.timestamp(datetime(symbol.backtest_date_stop.year,1,1, tzinfo=timezone.utc)) * 1000))) + "__" 
+                                    + str(int(round(datetime.timestamp(symbol.backtest_date_stop) * 1000))))
+        else:
+            date_from_date_to.append(str(int(round(datetime.timestamp(symbol.backtest_date_start) * 1000))) + "__" 
+                                    + str(int(round(datetime.timestamp(symbol.backtest_date_stop) * 1000))))
+
+        for dates in date_from_date_to:
+            file_names.append(symbol.historical_data_source.value + "__" 
+                                + symbol.symbol + "__" 
+                                + symbol.interval.value + "__" 
+                                + dates + '.csv')
+        return file_names
+
+
+    def __download_data(self, data_to_download) -> bool:
         for instrument_file_name in data_to_download:
             data_instrument = instrument_file_name[:-4]
             source, instrment, interval, time_start, time_stop = tuple(data_instrument.split('__'))
-            # print('data_splitted', source, instrment, interval, time_start, time_stop )
+            print('interval', interval)
             if source == HISTORICAL_SOURCES.binance.value: 
-                self._download_binance_data(instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                v = download_binance_data(self.__client, self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                if v == False: return False
             if source == HISTORICAL_SOURCES.ducascopy.value: 
-                self._download_ducascopy_data(instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                v = download_ducascopy_data(self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                if v == False: return False
             if source == HISTORICAL_SOURCES.rb30disk.value: 
-                self._download_rb30_disk_data(instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                v = download_rb30_disk_data(self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
+                if v == False: return False
+        return True
 
-        # if tick: get_aggregate_trades
-
-
-    def _download_binance_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
-        self._log('downloading binance data', instrument_file_name)
-        binance_interval = self.__get_binance_interval(interval)
-        klines = self.client.get_historical_klines(instrument, binance_interval, time_start, time_stop)
-        if len(klines) == 0:
-            self._log('Error. Klines downloaded has len = 0. Check if',instrument,'has not been deleted from the exachange.')
-            self._stop()
-        df = pd.DataFrame(klines).iloc[:-1, [0,1]]
-        self._log('downloaded data length', df.shape[0])
-        df = self.validate_dataframe_timestamps(df, interval, time_start, time_stop)
-        self._log('data length after validation', df.shape[0])
-        df.to_csv(join(self.downloaded_data_path, instrument_file_name), index=False, header=False)
-
-
-    def _download_ducascopy_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
-        self._log('_download_ducascopy_data', instrument_file_name)
-        """
-        documentation: 
-        https://github.com/Leo4815162342/dukascopy-node
-        """
-        duca_interval = self.__get_ducascopy_interval(interval)
-        from_param = datetime.fromtimestamp(time_start//1000.0).strftime("%Y-%m-%d")
-        to_param = datetime.fromtimestamp(time_stop//1000.0).strftime("%Y-%m-%d")
-        string_params = [
-            ' -i '+ instrument,
-            ' -from '+ from_param,
-            ' -to '+ to_param,
-            ' -s',
-            ' -t ' + duca_interval,
-            ' -fl', 
-            ' -f csv',
-            ' -dir ./cache' 
-        ]
-        command = 'npx dukascopy-node'
-        for param in string_params:
-            command += param
-        print('running command', command)
-        system(command)
-        name_of_created_file = instrument+'-'+duca_interval+'-bid-'+from_param+'-'+to_param+'.csv'
-        shutil.move('./cache/'+name_of_created_file, join(self.downloaded_data_path, instrument_file_name))
-        df = pd.read_csv(join(self.downloaded_data_path, instrument_file_name), index_col=None, header=None)
-        df = df.iloc[1:, [0,1]]
-        self._log('downloaded data length', df.shape[0])
-        remove(join(self.downloaded_data_path, instrument_file_name))
-        df = self.validate_dataframe_timestamps(df, interval, time_start, time_stop)
-        self._log('data length after validation', df.shape[0])
-        df.to_csv(join(self.downloaded_data_path, instrument_file_name), index=False, header=False)
-        
-
-    def _download_rb30_disk_data(self, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
-        # TODO
-        print('_download_rb30_disk_data')
-        pass
-
-    def prepare_loading_data_structure(self, file_names_to_load):
+    def __prepare_loading_data_structure(self, file_names_to_load) -> dict:
         files_collection = {}
         for instrument_file_name in file_names_to_load:
-            
             data_instrument = instrument_file_name[:-4]
             source, instrument, interval, time_start, time_stop = tuple(data_instrument.split('__'))
-            if not time_start in files_collection:
-                files_collection[time_start] = []
-            files_collection[time_start].append([instrument, instrument_file_name])
+            if not time_stop in files_collection:
+                files_collection[time_stop] = []
+            files_collection[time_stop].append({
+                "instrument": instrument, 
+                "instrument_file_name": instrument_file_name
+                }) 
         return files_collection
 
+    def __stop_all_services(self):
+        for service in SERVICES_ARRAY:
+            if service != self.name:
+                self._send(getattr(SERVICES, service), 'stop')
+        self._stop()
 
-    def __load_data_frame(self, files_array: list):
-        array_of_arrays = pd.DataFrame()
-        for file in files_array:
-            df = pd.read_csv(join(self.downloaded_data_path, file[1]), index_col=None, header=None, names=['timestamp', file[0]])
-            if len(array_of_arrays) == 0:
-                array_of_arrays = df
-            else:
-                if(array_of_arrays.shape[0] == df.shape[0]):
-                    array_of_arrays[file[0]] = df.iloc[:, [1]]
-                else:
-                    self._log('Error! Length of loading data parts is not equal. Name of file:', file[1], str(array_of_arrays.shape[0]) , "!=", str(df.shape[0]))
-                    self._stop()
-        return array_of_arrays
-        
-
-    def __get_interval_step_miliseconds(self, interval: str):
-        if interval == STRATEGY_INTERVALS.minute.value: return 60*1000
-        if interval == STRATEGY_INTERVALS.minute15.value: return 60*15*1000
-        if interval == STRATEGY_INTERVALS.minute30.value: return 60*30*1000
-        if interval == STRATEGY_INTERVALS.hour.value: return 60*60*1000
-        if interval == STRATEGY_INTERVALS.day.value: return 60*60*24*1000
-        # if interval == 'minute15': return 60*60*24*7
-        if interval == STRATEGY_INTERVALS.month.value: return 60*60*24*7*30*1000
- 
-
-    def __get_binance_interval(self, interval: str):
-        if interval == 'minute': return Client.KLINE_INTERVAL_1MINUTE
-        if interval == 'minute15': return Client.KLINE_INTERVAL_15MINUTE
-        if interval == 'minute30': return Client.KLINE_INTERVAL_30MINUTE
-        if interval == 'hour': return Client.KLINE_INTERVAL_1HOUR
-        if interval == 'day': return Client.KLINE_INTERVAL_1DAY
-        # if interval == 'week': return Client.KLINE_INTERVAL_1WEEK
-        if interval == 'month': return Client.KLINE_INTERVAL_1MONTH
-
-
-    def __get_ducascopy_interval(self, interval: str):
-        if interval == 'minute': return 'm1'
-        if interval == 'minute15': return 'm15'
-        if interval == 'minute30': return 'm30'
-        if interval == 'hour': return 'h1'
-        if interval == 'day': return 'd1'
-        # if interval == 'week': return 'm1'
-        if interval == 'month': return 'mn1'
-
-
-    def validate_dataframe_timestamps(self, df: pd.DataFrame, interval: str, time_start: int, time_stop: int):
-        # print('starting validation: ', 'interval',interval , 'time_start',time_start , 'time_stop', time_stop)
-        # print('-start in file name', datetime.fromtimestamp(time_start / 1000))
-        # print('-stop in file name', datetime.fromtimestamp(time_stop / 1000))
-        # print('is dividable???' ,( time_stop - time_start )/ timestamp_interval)
-        # print('list timestamps first: ', list_timestamps[0], 'last: ', list_timestamps[-1])
-        # print('-start in list', datetime.fromtimestamp(list_timestamps[0] / 1000))
-        # print('-stop in list', datetime.fromtimestamp(list_timestamps[-1] / 1000))
-        # print('proper len', len(list_timestamps))
-        # print('head', df.head(2))
-        # print('tail', df.tail(2))
-        # print(df.dtypes)
-        # print('iterating------')
-        timestamp_interval = self.__get_interval_step_miliseconds(interval)
-        list_timestamps = range(time_start, time_stop, timestamp_interval)
-        for i, timestamp in enumerate(list_timestamps):
-            count = 0
-            while int(df.iloc[i][0]) != int(timestamp):
-                count+= 1
-                df = pd.concat([df.iloc[:i],df.iloc[i-1:i],df.iloc[i:]], ignore_index=True)
-                df.iloc[i,0] = int(timestamp)
-
-        for i, timestamp in enumerate(list_timestamps):
-            if int(df.iloc[i][0]) != int(timestamp):
-                self._log('Error during second validation of data. Timestamps are not equal. Stopping')
-                self._stop()
-
-        if df.shape[0] != len(list_timestamps):
-            self._log('Error. Data frame length is not proper after validation. Check "validate_dataframe_timestamps" function')
+    def __map_raw_to_instruments(self, raw: list, instruments: list):
+        last_raw_obj = {}
+        if len(raw) != len(instruments):
+            self._log('Error in map_raw_to_instruments. Lengths of raw and list of instruments are not equal')
             self._stop()
-        return df
+        for value, instrument in zip(raw, instruments):
+            last_raw_obj[instrument] = value
+        return last_raw_obj
+
+    def __prepare_dataframes_to_synchronize(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[dict]:
+        list_of_dfs = []
+        for data_element in self.__data_schema.data:
+            columns = ['timestamp', data_element.symbol]
+            file_name = 'none'
+            actual_raw = [0,0]
+            prev_raw = [0,0]
+            for element in files_array:
+                if data_element.symbol == element['instrument']:
+                    file_name = element['instrument_file_name']
+            if file_name == 'none':
+                # No file in this period for this instrument. Set empty dataframe.
+                df = pd.DataFrame([], columns=columns)
+            else:
+                # File exists. Load dataframe.
+                df = pd.read_csv(join(downloaded_data_path, file_name), index_col=None, header=None, names=columns)
+                # append last raw it if exists
+                if last_row != []:
+                    # self._log('appending last row')
+                    last_raw_mapped = self.__map_raw_to_instruments(last_row, self.__columns)
+                    prev_raw[0] = last_raw_mapped["timestamp"]
+                    prev_raw[1] = last_raw_mapped[data_element.symbol]
+            obj = {
+                "trigger_feed": data_element.trigger_feed,
+                "rows_iterator": df.iterrows(),
+                "actual_raw": actual_raw,
+                "prev_raw": prev_raw,
+                "consumed": False
+            }            
+            #prepare to load:
+            if obj['actual_raw'][0] == 0:
+                try:
+                    i, v = next(obj['rows_iterator'])
+                    obj['actual_raw'] = list(v)
+                except StopIteration:
+                    obj['consumed'] = True
+            list_of_dfs.append(obj)
+        return list_of_dfs
+
+    def __synchronize_dataframes(self, list_of_dfs: List[dict], last_row: list) -> List[list]:
+        rows = []
+        c = 0
+        while True:
+            c += 1
+            row = [] 
+            feeding_next_timestamps = [df['actual_raw'][0] for df in list_of_dfs if df['trigger_feed'] == True and not df['consumed']]
+            if len(feeding_next_timestamps) == 0:
+                break
+            min_timestamp = min(feeding_next_timestamps) 
+            row.append(int(min_timestamp))
+            for df_obj in list_of_dfs:
+                while True:
+                    if df_obj['actual_raw'][0] > min_timestamp:
+                        row.append(df_obj['prev_raw'][1])
+                        break
+                    elif df_obj['actual_raw'][0] == min_timestamp:
+                        row.append(df_obj['actual_raw'][1])
+                        try:
+                            df_obj['prev_raw'] = df_obj['actual_raw']
+                            i, v = next(df_obj['rows_iterator'])
+                            df_obj['actual_raw'] = list(v)
+                        except StopIteration:
+                            df_obj['consumed'] = True
+                        break
+                    else: 
+                        try:
+                            df_obj['prev_raw'] = df_obj['actual_raw']
+                            i, v = next(df_obj['rows_iterator'])
+                            df_obj['actual_raw'] = list(v)
+                        except StopIteration:
+                            row.append(df_obj['actual_raw'][1])
+                            df_obj['consumed'] = True
+                            break
+            if len(last_row) == 0 or row[0] != last_row[0]:
+                rows.append(row)
+                # print(row)
+        return rows
+        
+    def __load_data_frame_ticks(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[list]:
+        """
+        Function is geting files array from one period that are going to be loaded. 
+        Function returns synchronized data in list of lists which are ready to send to engine.
+        """
+        list_of_dfs = self.__prepare_dataframes_to_synchronize(downloaded_data_path, last_row, files_array)
+        rows = self.__synchronize_dataframes(list_of_dfs, last_row)
+        return rows
 
 
     # COMMANDS

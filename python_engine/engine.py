@@ -53,15 +53,23 @@ class Engine(ZMQ):
     def _handle_zmq_message(self, message):
         pass
 
+    def _get_columns(self):
+        return self.__columns
+
     def _set_buffer_length(self, length: int):
         self.__buffer_length = length
 
     def _trigger_event(self, event: JSONSerializable):
         msg = {
             'price': self.__get_main_intrument_price_3(),
+            'timestamp': self.__data_buffer_dict[0][-1],
             'message': event
         }
         self._send(SERVICES.python_executor,'event', dumps(msg))
+
+    def _get_main_intrument_number(self):
+        num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
+        return num + 1
 
     def __get_main_intrument_price(self):
          # first function
@@ -72,9 +80,9 @@ class Engine(ZMQ):
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
         return self.__data_buffer_pandas.iloc[-1, num+1]
 
-    def __get_main_intrument_price_3(self):
+    def __get_main_intrument_price_3(self, price_delay_steps = -1):
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
-        return self.__data_buffer_dict[num+1][-1]
+        return self.__data_buffer_dict[num+1][price_delay_steps]
 
     #COMMANDS
     def __data_feed_event_2(self, new_data_row):
@@ -115,6 +123,10 @@ class Engine(ZMQ):
     def __data_finish_event(self, finish_params):
         self.on_data_finish()
         finish_params = loads(finish_params)
-        finish_params['main_instrument_price']= self.__get_main_intrument_price_3()
+        if len(self.__data_buffer_dict[0]) == 0: 
+            self._log('No data has received')
+            finish_params['main_instrument_price'] = 0
+        else:
+            finish_params['main_instrument_price'] = self.__get_main_intrument_price_3()
         
         self._send(SERVICES.python_backtester, 'data_finish', dumps(finish_params))

@@ -11,6 +11,7 @@ import pandas as pd
 from os.path import join
 import matplotlib.pyplot as plt
 import time as tm
+import numpy as np
 
 class Backtester(ZMQ):
     
@@ -28,6 +29,8 @@ class Backtester(ZMQ):
         self.number_of_actions = 0
         self.buy_summary_cost = 0
         self.sell_summary_cost = 0
+
+        self.biggest_investment = 0
 
         self.register("trade", self.__trade_event)
         self.register("data_finish", self.__data_finish_event)
@@ -70,13 +73,41 @@ class Backtester(ZMQ):
         self.main_instrument_chart = pd.concat(dfs)
 
         #plot trades chart
-        self.main_instrument_chart.plot(x ='timestamp', y='price', kind = 'line')	
+        fig,(ax1,ax2) = plt.subplots(nrows=2, ncols=1, sharex = True)
+        ax = self.main_instrument_chart.plot(x ='timestamp', y='price', kind = 'line', ax=ax1)	
+        ax.set_yscale('log')
 
+        normalized_quants = self.__normalize([abs(trade[2]) for trade in self.trades], (5,15))
+
+            
+        for trade, quant in zip(self.trades, normalized_quants):
+            ax.plot(trade[0], trade[1], '.g' if trade[2]>0 else '.r', ms=quant)
+        # self.trades.append([trade.timestamp, trade.price, trade.quantity])
+        
         #plot money chart
-        money_df = pd.DataFrame(self.cumulated_money_chart, columns=['timestamp', 'income'])
-        money_df.plot(x ='timestamp', y='income', kind = 'line',)
+        if len(self.cumulated_money_chart) > 0:
+            money_df = pd.DataFrame(self.cumulated_money_chart, columns=['timestamp', 'income'])
+            money_df.plot(x ='timestamp', y='income', kind = 'line', ax=ax2, sharex = ax)
 
-        plt.show()
+            plt.ion()
+            plt.show(block = True)
+
+        print('Finish breakpoint')
+
+    def __normalize(self, x, newRange=(0, 1)): #x is an array. Default range is between zero and one
+        if len(x) == 0:
+            return []
+        xmin, xmax = np.min(x), np.max(x) #get max and min from input array
+        if xmin != xmax:
+            norm = (x - xmin)/(xmax - xmin) # scale between zero and one
+
+            if newRange == (0, 1):
+                return(norm) # wanted range is the same as norm
+            elif newRange != (0, 1):
+                return norm * (newRange[1] - newRange[0]) + newRange[0] #scale to a different range.
+            #add other conditions here. For example, an error messag
+        return np.ones_like(x) * 15
+
 
     def __trade(self, trade: Trade):
         self.trades.append([trade.timestamp, trade.price, trade.quantity])
@@ -86,6 +117,8 @@ class Backtester(ZMQ):
         else:
             self.sell_summary_cost += trade.quantity * trade.price
         local_income =  - self.buy_summary_cost - self.sell_summary_cost + self.number_of_actions * trade.price
+        if abs(trade.price* self.number_of_actions) > self.biggest_investment:
+            self.biggest_investment = abs(trade.price* self.number_of_actions)
         # print('lodal income', local_income)
         self.cumulated_money_chart.append([trade.timestamp, local_income])
 
@@ -106,6 +139,7 @@ class Backtester(ZMQ):
         self._log('buy_summary_cost:', self.buy_summary_cost)
         self._log('sell_summary_cost:', self.sell_summary_cost)
         self._log('number of unrealized actions:', self.number_of_actions)
+        self._log('biggest investment: ', self.biggest_investment)
         self._log('actual price:', finish_params['main_instrument_price'])
         income = - self.buy_summary_cost - self.sell_summary_cost + self.number_of_actions * finish_params['main_instrument_price']
         self._log('income:', income)

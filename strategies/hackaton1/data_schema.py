@@ -1,46 +1,71 @@
 from libs.necessery_imports.data_imports import *
 
-# configure data feed =====================================
+datetime_start = datetime(2020,6,1)
 
 data={
-    'interval':STRATEGY_INTERVALS.hour,
-    'backtest_date_start': datetime(2020,6,1),
-    'backtest_date_stop': datetime(2022,6,1),
     'data':[
         {
-            'symbol': 'LTCUSDT',
+            'symbol': 'BTCUSDT',
+            'historical_data_source': HISTORICAL_SOURCES.binance,
+            'main': False,
+            'backtest_date_start': datetime_start,
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': True,
+            'interval': BINANCE_INTERVALS.hour
+        },
+        {
+            'symbol': 'ETHUSDT',
             'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': True,
+            'backtest_date_start': datetime_start,
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': True,
+            'interval': BINANCE_INTERVALS.hour
         },
         {
-            'symbol': 'IOTAETH',
+            'symbol': 'XRPUSDT',
             'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': False,
+            'backtest_date_start': datetime_start,
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': True,
+            'interval': BINANCE_INTERVALS.hour
         },
         {
-            'symbol': 'ADABTC',
+            'symbol': 'BNBUSDT',
             'historical_data_source': HISTORICAL_SOURCES.binance,
             'main': False,
+            'backtest_date_start': datetime_start,
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': True,
+            'interval': BINANCE_INTERVALS.hour
         },
         {
-            'symbol': 'saffreur',
+            'symbol': 'iefususd',
             'historical_data_source': HISTORICAL_SOURCES.ducascopy,
             'main': False,
+            'backtest_date_start': datetime_start,
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': True,
+            'interval': DUKASCOPY_INTERVALS.hour
         },
         {
-            'symbol': 'adsdeeur',
+            'symbol': 'iveususd',
             'historical_data_source': HISTORICAL_SOURCES.ducascopy,
             'main': False,
+            'backtest_date_start': datetime_start,
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': True,
+            'interval': DUKASCOPY_INTERVALS.hour
         },
         {
-            'symbol': 'bmwdeeur',
+            'symbol': 'xauusd',
             'historical_data_source': HISTORICAL_SOURCES.ducascopy,
             'main': False,
-        },
-        {
-            'symbol': '0291hkhkd',
-            'historical_data_source': HISTORICAL_SOURCES.ducascopy,
-            'main': False,
+            'backtest_date_start': datetime_start,
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': True,
+            'interval': DUKASCOPY_INTERVALS.hour
         }
     ]
 }

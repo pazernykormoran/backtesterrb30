@@ -8,7 +8,7 @@ from sys import argv
 from pydantic import BaseModel
 import time
 from libs.list_of_services.list_of_services import SERVICES_ARRAY
-from libs.data_feeds.data_feeds import DataSchema, HISTORICAL_SOURCES, STRATEGY_INTERVALS
+from libs.data_feeds.data_feeds import DataSchema
 from datetime import datetime
 
 #TODO hardcoded backtest mode: 
@@ -70,44 +70,16 @@ def create_port_configurations():
         
         
 def validate_strategy(strategy_name):
-    try:
-        data_schema: DataSchema = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
-        model_module = importlib.import_module('strategies.'+strategy_name+'.model')
-        executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
-    except Exception as e:
-        print('Excepted: ', e)
-        print('Error. Excepted while loading modules. Check if all necessery files are in your strategy')
-        print('Your strategy in folder strategies/'+strategy_name+'should contain files: "data_schema.py", "executor.py", "model.py"' )
-        print('Read more in readme file')
-        exit()
-    if backtest_state:
-        if data_schema.backtest_date_start == None:
-            print('Error. You must provide "backtest_date_start" field in data_schema file while you are backtesting your strategy')
-            exit()
-        if data_schema.backtest_date_start >= data_schema.backtest_date_stop: 
-            print('Error. You have provided "backtest_date_start" is equal or bigger than "backtest_date_start" ')
-            exit()
-        if data_schema.interval.value == STRATEGY_INTERVALS.tick.value: 
-            print('Error. Tick interval is not implemented yet ')
-            exit()
-
-        if [data_schema.backtest_date_start.hour,
-            data_schema.backtest_date_start.minute,
-            data_schema.backtest_date_start.second,
-            data_schema.backtest_date_start.microsecond] != [0,0,0,0]:
-            print('Error. Provide your "backtest_date_start" and "backtest_date_stop" in a day accuracy like: "backtest_date_start": datetime(2020,6,1)')
-            exit()
-
-        number_of_mains = 0
-        for data in data_schema.data:
-            if data.historical_data_source.value not in (HISTORICAL_SOURCES.binance.value, HISTORICAL_SOURCES.ducascopy.value): 
-                print('Error. This historical_data_source not implemented yet')
-                exit()
-            if data.main == True:
-                number_of_mains += 1
-        if number_of_mains != 1:
-            print('Error. Yout "data_schema.py" must have one main instrument')
-            exit()
+    # try:
+    data_schema: DataSchema = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
+    model_module = importlib.import_module('strategies.'+strategy_name+'.model')
+    executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
+    # except Exception as e:
+    #     print('Excepted: ', e)
+    #     print('Error. Excepted while loading modules. Check if all necessery files are in your strategy')
+    #     print('Your strategy in folder strategies/'+strategy_name+'should contain files: "data_schema.py", "executor.py", "model.py"' )
+    #     print('Read more in readme file')
+    #     exit()
 
     class Asd:
         name = "test",
@@ -132,14 +104,30 @@ else:
 
 
 """
+- add data sources:  
+    - implement nasdaq api? https://blog.data.nasdaq.com/getting-started-with-the-nasdaq-data-link-api
+                https://data.nasdaq.com/tools/python
+    - yachoo finance - only day data od slower
+- add checking if symbols are not duplicated in data_schema
+- add checking in data_schema if historical source fits to the interval source.
+- checking if all necessery keys are provoded in .env
 - handle better checking avaliable times than in 'historical_data_feeds/temporary_ducascopy_list.json'
-- handle scenario when your data is too big interval
-zrobic validacje gludosci danych również przy wczytywanieu.
 - interfaces for all functions
 - make all other functions inpossible to use and override in model and executor class.
-- add own interval and own data range for all the insruments in dataschema. it requires an inteligent data integration.
 - what with strategies that wants to play on  many instruments? every instrument will be required to flag as main   
     and the trade function must be overriten for this case and getting one more argument which is instrument.
 - add clean cache command
--Define that credentials are necessery. For example you dont need to pass binance credentials if you not using it.
+- Define that credentials are necessery. For example you dont need to pass binance credentials if you not using it.
+- add warning that first avaliable data will be this earliest feeding data. 
+- make sure charts are printed well when timeframes are not the same in all backtest.
+- pomysl o dodaniu wywalania wartości ceny w tickach ktore są takie same. czesto sie powtarzaja, moznaby odchudzic dane o 80%.
+- tick tada in day csv-s
+- minute data in month csv-s
+- think about requirements that strategies has. all strategy has to has requirements file? what with tensorflow that 
+    sometimes needs more commands?
+    - add custom charts that you areusing in summarison of backtest.
+- add option to stop code durin your backtest and click to make next.
+- uwzglednianie spreadu i prowizji dla  brokera. 
+- zrobić grid sarchea odpalania backtesów z różnymi parametrami.
+- konfiguracja czy chcesz logarytmiczna skalę czy nie. 
 """

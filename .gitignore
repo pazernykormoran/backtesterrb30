@@ -2,8 +2,9 @@
 **/__pycache__
 .additional_configs
 **/data_historical_downloaded
-cache
+cache_ducascopy
 node_modules
 download
 package-lock.json
 package.json
+.vscode
