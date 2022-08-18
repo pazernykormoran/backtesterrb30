@@ -30,6 +30,8 @@ class Backtester(ZMQ):
         self.buy_summary_cost = 0
         self.sell_summary_cost = 0
 
+        self.biggest_investment = 0
+
         self.register("trade", self.__trade_event)
         self.register("data_finish", self.__data_finish_event)
         self.register("close_all_trades", self.__close_all_trades_event)
@@ -73,7 +75,7 @@ class Backtester(ZMQ):
         #plot trades chart
         fig,(ax1,ax2) = plt.subplots(nrows=2, ncols=1, sharex = True)
         ax = self.main_instrument_chart.plot(x ='timestamp', y='price', kind = 'line', ax=ax1)	
-
+        ax.set_yscale('log')
 
         normalized_quants = self.__normalize([abs(trade[2]) for trade in self.trades], (5,15))
 
@@ -115,6 +117,8 @@ class Backtester(ZMQ):
         else:
             self.sell_summary_cost += trade.quantity * trade.price
         local_income =  - self.buy_summary_cost - self.sell_summary_cost + self.number_of_actions * trade.price
+        if abs(trade.price* self.number_of_actions) > self.biggest_investment:
+            self.biggest_investment = abs(trade.price* self.number_of_actions)
         # print('lodal income', local_income)
         self.cumulated_money_chart.append([trade.timestamp, local_income])
 
@@ -135,6 +139,7 @@ class Backtester(ZMQ):
         self._log('buy_summary_cost:', self.buy_summary_cost)
         self._log('sell_summary_cost:', self.sell_summary_cost)
         self._log('number of unrealized actions:', self.number_of_actions)
+        self._log('biggest investment: ', self.biggest_investment)
         self._log('actual price:', finish_params['main_instrument_price'])
         income = - self.buy_summary_cost - self.sell_summary_cost + self.number_of_actions * finish_params['main_instrument_price']
         self._log('income:', income)

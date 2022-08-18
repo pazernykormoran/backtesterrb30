@@ -9,7 +9,7 @@ data={
             'backtest_date_start': datetime(2021,6,1),
             'backtest_date_stop': datetime(2022,8,16),
             'trigger_feed': True,
-            'interval': BINANCE_INTERVALS.day
+            'interval': BINANCE_INTERVALS.hour
         },
         # {
         #     'symbol': 'ETHUSDT',

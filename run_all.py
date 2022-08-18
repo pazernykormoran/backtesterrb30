@@ -125,4 +125,9 @@ else:
 - minute data in month csv-s
 - think about requirements that strategies has. all strategy has to has requirements file? what with tensorflow that 
     sometimes needs more commands?
+    - add custom charts that you areusing in summarison of backtest.
+- add option to stop code durin your backtest and click to make next.
+- uwzglednianie spreadu i prowizji dla  brokera. 
+- zrobić grid sarchea odpalania backtesów z różnymi parametrami.
+- konfiguracja czy chcesz logarytmiczna skalę czy nie. 
 """
