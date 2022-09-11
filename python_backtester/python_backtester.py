@@ -80,7 +80,7 @@ class Backtester(ZMQ):
             if finish_params.custom_charts != None:
                 number_of_custom_charts = len([ch for ch in finish_params.custom_charts if not ch.display_on_price_chart])
 
-
+            #prepare axes
             fig, axs = plt.subplots(nrows=2+number_of_custom_charts, ncols=1, sharex = True)
 
             # plot instrment chart
@@ -100,9 +100,11 @@ class Backtester(ZMQ):
                 for i, ch in enumerate(finish_params.custom_charts):
                     custom_df = pd.DataFrame(ch.chart, columns=['timestamp', ch.name])
                     if ch.display_on_price_chart:
-                        custom_df.plot(x ='timestamp', y=ch.name, kind = 'line', ax=axs[0], sharex = ax)
+                        custom_df.plot(x ='timestamp', y=ch.name, kind = 'line', ax=axs[0], sharex = ax, color = ch.color)
                     else:
-                        custom_df.plot(x ='timestamp', y=ch.name, kind = 'line', ax=axs[2+i], sharex = ax)
+                        ax = custom_df.plot(x ='timestamp', y=ch.name, kind = 'line', ax=axs[2+i], sharex = ax, color = ch.color)
+                        if ch.log_scale:
+                            ax.set_yscale('log')
 
             plt.ion()
             plt.show(block = True)

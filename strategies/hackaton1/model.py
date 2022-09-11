@@ -30,8 +30,8 @@ class Model(Engine):
 
         self.custom_chart1: List[CustomChartElement]= []
         self.custom_chart2: List[CustomChartElement]= []
-        self._add_custom_chart(self.custom_chart1, 'custom1', False)
-        self._add_custom_chart(self.custom_chart2, 'custom2', True)
+        self._add_custom_chart(chart=self.custom_chart1, name='custom1', display_on_price_chart=False, log_scale=True, color='red')
+        self._add_custom_chart(chart=self.custom_chart2, name='custom2', display_on_price_chart=True)
 
 
     #override

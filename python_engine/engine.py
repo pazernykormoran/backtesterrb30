@@ -1,7 +1,7 @@
 
 from abc import abstractmethod
 import asyncio
-from typing import List
+from typing import List, Union
 from libs.interfaces.python_backtester.data_finish import DataFinish as DataFinishBacktester
 from libs.interfaces.python_engine.custom_chart_element import CustomChartElement
 from libs.interfaces.python_engine.data_finish import DataFinish as DataFinishEngine
@@ -74,12 +74,28 @@ class Engine(ZMQ):
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
         return num + 1
     
-    def _add_custom_chart(self, chart: List[CustomChartElement], name: str, display_on_price_chart: bool = False):
+    def _add_custom_chart(self, 
+                    chart: List[CustomChartElement], 
+                    name: str, 
+                    display_on_price_chart: Union[bool, None] = None, 
+                    log_scale: Union[bool, None] = None, 
+                    color: Union[str, None] = None):
+        """
+            - display_on_price_chart: variable indicates if chart should be displayed
+                in the main chart with prices
+            - log_scale: variable indicates if chart should be in the log scale. 
+                Skipped if display_on_price_chart is true because information about this chart is 
+                set in data_schema file
+            - color: color of matplotlib chart for example 'red', 'blue' ..
+        """
         chart_obj = {
             'chart': chart,
             'display_on_price_chart': display_on_price_chart,
             'name': name
         }
+        if display_on_price_chart: chart_obj['display_on_price_chart'] = display_on_price_chart
+        if log_scale: chart_obj['log_scale'] = log_scale
+        if color: chart_obj['color'] = color
         self.__custom_charts.append(chart_obj)
 
     def __get_main_intrument_price(self):
