@@ -144,7 +144,7 @@ class Backtester(ZMQ):
 
     # COMMANDS
 
-    def __data_finish_event(self, finish_params):
+    async def __data_finish_event(self, finish_params):
         finish_params = DataFinish(**finish_params)
         finish_time = tm.time()
         time_of_backtest = finish_time - finish_params.start_time
@@ -165,12 +165,12 @@ class Backtester(ZMQ):
         self.__print_charts(finish_params)
         self.__stop_all_services()
 
-    def __trade_event(self, msg):
+    async def __trade_event(self, msg):
         trade: Trade = Trade(**msg)
         self._log(f"Received trade: {trade}")
         self.__trade(trade)
 
-    def __close_all_trades_event(self, msg):
+    async def __close_all_trades_event(self, msg):
         self._log(f"Received close all trades command")
         msg = CloseAllTrades(**msg)
         msg = dict(msg)

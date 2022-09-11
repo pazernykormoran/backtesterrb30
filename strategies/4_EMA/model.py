@@ -19,7 +19,7 @@ class Model(Engine):
 
         self.rsi_arr = []
 
-    def on_feed(self, buffor: list):
+    async def on_feed(self, buffor: list):
         df = pd.DataFrame(np.array(buffor).T, columns=self._get_columns())
         col = self._get_columns()[-1]
         ema_8 = df[col].ewm(span=8).mean().values[-1]

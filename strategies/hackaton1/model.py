@@ -24,6 +24,7 @@ class Model(Engine):
         self.csv = pd.DataFrame([], columns=self._get_columns())
         self.model = load_model('strategies/'+self.config.strategy_name+'/models/test_model.h5')
         self.scaler = joblib.load('strategies/'+self.config.strategy_name+'/models/scaler.gz')
+        self.reloading_module = self._add_reloading_module('strategies.'+self.config.strategy_name+'.reloading_module.reloading_methods')
 
         self.actual_state = 0
         self.first_trade = True
@@ -35,7 +36,7 @@ class Model(Engine):
 
 
     #override
-    # def on_feed(self, data: list):
+    # async def on_feed(self, data: list):
     #     if self.counter % 30 == 0:
     #         transposed = np.array(data).T
     #         # cut frame to 49/8 size but leave some space (10 frames) for closing trades.
@@ -73,8 +74,8 @@ class Model(Engine):
 
 
 
-    def on_feed(self, data: list):
-        if self.counter % 5 == 0:
+    async def on_feed(self, data: list):
+        if self.counter % 10 == 0:
             transposed = np.array(data).T
             # cut frame to 49/8 size but leave some space (10 frames) for closing trades.
             cut_frame = transposed[:-10]
@@ -101,6 +102,7 @@ class Model(Engine):
                         'price': data[self._get_main_intrument_number()][-1],
                         'timestamp': data[0][-1] 
                     }
+                    
                     #append to custom chart some staff
                     chart_obj = {
                         'timestamp': data[0][-1],
@@ -112,7 +114,8 @@ class Model(Engine):
                         'value': data[self._get_main_intrument_number()][-11] + 100
                     }
                     self.custom_chart2.append(CustomChartElement(**chart_obj))
-
+                    await self._debug_breakpoint()
+                    self.reloading_module.on_feed_reload(data)
                     self._trigger_event(message)
         self.counter += 1
 

@@ -10,7 +10,7 @@ class Model(Engine):
         self._set_buffer_length(200)
 
     #override
-    def on_feed(self, data: list):
+    async def on_feed(self, data: list):
         if self.counter % 1000 == 0:
             quant = randint(-2,2)
             if quant != 0:

@@ -77,12 +77,13 @@ class ZMQ(Service, ABC):
             if self._is_active:
                 data = await sub.recv_multipart()
                 if data:
-                    self._handle(data)
+                    await self._handle(data)
+                await asyncio.sleep(0.00001)
             else:
                 await asyncio.sleep(0.01)
         self._deinit()
 
-    def _handle(self, data):
+    async def _handle(self, data):
         data = [x.decode('utf-8') for x in data]
         if len(data) >= 2:
             topic, cmd, *args = data
@@ -93,9 +94,9 @@ class ZMQ(Service, ABC):
                     args_loaded = []
                     for arg in args:
                         args_loaded.append(loads(arg))
-                    func(*args_loaded)
+                    await func(*args_loaded)
                 else:
-                    func()
+                    await func()
             else:
                 self._log(f"Command '{cmd}' not registered")
 
@@ -105,16 +106,16 @@ class ZMQ(Service, ABC):
         for pub in self._pubs.values():
             pub.close()
 
-    def _stop(self):
+    async def _stop(self):
         self._log("Service stoped")
         self._is_running = False
         _exit(1)
 
-    def _start(self):
+    async def _start(self):
         self._log("Service started")
         self._is_active = True
 
-    def _pause(self):
+    async def _pause(self):
         self._log("Service paused")
         self._is_active = False
 

@@ -77,10 +77,10 @@ class Executor(ZMQ):
 
     #COMMANDS
 
-    def __event_event(self, msg):
+    async def __event_event(self, msg):
         self.__event_price = msg['price']
         self.__event_timestamp = msg['timestamp']
         self.on_event(msg['message'])
 
-    def __set_number_of_actions_event(self, number: int):
+    async def __set_number_of_actions_event(self, number: int):
         self.__number_of_actions = number

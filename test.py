@@ -41,3 +41,9 @@
 # for s in exchange_info['symbols']:
 #     print(s['symbol'])
 # ===========================================
+
+import keyboard  # using module keyboard
+while True:
+    if keyboard.read_key() == "p":
+        print("You pressed p")
+        break

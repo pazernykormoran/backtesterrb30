@@ -1,7 +1,7 @@
 from libs.necessery_imports.data_imports import *
 
-datetime_start = datetime(2022,8,1)
-datatime_finish = datetime(2022,8,15)
+datetime_start = datetime(2022,6,1)
+datatime_finish = datetime(2022,8,1)
 
 data={
     'log_scale_valuation_chart': True,

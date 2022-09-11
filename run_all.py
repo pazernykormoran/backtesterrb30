@@ -126,16 +126,8 @@ else:
 - minute data in month csv-s
 - think about requirements that strategies has. all strategy has to has requirements file? what with tensorflow that 
     sometimes needs more commands?
-    - add custom charts that you areusing in summarison of backtest.
-- add option to stop code durin your backtest and click to make next.
 - uwzglednianie spreadu i prowizji dla  brokera. 
 - zrobić grid sarchea odpalania backtesów z różnymi parametrami.
-- konfiguracja czy chcesz logarytmiczna skalę czy nie. 
 - wywalic konieczność sudo. przy odpalaniu z dockera, sprawdz czy mozesz to zapisywac w folderze danego uzytkownika. 
-- mozliwosc przełączania strategii w tryb przełączania palcem (tryb debug).
-    - kliknij d zeby zatrzymać i wyswietlic charty (wejść do trybu debug).
-    - kliknij n aby przejść do następnego stopu
-    - kliknij l/ql aby odpalić tryb edycji pliku live
-    - kliknij t/qt aby przeskoki były tylko w momencie tradeow.
-    - kliknij q aby wyjść z trybu debug
+
 """

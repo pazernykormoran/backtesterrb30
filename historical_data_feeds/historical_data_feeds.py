@@ -323,5 +323,5 @@ class HistoricalDataFeeds(ZMQ):
 
     # COMMANDS
     
-    def __unlock_historical_sending_event(self):
+    async def __unlock_historical_sending_event(self):
         self.sending_locked = False

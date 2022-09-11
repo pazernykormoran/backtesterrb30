@@ -9,8 +9,10 @@ from libs.zmq.zmq import ZMQ
 from libs.list_of_services.list_of_services import SERVICES
 import pandas as pd
 from libs.data_feeds.data_feeds import DataSchema
-from importlib import import_module
+from importlib import import_module, reload
 from libs.interfaces.utils import JSONSerializable
+import keyboard
+import time
 
 
 class Engine(ZMQ):
@@ -26,13 +28,18 @@ class Engine(ZMQ):
         self.__data_buffer = []
         self.__buffer_length = 100
         self.__custom_charts = []
+        self.__debug_mode = False
+        self.__debug_next_pressed = False
+        self.__reloading_modules = []
 
         self.register("data_feed", self.__data_feed_event_3)
         self.register("historical_sending_locked", self.__historical_sending_locked_event)
         self.register("data_finish", self.__data_finish_event)
 
+    # public methods:
+
     @abstractmethod
-    def on_feed(self, data):
+    async def on_feed(self, data):
         pass
 
     def on_data_finish(self):
@@ -43,7 +50,8 @@ class Engine(ZMQ):
         loop = asyncio.get_event_loop()
         # loop.create_task(self._listen_zmq())
         self._create_listeners(loop)
-        loop.create_task(self.__some_loop())
+        # loop.create_task(self.__some_loop())
+        loop.create_task(self.__keyboard_listener())
         loop.run_forever()
         loop.close()
 
@@ -98,6 +106,32 @@ class Engine(ZMQ):
         if color: chart_obj['color'] = color
         self.__custom_charts.append(chart_obj)
 
+    
+    async def _debug_breakpoint(self):
+        if self.__debug_mode == True:
+            # reload live modules
+            while True:
+                if self.__debug_next_pressed == True:
+                    for module in self.__reloading_modules:
+                        reload(module)
+                    self.__debug_next_pressed = False
+                    return 
+                await asyncio.sleep(0.1)
+
+
+    def _add_reloading_module(self, module: str):
+        """
+            Function gets path to module
+
+            Function returning added module
+        """
+        module = import_module(module)
+        self.__reloading_modules.append(module)
+        return module
+
+
+    #private methods:
+
     def __get_main_intrument_price(self):
          # first function
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
@@ -111,6 +145,35 @@ class Engine(ZMQ):
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
         return self.__data_buffer_dict[num+1][price_delay_steps]
 
+    def __prepare_custom_charts_to_send(self, custom_charts_list):
+        for custom_chart in custom_charts_list:
+            custom_chart['chart'] = [[ch.timestamp, ch.value] for ch in custom_chart['chart'] ]
+        return custom_charts_list
+
+    async def __keyboard_listener(self):
+        while True:
+            if keyboard.is_pressed('d'): 
+                if self.__debug_mode == False:
+                    print('You entered Debug mode')
+                    self.__debug_mode = True
+                while keyboard.is_pressed('d'):
+                    await asyncio.sleep(0.1)
+            if keyboard.is_pressed('n'):
+                if self.__debug_mode == True and self.__debug_next_pressed == False:
+                    print('ext step:')
+                    self.__debug_next_pressed = True
+                while keyboard.is_pressed('n'):
+                    await asyncio.sleep(0.1)
+            if keyboard.is_pressed('q'):
+                if self.__debug_mode == True:
+                    print('You leaved Debug mode')
+                    self.__debug_mode = False
+                    self.__debug_next_pressed = True
+                while keyboard.is_pressed('q'):
+                    await asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)
+
+
     #COMMANDS
     def __data_feed_event_2(self, new_data_row):
         # using this function everythink runs 10 time slower.
@@ -122,31 +185,29 @@ class Engine(ZMQ):
         self.on_feed(self.__data_buffer_pandas)
 
 
-    def __data_feed_event_3(self, new_data_row):
+    async def __data_feed_event_3(self, new_data_row):
+        # await self._debug_breakpoint()
+        # print('asdddas123')
         for i, v in enumerate(new_data_row):
             self.__data_buffer_dict[i].append(v)
         if len(self.__data_buffer_dict[0])>self.__buffer_length:
             for i, v in enumerate(new_data_row):
                 self.__data_buffer_dict[i].pop(0)
-            self.on_feed(self.__data_buffer_dict)
+            await self.on_feed(self.__data_buffer_dict)
 
 
-    def __data_feed_event(self, new_data_row):
+    async def __data_feed_event(self, new_data_row):
         self.__data_buffer.append(new_data_row)
         if len(self.__data_buffer)>self.__buffer_length:
             self.__data_buffer.pop(0)
             self.on_feed(self.__data_buffer)
         
         
-    def __historical_sending_locked_event(self):
+    async def __historical_sending_locked_event(self):
         self._send(SERVICES.historical_data_feeds,'unlock_historical_sending')
 
-    def __prepare_custom_charts_to_send(self, custom_charts_list):
-        for custom_chart in custom_charts_list:
-            custom_chart['chart'] = [[ch.timestamp, ch.value] for ch in custom_chart['chart'] ]
-        return custom_charts_list
     
-    def __data_finish_event(self, finish_params):
+    async def __data_finish_event(self, finish_params):
         finish_params = DataFinishEngine(**finish_params)
         finish_params = dict(finish_params)
         self.on_data_finish()
