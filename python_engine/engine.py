@@ -1,8 +1,10 @@
 
 from abc import abstractmethod
 import asyncio
-from json import dumps, loads
-from typing import Callable, List
+from typing import List
+from libs.interfaces.python_backtester.data_finish import DataFinish as DataFinishBacktester
+from libs.interfaces.python_engine.custom_chart_element import CustomChartElement
+from libs.interfaces.python_engine.data_finish import DataFinish as DataFinishEngine
 from libs.zmq.zmq import ZMQ
 from libs.list_of_services.list_of_services import SERVICES
 import pandas as pd
@@ -23,6 +25,7 @@ class Engine(ZMQ):
         self.__data_buffer_pandas = pd.DataFrame(columns=self.__columns)
         self.__data_buffer = []
         self.__buffer_length = 100
+        self.__custom_charts = []
 
         self.register("data_feed", self.__data_feed_event_3)
         self.register("historical_sending_locked", self.__historical_sending_locked_event)
@@ -65,11 +68,19 @@ class Engine(ZMQ):
             'timestamp': self.__data_buffer_dict[0][-1],
             'message': event
         }
-        self._send(SERVICES.python_executor,'event', dumps(msg))
+        self._send(SERVICES.python_executor,'event', msg)
 
     def _get_main_intrument_number(self):
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
         return num + 1
+    
+    def _add_custom_chart(self, chart: List[CustomChartElement], name: str, display_on_price_chart: bool = False):
+        chart_obj = {
+            'chart': chart,
+            'display_on_price_chart': display_on_price_chart,
+            'name': name
+        }
+        self.__custom_charts.append(chart_obj)
 
     def __get_main_intrument_price(self):
          # first function
@@ -87,7 +98,6 @@ class Engine(ZMQ):
     #COMMANDS
     def __data_feed_event_2(self, new_data_row):
         # using this function everythink runs 10 time slower.
-        new_data_row = loads(new_data_row)
         if self.__data_buffer_pandas.shape[0]>self.__buffer_length:
             self.__data_buffer_pandas.drop(self.__data_buffer_pandas.head(1).index,inplace=True)
         new_data_df = pd.DataFrame([new_data_row], columns=self.__columns)
@@ -97,8 +107,6 @@ class Engine(ZMQ):
 
 
     def __data_feed_event_3(self, new_data_row):
-        new_data_row = loads(new_data_row)
-        # self.__data_buffer.append(new_data_row)
         for i, v in enumerate(new_data_row):
             self.__data_buffer_dict[i].append(v)
         if len(self.__data_buffer_dict[0])>self.__buffer_length:
@@ -108,7 +116,6 @@ class Engine(ZMQ):
 
 
     def __data_feed_event(self, new_data_row):
-        new_data_row = loads(new_data_row)
         self.__data_buffer.append(new_data_row)
         if len(self.__data_buffer)>self.__buffer_length:
             self.__data_buffer.pop(0)
@@ -116,17 +123,22 @@ class Engine(ZMQ):
         
         
     def __historical_sending_locked_event(self):
-        # self._log('sending unlocked to historical data feeds')
         self._send(SERVICES.historical_data_feeds,'unlock_historical_sending')
 
+    def __prepare_custom_charts_to_send(self, custom_charts_list):
+        for custom_chart in custom_charts_list:
+            custom_chart['chart'] = [[ch.timestamp, ch.value] for ch in custom_chart['chart'] ]
+        return custom_charts_list
     
     def __data_finish_event(self, finish_params):
+        finish_params = DataFinishEngine(**finish_params)
+        finish_params = dict(finish_params)
         self.on_data_finish()
-        finish_params = loads(finish_params)
+        finish_params['custom_charts'] = self.__prepare_custom_charts_to_send(self.__custom_charts) 
         if len(self.__data_buffer_dict[0]) == 0: 
             self._log('No data has received')
             finish_params['main_instrument_price'] = 0
         else:
             finish_params['main_instrument_price'] = self.__get_main_intrument_price_3()
         
-        self._send(SERVICES.python_backtester, 'data_finish', dumps(finish_params))
+        self._send(SERVICES.python_backtester, 'data_finish', DataFinishBacktester(**finish_params))

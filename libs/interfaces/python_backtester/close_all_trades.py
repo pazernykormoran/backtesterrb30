@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 
-
-
-class DataFrame(BaseModel):
+class CloseAllTrades(BaseModel):
+    price: float
     timestamp: int

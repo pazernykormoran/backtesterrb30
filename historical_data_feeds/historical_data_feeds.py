@@ -1,7 +1,7 @@
 
-from abc import abstractmethod
 import asyncio
 from typing import List
+from libs.interfaces.python_engine.data_finish import DataFinish
 from libs.zmq.zmq import ZMQ
 from libs.list_of_services.list_of_services import SERVICES, SERVICES_ARRAY
 from libs.data_feeds.data_feeds import HISTORICAL_SOURCES, DataSchema, DataSymbol
@@ -10,7 +10,6 @@ from historical_data_feeds.modules.dukascopy import *
 from historical_data_feeds.modules.rb30_disk import *
 from libs.interfaces.config import Config
 from importlib import import_module
-from json import dumps
 from datetime import datetime, timezone
 from os import path, mkdir, getenv
 from os import listdir
@@ -18,8 +17,6 @@ from os.path import isfile, join
 from binance import Client
 import pandas as pd
 from os import mkdir
-import time
-
 import time as tm
 
 class HistoricalDataFeeds(ZMQ):
@@ -78,7 +75,7 @@ class HistoricalDataFeeds(ZMQ):
                 data_part = self.__load_data_frame_ticks(self.downloaded_data_path, last_row, one_year_array)
                 for row in data_part:
                     last_row = row
-                    self._send(SERVICES.python_engine,'data_feed',dumps(list(last_row)))
+                    self._send(SERVICES.python_engine,'data_feed',list(last_row))
                     sending_counter += 1
                     if sending_counter % 1000 == 0:
                         self.sending_locked = True
@@ -92,7 +89,8 @@ class HistoricalDataFeeds(ZMQ):
                 'file_names': self.file_names_to_load,
                 'start_time': start_time
             }
-            self._send(SERVICES.python_engine, 'data_finish', dumps(finish_params))
+            
+            self._send(SERVICES.python_engine, 'data_finish', DataFinish(**finish_params))
 
         else:
             self._log("Error. Not all of the data has been downloaded, exiting")

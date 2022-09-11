@@ -108,6 +108,7 @@ else:
     - implement nasdaq api? https://blog.data.nasdaq.com/getting-started-with-the-nasdaq-data-link-api
                 https://data.nasdaq.com/tools/python
     - yachoo finance - only day data od slower
+    - coingecko api.
 - add checking if symbols are not duplicated in data_schema
 - add checking in data_schema if historical source fits to the interval source.
 - checking if all necessery keys are provoded in .env
@@ -130,4 +131,11 @@ else:
 - uwzglednianie spreadu i prowizji dla  brokera. 
 - zrobić grid sarchea odpalania backtesów z różnymi parametrami.
 - konfiguracja czy chcesz logarytmiczna skalę czy nie. 
+- wywalic konieczność sudo. przy odpalaniu z dockera, sprawdz czy mozesz to zapisywac w folderze danego uzytkownika. 
+- mozliwosc przełączania strategii w tryb przełączania palcem (tryb debug).
+    - kliknij d zeby zatrzymać i wyswietlic charty (wejść do trybu debug).
+    - kliknij n aby przejść do następnego stopu
+    - kliknij l/ql aby odpalić tryb edycji pliku live
+    - kliknij t/qt aby przeskoki były tylko w momencie tradeow.
+    - kliknij q aby wyjść z trybu debug
 """

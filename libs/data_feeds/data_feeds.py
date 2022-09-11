@@ -64,6 +64,7 @@ class DataSymbol(BaseModel):
 
 
 class DataSchema(BaseModel):
+    log_scale_valuation_chart: Optional[bool] = True
     data: List[DataSymbol]
 
 

@@ -1,12 +1,10 @@
 
 from abc import abstractmethod
-from concurrent.futures import Executor
-
 import asyncio
 import json
-from typing import Callable, List
+from libs.interfaces.python_backtester.close_all_trades import CloseAllTrades
+from libs.interfaces.python_backtester.trade import Trade
 from libs.zmq.zmq import ZMQ
-import time
 
 from libs.list_of_services.list_of_services import SERVICES
 
@@ -56,7 +54,7 @@ class Executor(ZMQ):
                 'price': price,
                 'timestamp': timestamp
             }
-            self._send(SERVICES.python_backtester, 'trade', json.dumps(trade_params))
+            self._send(SERVICES.python_backtester, 'trade', Trade(**trade_params))
             return True
         else:
             # TODO trade in real broker
@@ -64,11 +62,12 @@ class Executor(ZMQ):
 
     def _close_all_trades(self):
         if self.config.backtest == True:
-            trade_params = {
+            close_all_trades_params = {
                 'price': self.__event_price,
                 'timestamp': self.__event_timestamp
             }
-            self._send(SERVICES.python_backtester, 'close_all_trades', json.dumps(trade_params))
+            
+            self._send(SERVICES.python_backtester, 'close_all_trades', CloseAllTrades(**close_all_trades_params))
         else:
             # TODO trade in real broker
             pass
@@ -78,8 +77,7 @@ class Executor(ZMQ):
 
     #COMMANDS
 
-    def __event_event(self, data):
-        msg = json.loads(data)
+    def __event_event(self, msg):
         self.__event_price = msg['price']
         self.__event_timestamp = msg['timestamp']
         self.on_event(msg['message'])

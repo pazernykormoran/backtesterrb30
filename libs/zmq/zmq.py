@@ -9,6 +9,8 @@ from libs.zmq.service import Service
 from libs.interfaces.config import Config
 from os import _exit
 from pydantic import BaseModel
+from json import dumps, loads
+
 
 class ZMQ(Service, ABC):
 
@@ -40,12 +42,13 @@ class ZMQ(Service, ABC):
         super().run()
 
     # override
-    def _send(self, service: SERVICES, msg: dict or BaseModel, *args):
-        if isinstance(msg,BaseModel):
-            msg = msg.dict()
+    def _send(self, service: SERVICES, msg: str, *args):
         if self._is_active:
             data = [service.value.encode('utf-8'), msg.encode('utf-8')]
             for arg in args:
+                if isinstance(arg,BaseModel):
+                    arg = arg.dict()
+                arg = dumps(arg)
                 data.append(arg.encode('utf-8'))
             self._pub.send_multipart(data)
 
@@ -87,7 +90,10 @@ class ZMQ(Service, ABC):
             if func:
                 # self._log(f'Receive "{cmd}" command')
                 if args:
-                    func(*args)
+                    args_loaded = []
+                    for arg in args:
+                        args_loaded.append(loads(arg))
+                    func(*args_loaded)
                 else:
                     func()
             else:
