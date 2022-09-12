@@ -37,17 +37,16 @@ class Backtester(ZMQ):
         self.__file_names = []
         self.__backtest_start_time = 0
 
-        self.register("trade", self.__trade_event)
-        self.register("data_finish", self.__data_finish_event)
-        self.register("close_all_trades", self.__close_all_trades_event)
-        self.register("data_start", self.__data_start_event)
-        self.register("debug_breakpoint", self.__debug_breakpoint_event)
+        self._register("trade", self.__trade_event)
+        self._register("data_finish", self.__data_finish_event)
+        self._register("close_all_trades", self.__close_all_trades_event)
+        self._register("data_start", self.__data_start_event)
+        self._register("debug_breakpoint", self.__debug_breakpoint_event)
 
     # override
     def _loop(self):
         loop = asyncio.get_event_loop()
         self._create_listeners(loop)
-        # loop.create_task(self._listen_zmq())
         loop.run_forever()
         loop.close()
 
@@ -65,7 +64,7 @@ class Backtester(ZMQ):
     async def __stop_all_services(self):
         for service in SERVICES_ARRAY:
             if service != self.name:
-                self._send(getattr(SERVICES, service), 'stop')
+                super()._send(getattr(SERVICES, service), 'stop')
         await self._stop()
 
     async def __print_charts(self, file_names: List[str], 
@@ -141,7 +140,7 @@ class Backtester(ZMQ):
         # print('lodal income', local_income)
         self.cumulated_money_chart.append([trade.timestamp, local_income])
 
-        self._send(SERVICES.python_executor, 'set_number_of_actions', self.number_of_actions)
+        super()._send(SERVICES.python_executor, 'set_number_of_actions', self.number_of_actions)
 
     async def __print_summary(self, 
                 custom_charts: List[CustomChart], 

@@ -46,7 +46,7 @@ class HistoricalDataFeeds(ZMQ):
         self.data_parts = self.__prepare_loading_data_structure(self.__file_names_to_load)
 
         # register commands
-        self.register("unlock_historical_sending", self.__unlock_historical_sending_event)
+        self._register("unlock_historical_sending", self.__unlock_historical_sending_event)
 
     # override
     def _loop(self):
@@ -75,7 +75,7 @@ class HistoricalDataFeeds(ZMQ):
                 'file_names': self.__file_names_to_load,
                 'start_time': self.__start_time
             }
-            self._send(SERVICES.python_backtester, 'data_start', DataStart(**start_params))
+            super()._send(SERVICES.python_backtester, 'data_start', DataStart(**start_params))
 
             last_row = []
             for _, one_year_array in self.data_parts.items():
@@ -83,17 +83,17 @@ class HistoricalDataFeeds(ZMQ):
                 data_part = self.__load_data_frame_ticks(self.downloaded_data_path, last_row, one_year_array)
                 for row in data_part:
                     last_row = row
-                    self._send(SERVICES.python_engine,'data_feed',list(last_row))
+                    super()._send(SERVICES.python_engine,'data_feed',list(last_row))
                     sending_counter += 1
                     if sending_counter % 1000 == 0:
                         self.__sending_locked = True
-                        self._send(SERVICES.python_engine, 'historical_sending_locked')
+                        super()._send(SERVICES.python_engine, 'historical_sending_locked')
                         while self.__sending_locked:
                             await asyncio.sleep(0.01)
             #     self._log('=================== datapart has finished')
             # self._log('=================== Historical data has finished')
 
-            self._send(SERVICES.python_engine, 'data_finish')
+            super()._send(SERVICES.python_engine, 'data_finish')
 
         else:
             self._log("Error. Not all of the data has been downloaded, exiting")
@@ -224,7 +224,7 @@ class HistoricalDataFeeds(ZMQ):
     def __stop_all_services(self):
         for service in SERVICES_ARRAY:
             if service != self.name:
-                self._send(getattr(SERVICES, service), 'stop')
+                super()._send(getattr(SERVICES, service), 'stop')
         self._stop()
 
     def __map_raw_to_instruments(self, raw: list, instruments: list):

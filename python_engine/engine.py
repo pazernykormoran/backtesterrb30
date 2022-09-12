@@ -30,10 +30,9 @@ class Engine(ZMQ):
         self.__send_breakpoint_after_feed = False
         self.__backtest_finished = False
 
-        self.register("data_feed", self.__data_feed_event)
-        self.register("historical_sending_locked", self.__historical_sending_locked_event)
-        self.register("data_finish", self.__data_finish_event)
-
+        super()._register("data_feed", self.__data_feed_event)
+        super()._register("historical_sending_locked", self.__historical_sending_locked_event)
+        super()._register("data_finish", self.__data_finish_event)
 
     # public methods:
     # ==================================================================
@@ -44,20 +43,6 @@ class Engine(ZMQ):
 
 
     def on_data_finish(self):
-        pass
-
-
-    # override
-    def _loop(self):
-        loop = asyncio.get_event_loop()
-        self._create_listeners(loop)
-        loop.create_task(self.__keyboard_listener())
-        loop.run_forever()
-        loop.close()
-
-
-    # override
-    def _handle_zmq_message(self, message):
         pass
 
 
@@ -81,7 +66,7 @@ class Engine(ZMQ):
             'timestamp': self.__data_buffer_dict[0][-1],
             'message': event
         }
-        self._send(SERVICES.python_executor,'event', msg)
+        super()._send(SERVICES.python_executor,'event', msg)
 
 
     def _get_main_intrument_number(self):
@@ -151,13 +136,32 @@ class Engine(ZMQ):
 
     #private methods:
 
+    def _send(): pass
+    def _register(): pass
+    def _create_listeners(): pass
+
+
+    # override
+    def _loop(self):
+        loop = asyncio.get_event_loop()
+        super()._create_listeners(loop)
+        loop.create_task(self.__keyboard_listener())
+        loop.run_forever()
+        loop.close()
+
+
+    # override
+    def _handle_zmq_message(self, message):
+        pass
+
+
     def __send_debug_breakpoint(self):
         breakpoint_params= {}
         breakpoint_params['last_timestamp'] = self.__data_buffer_dict[0][-1]
         breakpoint_params['main_instrument_price'] = self.__get_main_intrument_price()
         breakpoint_params['custom_charts'] = self.__custom_charts
         self._log('sending debug breakpoint')
-        self._send(SERVICES.python_executor,'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
+        super()._send(SERVICES.python_executor,'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
 
     def __get_main_intrument_price(self, price_delay_steps = -1):
         if len(self.__data_buffer_dict[0]) == 0: 
@@ -210,7 +214,7 @@ class Engine(ZMQ):
         
         
     async def __historical_sending_locked_event(self):
-        self._send(SERVICES.historical_data_feeds,'unlock_historical_sending')
+        super()._send(SERVICES.historical_data_feeds,'unlock_historical_sending')
 
     
     async def __data_finish_event(self):
@@ -220,4 +224,4 @@ class Engine(ZMQ):
         finish_params = {}
         finish_params['custom_charts'] = self.__custom_charts
         finish_params['main_instrument_price'] = self.__get_main_intrument_price()
-        self._send(SERVICES.python_backtester, 'data_finish', DataFinish(**finish_params))
+        super()._send(SERVICES.python_backtester, 'data_finish', DataFinish(**finish_params))
