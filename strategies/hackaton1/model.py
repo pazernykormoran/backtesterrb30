@@ -87,7 +87,7 @@ class Model(Engine):
                 quant = int(pred.sum())
                 # quant = 5
                 if quant != 0:
-
+                    await self._debug_breakpoint()
                     # open trade
                     message = {
                         'value': quant,
@@ -114,9 +114,9 @@ class Model(Engine):
                         'value': data[self._get_main_intrument_number()][-11] + 100
                     }
                     self.custom_chart2.append(CustomChartElement(**chart_obj))
-                    await self._debug_breakpoint()
                     self.reloading_module.on_feed_reload(data)
                     self._trigger_event(message)
+                    
         self.counter += 1
 
     def on_data_finish(self):

@@ -6,7 +6,7 @@ function ctrl_c() {
         exit 2
 }
 
-sleep 5
+# sleep 5
 
 sudo python3 serve.py python_backtester &
 sudo python3 serve.py python_engine &

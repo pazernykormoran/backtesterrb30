@@ -1,6 +1,8 @@
 
 import asyncio
 from libs.interfaces.python_backtester.close_all_trades import CloseAllTrades
+from libs.interfaces.python_backtester.data_start import DataStart
+from libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
 from libs.zmq.zmq import ZMQ
 from libs.interfaces.python_backtester.trade import Trade
 from libs.interfaces.python_backtester.money_state import MoneyState
@@ -13,6 +15,7 @@ from os.path import join
 import matplotlib.pyplot as plt
 import time as tm
 import numpy as np
+from typing import List, Union
 
 class Backtester(ZMQ):
     
@@ -30,12 +33,15 @@ class Backtester(ZMQ):
         self.number_of_actions = 0
         self.buy_summary_cost = 0
         self.sell_summary_cost = 0
-
         self.biggest_investment = 0
+        self.__file_names = []
+        self.__backtest_start_time = 0
 
         self.register("trade", self.__trade_event)
         self.register("data_finish", self.__data_finish_event)
         self.register("close_all_trades", self.__close_all_trades_event)
+        self.register("data_start", self.__data_start_event)
+        self.register("debug_breakpoint", self.__debug_breakpoint_event)
 
     # override
     def _loop(self):
@@ -56,35 +62,30 @@ class Backtester(ZMQ):
     def _trigger_event(self, event):
         pass
     
-    def __stop_all_services(self):
+    async def __stop_all_services(self):
         for service in SERVICES_ARRAY:
             if service != self.name:
                 self._send(getattr(SERVICES, service), 'stop')
-        self._stop()
+        await self._stop()
 
-    def __print_charts(self, finish_params: DataFinish):
+    async def __print_charts(self, file_names: List[str], 
+                    custom_charts: List[CustomChart], 
+                    last_timestamp: Union[int, None] = None):
+        plt.close()
         if len(self.cumulated_money_chart) > 0:
-            main_instrument_name = [element.symbol for element in self.data_schema.data if element.main == True][0]
-            # print('main instrument name', main_instrument_name)
-            files = [f for f in finish_params.file_names if main_instrument_name in f]
-            # print('files', files)
-            dfs = []
-            for file in files:
-                df = pd.read_csv(join(self.downloaded_data_path, file), index_col=None, header=None, names=['timestamp', 'price'])
-                dfs.append(df)
-            self.main_instrument_chart = pd.concat(dfs)
-
             #plot trades chart
-            custom_charts = []
             number_of_custom_charts = 0
-            if finish_params.custom_charts != None:
-                number_of_custom_charts = len([ch for ch in finish_params.custom_charts if not ch.display_on_price_chart])
+            if custom_charts != None:
+                number_of_custom_charts = len([ch for ch in custom_charts if not ch.display_on_price_chart])
 
             #prepare axes
             fig, axs = plt.subplots(nrows=2+number_of_custom_charts, ncols=1, sharex = True)
 
             # plot instrment chart
-            ax = self.main_instrument_chart.plot(x ='timestamp', y='price', kind = 'line', ax=axs[0])
+            main_chart = self.main_instrument_chart
+            if last_timestamp != None:
+                main_chart = self.main_instrument_chart.loc[self.main_instrument_chart['timestamp'] <= last_timestamp]
+            ax = main_chart.plot(x ='timestamp', y='price', kind = 'line', ax=axs[0])
             if self.data_schema.log_scale_valuation_chart:	
                 ax.set_yscale('log')
             normalized_quants = self.__normalize([abs(trade[2]) for trade in self.trades], (5,15))   
@@ -96,9 +97,10 @@ class Backtester(ZMQ):
             money_df.plot(x ='timestamp', y='income', kind = 'line', ax=axs[1], sharex = ax)
 
             #plot custom charts
-            if finish_params.custom_charts != None:
-                for i, ch in enumerate(finish_params.custom_charts):
-                    custom_df = pd.DataFrame(ch.chart, columns=['timestamp', ch.name])
+            if custom_charts != None:
+                for i, ch in enumerate(custom_charts):
+                    chart = [[c.timestamp, c.value] for c in ch.chart ]
+                    custom_df = pd.DataFrame(chart, columns=['timestamp', ch.name])
                     if ch.display_on_price_chart:
                         custom_df.plot(x ='timestamp', y=ch.name, kind = 'line', ax=axs[0], sharex = ax, color = ch.color)
                     else:
@@ -107,9 +109,9 @@ class Backtester(ZMQ):
                             ax.set_yscale('log')
 
             plt.ion()
-            plt.show(block = True)
-
-            print('Finish breakpoint')
+            # plt.show(block = False)
+            fig.canvas.draw()
+            fig.canvas.flush_events()
 
     def __normalize(self, x, newRange=(0, 1)): #x is an array. Default range is between zero and one
         if len(x) == 0:
@@ -141,29 +143,41 @@ class Backtester(ZMQ):
 
         self._send(SERVICES.python_executor, 'set_number_of_actions', self.number_of_actions)
 
-
-    # COMMANDS
-
-    async def __data_finish_event(self, finish_params):
-        finish_params = DataFinish(**finish_params)
+    async def __print_summary(self, 
+                custom_charts: List[CustomChart], 
+                file_names: List[str],
+                main_instrument_price: float,
+                last_timestamp: Union[int, None] = None):
+        self._log('==========================')
+        self._log('SUMMARY')
         finish_time = tm.time()
-        time_of_backtest = finish_time - finish_params.start_time
-        self._log('')
-        self._log('========================================================')
-        self._log('BACKTEST FINISHED')
+        time_of_backtest = finish_time - self.__backtest_start_time
         self._log('time of backtest:', round(time_of_backtest,2), '[s]')
         self._log('number of trades:', len(self.trades))
         self._log('buy_summary_cost:', self.buy_summary_cost)
         self._log('sell_summary_cost:', self.sell_summary_cost)
         self._log('number of unrealized actions:', self.number_of_actions)
         self._log('biggest investment: ', self.biggest_investment)
-        self._log('actual price:', finish_params.main_instrument_price)
-        income = - self.buy_summary_cost - self.sell_summary_cost + self.number_of_actions * finish_params.main_instrument_price
+        self._log('actual price:', main_instrument_price)
+        income = - self.buy_summary_cost - self.sell_summary_cost + self.number_of_actions * main_instrument_price
         self._log('income:', income)
-        self._log('========================================================')
+        self._log('==========================')
         self._log('')
-        self.__print_charts(finish_params)
-        self.__stop_all_services()
+        await self.__print_charts(file_names, custom_charts, last_timestamp)
+
+    # COMMANDS
+
+    async def __data_finish_event(self, finish_params):
+        finish_params = DataFinish(**finish_params)
+        self._log('')
+        self._log('====================================================')
+        self._log('BACKTEST FINISHED')
+        await self.__print_summary(finish_params.custom_charts, 
+                    self.__file_names, 
+                    finish_params.main_instrument_price)
+        self._log('====================================================')
+        plt.show(block = True)
+        await self.__stop_all_services()
 
     async def __trade_event(self, msg):
         trade: Trade = Trade(**msg)
@@ -177,5 +191,24 @@ class Backtester(ZMQ):
         msg["quantity"] = -self.number_of_actions
         trade: Trade = Trade(**msg)
         self.__trade(trade)
+
+    async def __data_start_event(self, start_params):
+        start_params = DataStart(**start_params)
+        self.__file_names = start_params.file_names
+        self.__backtest_start_time = start_params.start_time
+        main_instrument_name = [element.symbol for element in self.data_schema.data if element.main == True][0]
+        files = [f for f in self.__file_names if main_instrument_name in f]
+        dfs = []
+        for file in files:
+            df = pd.read_csv(join(self.downloaded_data_path, file), index_col=None, header=None, names=['timestamp', 'price'])
+            dfs.append(df)
+        self.main_instrument_chart = pd.concat(dfs)
+
+    async def __debug_breakpoint_event(self, breakpoint_params):
+        breakpoint_params = DebugBreakpoint(**breakpoint_params)
+        await self.__print_summary(breakpoint_params.custom_charts, 
+                    self.__file_names, 
+                    breakpoint_params.main_instrument_price,
+                    breakpoint_params.last_timestamp)
 
 

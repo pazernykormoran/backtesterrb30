@@ -1,7 +1,7 @@
 
 import asyncio
 from typing import List
-from libs.interfaces.python_engine.data_finish import DataFinish
+from libs.interfaces.python_backtester.data_start import DataStart
 from libs.zmq.zmq import ZMQ
 from libs.list_of_services.list_of_services import SERVICES, SERVICES_ARRAY
 from libs.data_feeds.data_feeds import HISTORICAL_SOURCES, DataSchema, DataSymbol
@@ -33,16 +33,17 @@ class HistoricalDataFeeds(ZMQ):
             binance_api_key=getenv("binance_api_key")
             self.__client = Client(binance_api_key, binance_api_secret)
             
-        self.sending_locked = False
+        self.__sending_locked = False
+        self.__start_time = 0
         if not self.__validate_data_schema_instruments(self.__data_schema.data): 
             self.__stop_all_services()
         self.__validate_downloaded_data_folder()
-        self.file_names_to_load, self.data_to_download =  self.__check_if_all_data_exists(self.__data_schema.data)
-        if len(self.data_to_download) > 0:
-            if not self.__download_data(self.data_to_download):
+        self.__file_names_to_load, self.__data_to_download =  self.__check_if_all_data_exists(self.__data_schema.data)
+        if len(self.__data_to_download) > 0:
+            if not self.__download_data(self.__data_to_download):
                 self._log('Error while downloading')
                 self.__stop_all_services()
-        self.data_parts = self.__prepare_loading_data_structure(self.file_names_to_load)
+        self.data_parts = self.__prepare_loading_data_structure(self.__file_names_to_load)
 
         # register commands
         self.register("unlock_historical_sending", self.__unlock_historical_sending_event)
@@ -63,12 +64,19 @@ class HistoricalDataFeeds(ZMQ):
         self._log('waiting for all ports starts up')
         await asyncio.sleep(0.5)
 
-        if self.__data_downloaded(self.data_to_download): 
+        if self.__data_downloaded(self.__data_to_download): 
             self._log('All data has been downloaded')
             
             sending_counter = 0
             self._log('Starting data loop')
-            start_time = tm.time()
+            self.__start_time = tm.time()
+            
+            start_params = {
+                'file_names': self.__file_names_to_load,
+                'start_time': self.__start_time
+            }
+            self._send(SERVICES.python_backtester, 'data_start', DataStart(**start_params))
+
             last_row = []
             for _, one_year_array in self.data_parts.items():
                 self._log('Synchronizing part of data')
@@ -78,19 +86,14 @@ class HistoricalDataFeeds(ZMQ):
                     self._send(SERVICES.python_engine,'data_feed',list(last_row))
                     sending_counter += 1
                     if sending_counter % 1000 == 0:
-                        self.sending_locked = True
+                        self.__sending_locked = True
                         self._send(SERVICES.python_engine, 'historical_sending_locked')
-                        while self.sending_locked:
+                        while self.__sending_locked:
                             await asyncio.sleep(0.01)
-                self._log('=================== datapart has finished')
-            self._log('=================== Historical data has finished')
-            
-            finish_params = {
-                'file_names': self.file_names_to_load,
-                'start_time': start_time
-            }
-            
-            self._send(SERVICES.python_engine, 'data_finish', DataFinish(**finish_params))
+            #     self._log('=================== datapart has finished')
+            # self._log('=================== Historical data has finished')
+
+            self._send(SERVICES.python_engine, 'data_finish')
 
         else:
             self._log("Error. Not all of the data has been downloaded, exiting")
@@ -324,4 +327,4 @@ class HistoricalDataFeeds(ZMQ):
     # COMMANDS
     
     async def __unlock_historical_sending_event(self):
-        self.sending_locked = False
+        self.__sending_locked = False

@@ -3,6 +3,7 @@ from abc import abstractmethod
 import asyncio
 import json
 from libs.interfaces.python_backtester.close_all_trades import CloseAllTrades
+from libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
 from libs.interfaces.python_backtester.trade import Trade
 from libs.zmq.zmq import ZMQ
 
@@ -17,6 +18,7 @@ class Executor(ZMQ):
 
         self.register("event", self.__event_event)
         self.register("set_number_of_actions", self.__set_number_of_actions_event)
+        self.register("debug_breakpoint", self.__debug_breakpoint_event)
 
 
     @abstractmethod
@@ -84,3 +86,6 @@ class Executor(ZMQ):
 
     async def __set_number_of_actions_event(self, number: int):
         self.__number_of_actions = number
+
+    async def __debug_breakpoint_event(self, breakpoint_params):
+        self._send(SERVICES.python_backtester, 'debug_breakpoint', DebugBreakpoint(**breakpoint_params))

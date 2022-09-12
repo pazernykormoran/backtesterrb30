@@ -129,5 +129,6 @@ else:
 - uwzglednianie spreadu i prowizji dla  brokera. 
 - zrobić grid sarchea odpalania backtesów z różnymi parametrami.
 - wywalic konieczność sudo. przy odpalaniu z dockera, sprawdz czy mozesz to zapisywac w folderze danego uzytkownika. 
-
+    Problem jest taki ze do debg moda uzywam keyboard.
+- add live realoding charts in debug mode without closing them and show them again.
 """
