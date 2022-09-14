@@ -36,6 +36,8 @@ class Backtester(ZMQ):
         self.biggest_investment = 0
         self.__file_names = []
         self.__backtest_start_time = 0
+        self.__fig = None
+        self.__chart_displayed = False
 
         self._register("trade", self.__trade_event)
         self._register("data_finish", self.__data_finish_event)
@@ -47,6 +49,7 @@ class Backtester(ZMQ):
     def _loop(self):
         loop = asyncio.get_event_loop()
         self._create_listeners(loop)
+        loop.create_task(self.__update_chart())
         loop.run_forever()
         loop.close()
 
@@ -65,7 +68,7 @@ class Backtester(ZMQ):
         for service in SERVICES_ARRAY:
             if service != self.name:
                 super()._send(getattr(SERVICES, service), 'stop')
-        await self._stop()
+        self._stop()
 
     async def __print_charts(self, file_names: List[str], 
                     custom_charts: List[CustomChart], 
@@ -78,7 +81,7 @@ class Backtester(ZMQ):
                 number_of_custom_charts = len([ch for ch in custom_charts if not ch.display_on_price_chart])
 
             #prepare axes
-            fig, axs = plt.subplots(nrows=2+number_of_custom_charts, ncols=1, sharex = True)
+            self.__fig, axs = plt.subplots(nrows=2+number_of_custom_charts, ncols=1, sharex = True)
 
             # plot instrment chart
             main_chart = self.main_instrument_chart
@@ -106,11 +109,20 @@ class Backtester(ZMQ):
                         ax = custom_df.plot(x ='timestamp', y=ch.name, kind = 'line', ax=axs[2+i], sharex = ax, color = ch.color)
                         if ch.log_scale:
                             ax.set_yscale('log')
+            if self.__chart_displayed == False:
+                plt.ion()
+                plt.show(block = False)
+                self.__chart_displayed = True
 
-            plt.ion()
-            # plt.show(block = False)
-            fig.canvas.draw()
-            fig.canvas.flush_events()
+    async def __update_chart(self): 
+        while True:
+            if self.__fig != None:
+                try:
+                    self.__fig.canvas.draw()
+                    self.__fig.canvas.flush_events()
+                except Exception as e: 
+                    pass
+            await asyncio.sleep(0.1)
 
     def __normalize(self, x, newRange=(0, 1)): #x is an array. Default range is between zero and one
         if len(x) == 0:
@@ -148,7 +160,7 @@ class Backtester(ZMQ):
                 main_instrument_price: float,
                 last_timestamp: Union[int, None] = None):
         self._log('==========================')
-        self._log('SUMMARY')
+        self._log(('BREAKPOINT ' if last_timestamp != None else '') + 'SUMMARY')
         finish_time = tm.time()
         time_of_backtest = finish_time - self.__backtest_start_time
         self._log('time of backtest:', round(time_of_backtest,2), '[s]')

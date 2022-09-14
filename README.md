@@ -76,11 +76,14 @@ Avaliable methods to overload:
 - "on_data_finish"
 
 Avaliable methods to use: 
-- "_get_main_intrument_number"
-- "_get_columns"
-- "_set_buffer_length"
-- "_trigger_event"
-- "_log"
+- "_get_columns" - Gets instrument names in proper order fitting to data provided to "on_feed" method.
+- "_get_main_intrument_number" - Gets number of instrument in your data array that is main instrument.
+- "_set_buffer_length" - Sets data buffer length provided to "on_feed" method
+- "_trigger_event" - Triggers Trade executor "event" method.
+- "_add_custom_chart" - Adds custom chart printed in summary.
+- "_debug_breakpoint" - Adds breakpoint where your code stops in debug mode.
+- "_add_reloading_module" - Add module that is going to be live reloaded while using debug mode.
+- "_log" - triggers console log
 ~~~
 
 from libs.necessery_imports.model_imports import *
@@ -132,6 +135,26 @@ class TradeExecutor(Executor):
         self._trade(trade_value)
 ~~~
 
+# Debug mode
+
+## Usage of debug mode
+Framework gives you access to debug mode that allows you printing summary charts and descriptions every step of your debug. To enable use debug while implementing your strategy follow below steps:
+- Somewhere in your "on_feed" method use "_debug_breakpoint" method. This works as breakpoint while debugging. The code will stop in this place.
+- Run your strategy backtest and press "d" letter in any moment during backtest loop. This will cause entering debug mode and stopping the code in the nearest moment when your code occurs "_debug_breakpoint" function. You should also se summary and charts printed for current moment of backtest.
+- Press "n" button for next or "q" for quit debug mode.
+
+#TODO gif
+
+## Live code reloads
+Debug mode enables user to develop his strategies live with backtest running in debud mode. Thats only possible importable modules to bo live reloaded. To achive this use "_add_reloading_module(path_to_module)" in the init function in your Model class. As an argument to the function pass the path to the module you are goint to be reloaded after every step of your debug.
+
+To preview how it works you can run example strategy in "TODO"
+
+example:
+
+~~~
+# TODO
+~~~
 
 # Library implementation
 

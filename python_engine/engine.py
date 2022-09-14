@@ -29,6 +29,7 @@ class Engine(ZMQ):
         self.__reloading_modules = []
         self.__send_breakpoint_after_feed = False
         self.__backtest_finished = False
+        self.__code_stopped_debug = False
 
         super()._register("data_feed", self.__data_feed_event)
         super()._register("historical_sending_locked", self.__historical_sending_locked_event)
@@ -53,6 +54,11 @@ class Engine(ZMQ):
         return self.__columns
 
 
+    def _get_main_intrument_number(self):
+        num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
+        return num + 1
+
+
     def _set_buffer_length(self, length: int):
         self.__buffer_length = length
 
@@ -67,11 +73,6 @@ class Engine(ZMQ):
             'message': event
         }
         super()._send(SERVICES.python_executor,'event', msg)
-
-
-    def _get_main_intrument_number(self):
-        num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
-        return num + 1
     
 
     def _add_custom_chart(self, 
@@ -106,27 +107,29 @@ class Engine(ZMQ):
         Function causes breakpoint if debug mode is turned on.
         """
         if self.__debug_mode == True:
-            # reload live modules
+            self.__code_stopped_debug = True
             while True:
                 if self.__debug_mode == False:
                     for module in self.__reloading_modules:
                         reload(module)
+                    self.__code_stopped_debug = False
                     return
                 if self.__debug_next_pressed == True:
                     for module in self.__reloading_modules:
                         reload(module)
                     self.__debug_next_pressed = False
                     self.__send_breakpoint_after_feed = True
+                    self.__code_stopped_debug = False
                     return 
                 await asyncio.sleep(0.1)
 
 
-    def _add_reloading_module(self, module: str):
+    def _add_reloading_module(self, module_path: str):
         """
             Function gets path to module
             Function returning added module
         """
-        module = import_module(module)
+        module = import_module(module_path)
         self.__reloading_modules.append(module)
         return module
 
@@ -183,7 +186,7 @@ class Engine(ZMQ):
                 while keyboard.is_pressed('d'):
                     await asyncio.sleep(0.1)
             if keyboard.is_pressed('n'):
-                if self.__debug_mode == True and self.__debug_next_pressed == False:
+                if self.__debug_mode == True and self.__debug_next_pressed == False and self.__code_stopped_debug:
                     self._log('next step ... \n\
                                 -> press "q" to leave debug mode')
                     self.__debug_next_pressed = True

@@ -113,12 +113,12 @@ else:
 - add checking in data_schema if historical source fits to the interval source.
 - checking if all necessery keys are provoded in .env
 - handle better checking avaliable times than in 'historical_data_feeds/temporary_ducascopy_list.json'
-- interfaces for all functions
-- make all other functions inpossible to use and override in model and executor class.
+- make all other functions inpossible to use and override in model and executor class. 
+    Almost done. only overridable functions are problem and run 
 - what with strategies that wants to play on  many instruments? every instrument will be required to flag as main   
     and the trade function must be overriten for this case and getting one more argument which is instrument.
 - add clean cache command
-- Define that credentials are necessery. For example you dont need to pass binance credentials if you not using it.
+- Define what credentials are necessery. For example you dont need to pass binance credentials if you not using it.
 - add warning that first avaliable data will be this earliest feeding data. 
 - make sure charts are printed well when timeframes are not the same in all backtest.
 - pomysl o dodaniu wywalania wartości ceny w tickach ktore są takie same. czesto sie powtarzaja, moznaby odchudzic dane o 80%.
@@ -127,8 +127,8 @@ else:
 - think about requirements that strategies has. all strategy has to has requirements file? what with tensorflow that 
     sometimes needs more commands?
 - uwzglednianie spreadu i prowizji dla  brokera. 
-- zrobić grid sarchea odpalania backtesów z różnymi parametrami.
 - wywalic konieczność sudo. przy odpalaniu z dockera, sprawdz czy mozesz to zapisywac w folderze danego uzytkownika. 
     Problem jest taki ze do debg moda uzywam keyboard.
 - add live realoding charts in debug mode without closing them and show them again.
+- zrobić grid sarchea odpalania backtesów z różnymi parametrami.
 """

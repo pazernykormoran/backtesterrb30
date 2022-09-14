@@ -30,9 +30,9 @@ class ZMQ(Service, ABC):
         self.__subs = []
         
 
-        self.__commands = {'start': self.__start,
-                          'pause': self.__pause,
-                          'stop': self.__stop}
+        self.__commands = {'start': self._start,
+                          'pause': self._pause,
+                          'stop': self._stop}
 
     # override
     def run(self):
@@ -113,18 +113,18 @@ class ZMQ(Service, ABC):
         self.__pub.close()
 
 
-    async def __stop(self):
+    def _stop(self):
         self._log("Service stoped")
         self.__is_running = False
         _exit(1)
 
 
-    async def __start(self):
+    def _start(self):
         self._log("Service started")
         self.__is_active = True
 
 
-    async def __pause(self):
+    def _pause(self):
         self._log("Service paused")
         self.__is_active = False
 
