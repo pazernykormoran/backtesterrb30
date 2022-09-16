@@ -8,6 +8,7 @@ from libs.utils.historical_sources import EXANTE_INTERVALS
 from libs.interfaces.utils.data_symbol import DataSymbol
 from libs.utils.singleton import singleton
 from os import getenv
+import asyncio
 
 @singleton
 class ExanteDataSource(DataSource):
@@ -25,12 +26,20 @@ class ExanteDataSource(DataSource):
         if interval == 'day': return CandleDurations.DAY1
 
     #override
-    def validate_instrument_data(self, data: DataSymbol):
+    async def validate_instrument_data(self, data: DataSymbol):
         #TODO check if volume necessery or not.
         data_type = DataType.TRADES
-        candles = self.client.get_ohlc(symbol=data.symbol, 
-                    duration=60, start=1, end=time()*1000, version='3.0', 
-                    limit=1, agg_type=data_type)
+
+        start_validation_time = time()
+        candles = None
+        while True:
+            candles = self.client.get_ohlc(symbol=data.symbol, 
+                        duration=60, start=1, end=time()*1000, version='3.0', 
+                        limit=1, agg_type=data_type)
+            if candles != None or time() - start_validation_time > 61:
+                break
+            self._log('Performing validation, that is goint to take up to 1 minute')
+            await asyncio.sleep(10)
         if candles == None:
             self._log('Error. Instrument "'+data.symbol+'" probably does not exists on exante.')
             return False

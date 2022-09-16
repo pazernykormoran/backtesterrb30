@@ -19,7 +19,7 @@ class BinanceDataSource(DataSource):
         self.client = Client(binance_api_key, binance_api_secret)
 
     #override
-    def validate_instrument_data(self, data: DataSymbol):
+    async def validate_instrument_data(self, data: DataSymbol):
         #validate if instrument exists:
         exchange_info = self.client.get_exchange_info()
         if data.symbol not in [s['symbol'] for s in exchange_info['symbols']]:

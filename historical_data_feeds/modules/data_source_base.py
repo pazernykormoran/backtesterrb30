@@ -7,7 +7,7 @@ class DataSource():
         self._log = logger
 
     @abstractmethod
-    def validate_instrument_data(data) -> bool:
+    async def validate_instrument_data(data) -> bool:
         pass
     
     @abstractmethod

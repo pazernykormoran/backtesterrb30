@@ -26,7 +26,7 @@ class DukascopyDataSource(DataSource):
         if interval == 'month': return 'mn1'
 
 
-    def validate_instrument_data(self, data: DataSymbol):
+    async def validate_instrument_data(self, data: DataSymbol):
         # https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/master/src/utils/instrument-meta-data/generated/raw-meta-data-2022-04-23.json
         # response = requests.get("http://api.open-notify.org/astros.json")
         from_datetime_timestamp = int(round(datetime.timestamp(data.backtest_date_start) * 1000))

@@ -57,11 +57,11 @@ class HistoricalDataFeeds(ZMQ):
     def _handle_zmq_message(self, message):
         pass
 
-    def __validate_and_download(self):
+    async def __validate_and_download(self):
         for source in self.__historical_sources_array:
             if source in [data.historical_data_source.value for data in self.__data_schema.data]:
                 self.__data_sources[source]: DataSource = self.__data_sources_classes[source](self._log)
-        if not self.__validate_data_schema_instruments(self.__data_schema.data): 
+        if not await self.__validate_data_schema_instruments(self.__data_schema.data): 
             self.__stop_all_services()
         self.__validate_downloaded_data_folder()
         self.__file_names_to_load, self.__data_to_download =  self.__check_if_all_data_exists(self.__data_schema.data)
@@ -74,13 +74,13 @@ class HistoricalDataFeeds(ZMQ):
     def __register_data_source(self, source_name: HISTORICAL_SOURCES, data_source_class):
         self.__data_sources_classes[source_name.value] = data_source_class
 
-    def __get_data_source_client(self, historical_source: str):
+    def __get_data_source_client(self, historical_source: str) -> DataSource:
         return self.__data_sources[historical_source]
 
     async def __historical_data_loop_ticks(self):
         self._log('waiting for all ports starts up')
         await asyncio.sleep(0.5)
-        self.__validate_and_download()
+        await self.__validate_and_download()
 
         if self.__data_downloaded(self.__data_to_download): 
             self._log('All data has been downloaded')
@@ -117,14 +117,14 @@ class HistoricalDataFeeds(ZMQ):
             self._log("Error. Not all of the data has been downloaded, exiting")
             super()._stop()
 
-    def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbol]):
+    async def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbol]):
         self._log('Data_schema validation')
         data_valid = True
         number_of_mains = 0
         number_of_trigger_feeders = 0
         for data in data_symbol_array:
             data_source_client: DataSource = self.__get_data_source_client(data.historical_data_source.value)
-            if not data_source_client.validate_instrument_data(data):
+            if not await data_source_client.validate_instrument_data(data):
                 data_valid = False
             if data.backtest_date_start == None:
                 self._log('Error. You must provide "backtest_date_start" field in data_schema file while you are backtesting your strategy')
