@@ -3,12 +3,15 @@ import asyncio
 from typing import List
 from libs.interfaces.python_backtester.data_start import DataStart
 from libs.zmq.zmq import ZMQ
-from libs.list_of_services.list_of_services import SERVICES, SERVICES_ARRAY
-from libs.data_feeds.data_feeds import HISTORICAL_SOURCES, DataSchema, DataSymbol
+from libs.utils.list_of_services import SERVICES, SERVICES_ARRAY
+from libs.interfaces.utils.data_schema import DataSchema
+from libs.interfaces.utils.data_symbol import DataSymbol
+from libs.utils.historical_sources import HISTORICAL_SOURCES
 from historical_data_feeds.modules.binance import *
 from historical_data_feeds.modules.dukascopy import *
 from historical_data_feeds.modules.rb30_disk import *
-from libs.interfaces.config import Config
+from historical_data_feeds.modules.exante import *
+from libs.interfaces.utils.config import Config
 from importlib import import_module
 from datetime import datetime, timezone
 from os import path, mkdir, getenv
@@ -27,23 +30,17 @@ class HistoricalDataFeeds(ZMQ):
         super().__init__(config, logger)
         self.__data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
-
-        if HISTORICAL_SOURCES.binance in [data.historical_data_source for data in self.__data_schema.data]:
-            binance_api_secret=getenv("binance_api_secret")
-            binance_api_key=getenv("binance_api_key")
-            self.__client = Client(binance_api_key, binance_api_secret)
-            
+        self.__historical_sources_array = [i for i in dir(HISTORICAL_SOURCES) if not i.startswith('__')]
+        self.__data_sources_classes = {}
+        self.__data_sources = {}
         self.__sending_locked = False
         self.__start_time = 0
-        if not self.__validate_data_schema_instruments(self.__data_schema.data): 
-            self.__stop_all_services()
-        self.__validate_downloaded_data_folder()
-        self.__file_names_to_load, self.__data_to_download =  self.__check_if_all_data_exists(self.__data_schema.data)
-        if len(self.__data_to_download) > 0:
-            if not self.__download_data(self.__data_to_download):
-                self._log('Error while downloading')
-                self.__stop_all_services()
-        self.data_parts = self.__prepare_loading_data_structure(self.__file_names_to_load)
+
+        #register data sources classes
+        self.__register_data_source(HISTORICAL_SOURCES.binance, BinanceDataSource)
+        self.__register_data_source(HISTORICAL_SOURCES.exante, ExanteDataSource)
+        self.__register_data_source(HISTORICAL_SOURCES.ducascopy, DukascopyDataSource)
+        self.__register_data_source(HISTORICAL_SOURCES.rb30disk, RB30DataSource)
 
         # register commands
         self._register("unlock_historical_sending", self.__unlock_historical_sending_event)
@@ -60,9 +57,30 @@ class HistoricalDataFeeds(ZMQ):
     def _handle_zmq_message(self, message):
         pass
 
+    def __validate_and_download(self):
+        for source in self.__historical_sources_array:
+            if source in [data.historical_data_source.value for data in self.__data_schema.data]:
+                self.__data_sources[source]: DataSource = self.__data_sources_classes[source](self._log)
+        if not self.__validate_data_schema_instruments(self.__data_schema.data): 
+            self.__stop_all_services()
+        self.__validate_downloaded_data_folder()
+        self.__file_names_to_load, self.__data_to_download =  self.__check_if_all_data_exists(self.__data_schema.data)
+        if len(self.__data_to_download) > 0:
+            if not self.__download_data(self.__data_to_download):
+                self._log('Error while downloading')
+                self.__stop_all_services()
+        self.data_parts = self.__prepare_loading_data_structure(self.__file_names_to_load)
+
+    def __register_data_source(self, source_name: HISTORICAL_SOURCES, data_source_class):
+        self.__data_sources_classes[source_name.value] = data_source_class
+
+    def __get_data_source_client(self, historical_source: str):
+        return self.__data_sources[historical_source]
+
     async def __historical_data_loop_ticks(self):
         self._log('waiting for all ports starts up')
         await asyncio.sleep(0.5)
+        self.__validate_and_download()
 
         if self.__data_downloaded(self.__data_to_download): 
             self._log('All data has been downloaded')
@@ -97,7 +115,7 @@ class HistoricalDataFeeds(ZMQ):
 
         else:
             self._log("Error. Not all of the data has been downloaded, exiting")
-            self._stop()
+            super()._stop()
 
     def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbol]):
         self._log('Data_schema validation')
@@ -105,12 +123,9 @@ class HistoricalDataFeeds(ZMQ):
         number_of_mains = 0
         number_of_trigger_feeders = 0
         for data in data_symbol_array:
-            if data.historical_data_source == HISTORICAL_SOURCES.binance:
-                if not validate_binance_instrument(self.__client, data.symbol):
-                    data_valid = False
-            elif data.historical_data_source == HISTORICAL_SOURCES.ducascopy:
-                if not validate_ducascopy_instrument(data.symbol, data.backtest_date_start): 
-                    data_valid = False
+            data_source_client: DataSource = self.__get_data_source_client(data.historical_data_source.value)
+            if not data_source_client.validate_instrument_data(data):
+                data_valid = False
             if data.backtest_date_start == None:
                 self._log('Error. You must provide "backtest_date_start" field in data_schema file while you are backtesting your strategy')
                 data_valid = False
@@ -123,7 +138,7 @@ class HistoricalDataFeeds(ZMQ):
                 data.backtest_date_start.microsecond] != [0,0,0,0]:
                 self._log('Error. Provide your "backtest_date_start" and "backtest_date_stop" in a day accuracy like: "backtest_date_start": datetime(2020,6,1)')
                 data_valid = False
-            if data.historical_data_source.value not in (HISTORICAL_SOURCES.binance.value, HISTORICAL_SOURCES.ducascopy.value): 
+            if data.historical_data_source.value not in self.__historical_sources_array: 
                 self._log('Error. This historical_data_source not implemented yet')
                 data_valid = False
             if data.main == True:
@@ -196,16 +211,13 @@ class HistoricalDataFeeds(ZMQ):
         for instrument_file_name in data_to_download:
             data_instrument = instrument_file_name[:-4]
             source, instrment, interval, time_start, time_stop = tuple(data_instrument.split('__'))
-            print('interval', interval)
-            if source == HISTORICAL_SOURCES.binance.value: 
-                v = download_binance_data(self.__client, self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
-                if v == False: return False
-            if source == HISTORICAL_SOURCES.ducascopy.value: 
-                v = download_ducascopy_data(self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
-                if v == False: return False
-            if source == HISTORICAL_SOURCES.rb30disk.value: 
-                v = download_rb30_disk_data(self.downloaded_data_path, instrument_file_name, instrment, interval, int(time_start), int(time_stop))
-                if v == False: return False
+            data_source_client: DataSource = self.__get_data_source_client(source)
+            if not data_source_client.download_instrument_data(self.downloaded_data_path, 
+                                                            instrument_file_name, 
+                                                            instrment, interval, 
+                                                            int(time_start), 
+                                                            int(time_stop)):
+                return False
         return True
 
     def __prepare_loading_data_structure(self, file_names_to_load) -> dict:
@@ -225,13 +237,13 @@ class HistoricalDataFeeds(ZMQ):
         for service in SERVICES_ARRAY:
             if service != self.name:
                 super()._send(getattr(SERVICES, service), 'stop')
-        self._stop()
+        super()._stop()
 
     def __map_raw_to_instruments(self, raw: list, instruments: list):
         last_raw_obj = {}
         if len(raw) != len(instruments):
             self._log('Error in map_raw_to_instruments. Lengths of raw and list of instruments are not equal')
-            self._stop()
+            super()._stop()
         for value, instrument in zip(raw, instruments):
             last_raw_obj[instrument] = value
         return last_raw_obj

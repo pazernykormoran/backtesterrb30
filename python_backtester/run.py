@@ -8,7 +8,7 @@ backtest_state = getenv('backtest_state')
 
 
 from python_backtester.python_backtester import Backtester
-from libs.interfaces.config import Config
+from libs.interfaces.utils.config import Config
 config = {
     "name": microservice_name,
     "ip": "localhost",

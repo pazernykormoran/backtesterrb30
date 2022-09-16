@@ -3,7 +3,7 @@ import numpy as np
 import joblib
 from libs.interfaces.python_engine.custom_chart_element import CustomChartElement
 from typing import List
-from libs.necessery_imports.model_imports import *
+from libs.utils.model_imports import *
 from random import randint
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 

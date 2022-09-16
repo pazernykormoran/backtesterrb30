@@ -7,8 +7,8 @@ from enum import Enum
 from sys import argv
 from pydantic import BaseModel
 import time
-from libs.list_of_services.list_of_services import SERVICES_ARRAY
-from libs.data_feeds.data_feeds import DataSchema
+from libs.utils.list_of_services import SERVICES_ARRAY
+from libs.interfaces.utils.data_schema import DataSchema
 from datetime import datetime
 
 #TODO hardcoded backtest mode: 
@@ -131,4 +131,17 @@ else:
     Problem jest taki ze do debg moda uzywam keyboard.
 - add live realoding charts in debug mode without closing them and show them again.
 - zrobić grid sarchea odpalania backtesów z różnymi parametrami.
+- przerobić historical_downloader na osobny mikroserwis
+- uwzglednij add volume column
+- zrob wlasna baze w ktorej umiescisz informacje o wszyskich giełdach i będziesz tam dumpować informacja o wszystkich instrumentach
+    takie jak zakres dat ktore obsługują itp.
+- zamien datetimy na int(from_datetime.timestamp() * 1000) i zrob do tego funckje
+- zrob uproszczenie dodawania strategii, musi sie sprawdzać do dopisania jej do enuma z strategiami, zarejestrowania jej w
+    history handlerze oraz dodania klasy z odpowiednią klasą bazową. Trzeba na pewno rozwiazac temat 
+    config_interface gdzie są podane interwały odpowiednie itp. Error. This historical_data_source not implemented yet
+- base class serwice nie w folderze zmq, poukladac folder z interfejsami bo jest tam burdel
+- dodać zapis logów do pliku.    
+- przy pobieraniu swiec uzupelniaj jednak dane o brakujące swiece...
+- singletons in data suurces modules
+- add some safety function checking if downloaded data is in the proper order.
 """

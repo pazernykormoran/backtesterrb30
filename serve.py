@@ -1,4 +1,4 @@
-from libs.list_of_services.list_of_services import SERVICES_ARRAY
+from libs.utils.list_of_services import SERVICES_ARRAY
 from importlib import import_module
 from sys import argv
 from dotenv import load_dotenv

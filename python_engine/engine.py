@@ -7,11 +7,11 @@ from libs.interfaces.python_backtester.data_finish import DataFinish
 from libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint 
 from libs.interfaces.python_engine.custom_chart_element import CustomChartElement
 from libs.zmq.zmq import ZMQ
-from libs.list_of_services.list_of_services import SERVICES
+from libs.utils.list_of_services import SERVICES
 import pandas as pd
-from libs.data_feeds.data_feeds import DataSchema
+from libs.interfaces.utils.data_schema import DataSchema
 from importlib import import_module, reload
-from libs.interfaces.utils import JSONSerializable
+from libs.utils.json_serializable import JSONSerializable
 import keyboard
 
 

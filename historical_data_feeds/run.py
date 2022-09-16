@@ -8,7 +8,7 @@ backtest_state = getenv('backtest_state')
 
 
 from historical_data_feeds.historical_data_feeds import HistoricalDataFeeds
-from libs.interfaces.config import Config
+from libs.interfaces.utils.config import Config
 config = {
     "name": microservice_name,
     "ip": "localhost",

@@ -1,4 +1,4 @@
-from libs.necessery_imports.data_imports import *
+from libs.utils.data_imports import *
 
 datetime_start = datetime(2022,6,1)
 datatime_finish = datetime(2022,8,1)

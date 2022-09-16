@@ -1,4 +1,4 @@
-from libs.necessery_imports.data_imports import *
+from libs.utils.data_imports import *
 
 # configure data feed =====================================
 

@@ -27,7 +27,8 @@ All the data related to your strategy like models,
 In "data_schema.py" configure your input data schema and strategy intervals using "DataSchema" interface and list of avaliable instruments avaliable in adequate data source.
 Avaliable data sources: 
 - [ binance ] avaliable instruments in "historical_data_feeds/binance_instruments.txt"
-- [ ducascopy ] avaliable instruments in "https://github.com/Leo4815162342/dukascopy-node"
+- [ ducascopy ] avaliable instruments in https://github.com/Leo4815162342/dukascopy-node
+- [ exante ] avaliable instruments in https://drive.google.com/drive/folders/1qJAGedEWhGehG2Hh48ITgE7LjGWwyzOw?usp=sharing
 
 Variables in data elements explanation: 
 - [ symbol ] - string representing one of instruments from provided data source.
@@ -38,7 +39,7 @@ Variables in data elements explanation:
 - [ trigger_feed ] - Decision if this data feeds triggers on_feed function in your model with new buffer update. At least one instrument must have trigger_feed set on True.
 - [ interval ] - Element of intervals enum corresponding to provided historical data source.
 ~~~
-from libs.necessery_imports.data_imports import *
+from libs.utils.data_imports import *
 
 data={
     'data':[
@@ -86,7 +87,7 @@ Avaliable methods to use:
 - "_log" - triggers console log
 ~~~
 
-from libs.necessery_imports.model_imports import *
+from libs.utils.model_imports import *
 from random import randint
 
 class Model(Engine):
@@ -121,7 +122,7 @@ Avaliable methods to use:
 - "_get_number_of_actions"
 - "_log"
 ~~~
-from libs.necessery_imports.executor_imports import *
+from libs.utils.executor_imports import *
 
 class TradeExecutor(Executor):
 
@@ -162,9 +163,12 @@ If you are implementing piece of code that can be usefull in other strategies, u
 Your communication interfaces include in "libs/interfaces" folder.
 
 # Data source implementation
-1. In "libs/data_feeds.py add your source to HISTORICAL_SOURCES enum and add enum class with your avaliable intervals by analogy to BINANCE_INTERVALS.
-2. Add file handling your download process, saving process and validation process in "historical_data_feeds/modules" folder.
-3. In "historical_data_feeds/historical_data_feeds.py" edit function "__download_data" and "__validate_data_schema_instruments" properly. 
+1. In "libs/utils/historical_sources.py 
+   1. add your source to HISTORICAL_SOURCES enum
+   2. add enum class with your avaliable intervals by analogy to BINANCE_INTERVALS.
+   3. add your intervals enum to HISTORICAL_INTERVALS_UNION
+2. Add class to "historical_data_feeds/modules" folder.
+3. Register your class in historical_data_feeds/historical_data_feeds.py calling "__register_data_source" function.
 
 # Microservice implementation
 

@@ -10,7 +10,7 @@ backtest_state = getenv('backtest_state')
 import importlib
 
 module = importlib.import_module('strategies.'+strategy_name+'.model')
-from libs.interfaces.config import Config
+from libs.interfaces.utils.config import Config
 config = {
     "name": microservice_name,
     "ip": "localhost",

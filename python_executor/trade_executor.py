@@ -7,7 +7,7 @@ from libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
 from libs.interfaces.python_backtester.trade import Trade
 from libs.zmq.zmq import ZMQ
 
-from libs.list_of_services.list_of_services import SERVICES
+from libs.utils.list_of_services import SERVICES
 
 class Executor(ZMQ):
     def __init__(self, config: dict, logger=print):

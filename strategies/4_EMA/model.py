@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import joblib
 
-from libs.necessery_imports.model_imports import *
+from libs.utils.model_imports import *
 from random import randint
 import os
 import pandas_ta as pta

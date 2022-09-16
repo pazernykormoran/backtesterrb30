@@ -7,9 +7,9 @@ from libs.zmq.zmq import ZMQ
 from libs.interfaces.python_backtester.trade import Trade
 from libs.interfaces.python_backtester.money_state import MoneyState
 from libs.interfaces.python_backtester.data_finish import DataFinish, CustomChart
-from libs.data_feeds.data_feeds import DataSchema
+from libs.interfaces.utils.data_schema import DataSchema
 from importlib import import_module
-from libs.list_of_services.list_of_services import SERVICES, SERVICES_ARRAY
+from libs.utils.list_of_services import SERVICES, SERVICES_ARRAY
 import pandas as pd
 from os.path import join
 import matplotlib.pyplot as plt
@@ -68,7 +68,7 @@ class Backtester(ZMQ):
         for service in SERVICES_ARRAY:
             if service != self.name:
                 super()._send(getattr(SERVICES, service), 'stop')
-        self._stop()
+        super()._stop()
 
     async def __print_charts(self, file_names: List[str], 
                     custom_charts: List[CustomChart], 
