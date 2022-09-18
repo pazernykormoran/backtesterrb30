@@ -11,7 +11,7 @@ class DataSource():
         pass
     
     @abstractmethod
-    def download_instrument_data(self,
+    async def download_instrument_data(self,
                         downloaded_data_path: str, 
                         instrument_file_name:str, 
                         instrument: str, 

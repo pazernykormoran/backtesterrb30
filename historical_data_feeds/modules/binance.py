@@ -35,7 +35,7 @@ class BinanceDataSource(DataSource):
         return True
     
     #override
-    def download_instrument_data(self,
+    async def download_instrument_data(self,
                         downloaded_data_path: str, 
                         instrument_file_name:str, 
                         instrument: str, 
@@ -43,33 +43,33 @@ class BinanceDataSource(DataSource):
                         time_start: int, 
                         time_stop: int) -> bool:
         self._log('downloading binance data', instrument_file_name)
-        try:
-            if interval == 'tick': 
+        # try:
+        if interval == 'tick': 
 
-                interval_timestamp = 1000*60*60
-                trades_arr = []
-                start_hour = time_start
-                stop_hour = start_hour + interval_timestamp
-                while stop_hour < time_stop:
-                    trades = self.client.get_aggregate_trades(symbol=instrument, startTime=start_hour, endTime=stop_hour)
-                    # print('trades', trades)
-                    trades_arr = trades_arr + trades
-                    start_hour += interval_timestamp
-                    stop_hour += interval_timestamp
-                df = pd.DataFrame(trades_arr)
-                df = df[['T','p']]
-            else:
-                binance_interval = self.__get_binance_interval(interval)
-                klines = self.client.get_historical_klines(instrument, binance_interval, time_start, time_stop)
-                df = pd.DataFrame(klines).iloc[:-1, [0,1]]
-                # if interval != STRATEGY_INTERVALS.tick.value:
-                #     df = validate_dataframe_timestamps(df, interval, time_start, time_stop)
+            interval_timestamp = 1000*60*60
+            trades_arr = []
+            start_hour = time_start
+            stop_hour = start_hour + interval_timestamp
+            while stop_hour < time_stop:
+                trades = self.client.get_aggregate_trades(symbol=instrument, startTime=start_hour, endTime=stop_hour)
+                # print('trades', trades)
+                trades_arr = trades_arr + trades
+                start_hour += interval_timestamp
+                stop_hour += interval_timestamp
+            df = pd.DataFrame(trades_arr)
+            df = df[['T','p']]
+        else:
+            binance_interval = self.__get_binance_interval(interval)
+            klines = self.client.get_historical_klines(instrument, binance_interval, time_start, time_stop)
+            df = pd.DataFrame(klines).iloc[:-1, [0,1]]
+            # if interval != STRATEGY_INTERVALS.tick.value:
+            #     df = validate_dataframe_timestamps(df, interval, time_start, time_stop)
 
-            df.to_csv(join(downloaded_data_path, instrument_file_name), index=False, header=False)
+        df.to_csv(join(downloaded_data_path, instrument_file_name), index=False, header=False)
 
-        except Exception as e: 
-            self._log('Excepted', e)
-            return False
+        # except Exception as e: 
+        #     self._log('Excepted', e)
+        #     return False
 
         return True
 

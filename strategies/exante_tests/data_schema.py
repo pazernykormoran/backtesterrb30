@@ -1,6 +1,6 @@
 from libs.utils.data_imports import *
 
-datetime_start = datetime(2022,2,2)
+datetime_start = datetime(2021,5,1)
 datatime_finish = datetime(2022,8,1)
 
 data={
@@ -13,7 +13,7 @@ data={
             'backtest_date_start': datetime_start,
             'backtest_date_stop': datatime_finish,
             'trigger_feed': True,
-            'interval': BINANCE_INTERVALS.hour
+            'interval': BINANCE_INTERVALS.minute5
         },
         {
             'symbol': 'iefususd',
@@ -22,7 +22,7 @@ data={
             'backtest_date_start': datetime_start,
             'backtest_date_stop': datatime_finish,
             'trigger_feed': True,
-            'interval': DUKASCOPY_INTERVALS.hour
+            'interval': DUKASCOPY_INTERVALS.minute5
         },
         {
             'symbol': 'AAPL.NASDAQ',
@@ -31,7 +31,7 @@ data={
             'backtest_date_start': datetime_start,
             'backtest_date_stop': datatime_finish,
             'trigger_feed': True,
-            'interval': EXANTE_INTERVALS.hour
+            'interval': EXANTE_INTERVALS.minute5
         }
     ]
 }

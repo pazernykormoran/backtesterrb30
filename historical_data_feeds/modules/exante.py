@@ -28,7 +28,7 @@ class ExanteDataSource(DataSource):
     #override
     async def validate_instrument_data(self, data: DataSymbol):
         #TODO check if volume necessery or not.
-        data_type = DataType.TRADES
+        data_type = DataType.QUOTES
 
         start_validation_time = time()
         candles = None
@@ -50,43 +50,60 @@ class ExanteDataSource(DataSource):
             return False
         return True
 
-    def __wait(self):
+    async def __wait(self):
         self._log('waiting for exante download 60s')
-        sleep(60)
+        await asyncio.sleep(60)
 
     #override
-    def download_instrument_data(self, downloaded_data_path: str, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int) -> bool:
+    async def download_instrument_data(self, downloaded_data_path: str, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int) -> bool:
         self._log('downloading exante data', instrument_file_name)
-        try:
-            self.__wait()
-            if interval == 'tick': 
-                # todo
-                trades_arr=[]
-                df = pd.DataFrame(trades_arr)
-                df = df[['T','p']]
-            else:
-                limit = 5000
-                exante_interval = self.__get_exante_interval(interval).value
-                if abs(time_start - time_stop) > limit*exante_interval*1000:
-                    #TODO
-                    self._log('to big amout of candles')
+        # try:
+        await self.__wait()
+        if interval == 'tick': 
+            # todo
+            trades_arr=[]
+            df = pd.DataFrame(trades_arr)
+            df = df[['T','p']]
+        else:
+            limit = 5000
+            exante_interval = self.__get_exante_interval(interval).value
+            floating_start = time_start
+            klines_arr = []
+            iteration_n = 0
+            while True:
+                if floating_start >= time_stop: break
+                klines = self.client.get_ohlc(symbol=instrument, 
+                                    duration=exante_interval, 
+                                    start = floating_start, 
+                                    end = time_stop, 
+                                    limit = limit, 
+                                    agg_type=DataType.QUOTES)
+                if klines == None:
+                    self._log("Error while downloading, returning")
                     return False
+                klines_arr = klines + klines_arr
+                if klines == []:
+                    if iteration_n == 0:
+                        self._log("Error while downloading, returning...")
+                        return False
+                if len(klines) == 5000:
+                    floating_start = int(klines[0].timestamp.timestamp() * 1000) + (exante_interval * 1000)
 
-                klines = self.client.get_ohlc(symbol=instrument, duration=exante_interval, start = time_start, end = time_stop, limit = limit)
-                
-                klines_arr = klines
-                
-                klines_transformed = []
-                for kl in klines_arr:
-                    # klines_transformed.append([int(round(datetime.timestamp(kl.timestamp) * 1000)), kl.open_])
-                    klines_transformed.append([int(kl.timestamp.timestamp() * 1000), kl.open_])
-                df = pd.DataFrame(klines_transformed)
-                df = df.iloc[::-1]
+                if len(klines)<5000:
+                    break
+                iteration_n += 1
+                await self.__wait()
+            
+            klines_transformed = []
+            for kl in klines_arr:
+                # klines_transformed.append([int(round(datetime.timestamp(kl.timestamp) * 1000)), kl.open_])
+                klines_transformed.append([int(kl.timestamp.timestamp() * 1000), kl.open_])
+            df = pd.DataFrame(klines_transformed)
+            df = df.iloc[::-1]
+        df.to_csv(join(downloaded_data_path, instrument_file_name), index=False, header=False)
 
-            df.to_csv(join(downloaded_data_path, instrument_file_name), index=False, header=False)
-
-        except Exception as e: 
-            self._log('Excepted', e)
-            return False
+        # except Exception as e: 
+        #     self._log('Excepted', e)
+        #     return False
 
         return True

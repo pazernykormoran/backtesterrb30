@@ -10,10 +10,7 @@ Engine-RB30 is a framework to backtest and run live your market strategies.
 
 1. provide .env file with name of strategy existing in strategies folder like:
 ~~~
-strategy="folder name with strategy"
-# if you are going to use binance historical data:
-binance_api_secret="binance api secret"
-binance_api_key="binance api key"
+strategy="examples.basic_example"
 ~~~
 1. To install dependencies locally run: "bash install_dependencies_locally.sh"
 
@@ -23,6 +20,8 @@ binance_api_key="binance api key"
 
 In folder "strategies" add folder with your strategy name and create three files: "data_schema.py", "executor.py", "model.py"
 All the data related to your strategy like models, 
+
+## Data schema
 
 In "data_schema.py" configure your input data schema and strategy intervals using "DataSchema" interface and list of avaliable instruments avaliable in adequate data source.
 Avaliable data sources: 
@@ -44,28 +43,29 @@ from libs.utils.data_imports import *
 data={
     'data':[
         {
-            'symbol': 'BTCUSDT',
-            'historical_data_source': HISTORICAL_SOURCES.binance,
-            'main': True,
-            'backtest_date_start': datetime(2022,6,1),
+            'symbol': '2914jpjpy',
+            'historical_data_source': HISTORICAL_SOURCES.ducascopy,
+            'main': False,
+            'backtest_date_start': datetime(2021,5,1),
             'backtest_date_stop': datetime(2022,8,1),
-            'trigger_feed': True,
-            'interval': BINANCE_INTERVALS.minute15
-        }
+            'trigger_feed': False,
+            'interval': DUKASCOPY_INTERVALS.hour,
+        },
         {
             'symbol': 'iefususd',
             'historical_data_source': HISTORICAL_SOURCES.ducascopy,
-            'main': False,
-            'backtest_date_start': datetime(2022,6,1),
+            'main': True,
+            'backtest_date_start': datetime(2021,5,1),
             'backtest_date_stop': datetime(2022,8,1),
             'trigger_feed': True,
-            'interval': DUKASCOPY_INTERVALS.minute15
+            'interval': DUKASCOPY_INTERVALS.hour
         }
     ]
 }
 DATA = validate_config(data)
-
 ~~~
+
+## Model class
 
 In "model.py" configure your model class named Model ingeriting from Engine.
 Override "on_feed" function which is triggered every interval you have choosen.
@@ -85,8 +85,9 @@ Avaliable methods to use:
 - "_debug_breakpoint" - Adds breakpoint where your code stops in debug mode.
 - "_add_reloading_module" - Add module that is going to be live reloaded while using debug mode.
 - "_log" - triggers console log
-~~~
 
+Below you can check basic example with random trades:
+~~~
 from libs.utils.model_imports import *
 from random import randint
 
@@ -98,7 +99,7 @@ class Model(Engine):
         self._set_buffer_length(200)
 
     #override
-    def on_feed(self, data: list):
+    async def on_feed(self, data: list):
         if self.counter % 30 == 0:
             quant = randint(-2,2)
             if quant != 0:
@@ -107,8 +108,45 @@ class Model(Engine):
                 }
                 self._trigger_event(message)
         self.counter += 1
+~~~
+
+Below you can check alternative example with live reloading function that allows you live developement in debug mode:
+~~~
+from libs.utils.model_imports import *
+from random import randint
+
+async def live_reloading_function(data, state, _trigger_event, _debug_breakpoint):
+    if state['counter'] % 30 == 0:
+        quant = randint(-2,2)
+        if quant != 0:
+            message = {
+                'value': quant
+            }
+            await _debug_breakpoint()
+            _trigger_event(message)
+    state['counter'] += 1
+
+
+class Model(Engine):
+    
+    def __init__(self, config):
+        super().__init__(config)
+        self.state = {
+            'counter': 0
+        }
+        self._set_buffer_length(200)
+        self.live_reloading_module = self._add_reloading_module(
+                'strategies.'+self.config.strategy_name+'.model')
+        
+    #override
+    async def on_feed(self, data: list):
+        await self.live_reloading_module.live_reloading_function(
+                data, self.state, self._trigger_event, self._debug_breakpoint)
+
 
 ~~~
+
+## Executor class
 
 In "executor.py" configure your trade executor class named TradeExecutor inheriting from Executor.
 Override "on_event" triggered while your implemented model returns event. In this class, you can use "_trade" function inheritet from Executor class.
@@ -121,6 +159,8 @@ Avaliable methods to use:
 - "_close_all_trades"
 - "_get_number_of_actions"
 - "_log"
+
+Below you can check simple executor class that triggers trade based on Model message:
 ~~~
 from libs.utils.executor_imports import *
 
@@ -131,18 +171,17 @@ class TradeExecutor(Executor):
 
     #override
     def on_event(self, message):
-        # your function body here
-        trade_value = message['value']
-        self._trade(trade_value)
+        self._trade(message['value'])
 ~~~
 
 # Debug mode
 
 ## Usage of debug mode
 Framework gives you access to debug mode that allows you printing summary charts and descriptions every step of your debug. To enable use debug while implementing your strategy follow below steps:
-- Somewhere in your "on_feed" method use "_debug_breakpoint" method. This works as breakpoint while debugging. The code will stop in this place.
-- Run your strategy backtest and press "d" letter in any moment during backtest loop. This will cause entering debug mode and stopping the code in the nearest moment when your code occurs "_debug_breakpoint" function. You should also se summary and charts printed for current moment of backtest.
-- Press "n" button for next or "q" for quit debug mode.
+- Use "_debug_breakpoint" method somewhere in your "on_feed" method. This works as breakpoint while debugging. The code will stop in this place.
+- Press "ctrl+d" in any moment during backtest loop. This will cause entering debug mode and stopping the code in the nearest moment when your code occurs "_debug_breakpoint" function. You should also se summary and charts printed for current moment of backtest.
+- Press "ctrl+n" for next.
+- Press "ctrl+q" for quit debug mode.
 
 #TODO gif
 

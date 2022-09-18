@@ -66,7 +66,7 @@ class HistoricalDataFeeds(ZMQ):
         self.__validate_downloaded_data_folder()
         self.__file_names_to_load, self.__data_to_download =  self.__check_if_all_data_exists(self.__data_schema.data)
         if len(self.__data_to_download) > 0:
-            if not self.__download_data(self.__data_to_download):
+            if not await self.__download_data(self.__data_to_download):
                 self._log('Error while downloading')
                 self.__stop_all_services()
         self.data_parts = self.__prepare_loading_data_structure(self.__file_names_to_load)
@@ -207,12 +207,12 @@ class HistoricalDataFeeds(ZMQ):
         return file_names
 
 
-    def __download_data(self, data_to_download) -> bool:
+    async def __download_data(self, data_to_download) -> bool:
         for instrument_file_name in data_to_download:
             data_instrument = instrument_file_name[:-4]
             source, instrment, interval, time_start, time_stop = tuple(data_instrument.split('__'))
             data_source_client: DataSource = self.__get_data_source_client(source)
-            if not data_source_client.download_instrument_data(self.downloaded_data_path, 
+            if not await data_source_client.download_instrument_data(self.downloaded_data_path, 
                                                             instrument_file_name, 
                                                             instrment, interval, 
                                                             int(time_start), 

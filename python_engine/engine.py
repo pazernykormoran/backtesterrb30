@@ -177,7 +177,7 @@ class Engine(ZMQ):
     async def __keyboard_listener(self):
         self._log('To enter debug mode press "d"')
         while True:
-            if keyboard.is_pressed('d'): 
+            if keyboard.is_pressed('ctrl+d'): 
                 if self.__debug_mode == False:
                     self._log('You have entered Debug mode \n\
                                  -> press "n" to next step\n\
@@ -185,14 +185,14 @@ class Engine(ZMQ):
                     self.__debug_mode = True
                 while keyboard.is_pressed('d'):
                     await asyncio.sleep(0.1)
-            if keyboard.is_pressed('n'):
+            if keyboard.is_pressed('ctrl+n'):
                 if self.__debug_mode == True and self.__debug_next_pressed == False and self.__code_stopped_debug:
                     self._log('next step ... \n\
                                 -> press "q" to leave debug mode')
                     self.__debug_next_pressed = True
                 while keyboard.is_pressed('n'):
                     await asyncio.sleep(0.1)
-            if keyboard.is_pressed('q'):
+            if keyboard.is_pressed('ctrl+q'):
                 if self.__debug_mode == True:
                     self._log('You have leaved Debug mode \n\
                                 -> press "d" to enter debug mode again')

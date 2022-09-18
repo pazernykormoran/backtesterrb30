@@ -13,5 +13,5 @@ class RB30DataSource(DataSource):
     async def validate_instrument_data(self, data: DataSymbol):
         return True
 
-    def download_instrument_data(self, downloaded_data_path: str, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
+    async def download_instrument_data(self, downloaded_data_path: str, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
         return True

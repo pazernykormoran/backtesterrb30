@@ -139,4 +139,5 @@ else:
 - dodać zapis logów do pliku.    
 - przy pobieraniu swiec uzupelniaj jednak dane o brakujące swiece...
 - add some safety function checking if downloaded data is in the proper order.
+- add predicted donwloading time for exante and others
 """
