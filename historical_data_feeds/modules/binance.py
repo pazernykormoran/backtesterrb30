@@ -1,12 +1,15 @@
+from typing import Union
 from xmlrpc.client import DateTime
 from binance import Client
+from binance.helpers import interval_to_milliseconds
 from datetime import datetime
 import pandas as pd
 from os.path import join
 from historical_data_feeds.modules.data_source_base import DataSource
+from libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from libs.utils.historical_sources import BINANCE_INTERVALS
 from libs.interfaces.utils.data_symbol import DataSymbol
-# from historical_data_feeds.modules.utils import validate_dataframe_timestamps
+from historical_data_feeds.modules.utils import validate_dataframe_timestamps
 from os import getenv
 from libs.utils.singleton import singleton
 
@@ -19,7 +22,7 @@ class BinanceDataSource(DataSource):
         self.client = Client(binance_api_key, binance_api_secret)
 
     #override
-    async def _validate_instrument_data(self, data: DataSymbol):
+    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         #validate if instrument exists:
         exchange_info = self.client.get_exchange_info()
         if data.symbol not in [s['symbol'] for s in exchange_info['symbols']]:
@@ -40,21 +43,16 @@ class BinanceDataSource(DataSource):
     #override
     async def _download_instrument_data(self,
                         downloaded_data_path: str, 
-                        instrument_file_name:str, 
-                        instrument: str, 
-                        interval: str, 
-                        time_start: int, 
-                        time_stop: int) -> bool:
-        self._log('Downloading binance data', instrument_file_name)
-        # try:
-        if interval == 'tick': 
-
+                        instrument_file: InstrumentFile) -> bool:
+        self._log('Downloading binance data', instrument_file.to_filename())
+        if instrument_file.interval == 'tick': 
             interval_timestamp = 1000*60*60
             trades_arr = []
-            start_hour = time_start
+            start_hour = instrument_file.time_start
             stop_hour = start_hour + interval_timestamp
-            while stop_hour < time_stop:
-                trades = self.client.get_aggregate_trades(symbol=instrument, startTime=start_hour, endTime=stop_hour)
+            while stop_hour < instrument_file.time_stop:
+                trades = self.client.get_aggregate_trades(symbol=instrument_file.instrument, 
+                        startTime=start_hour, endTime=stop_hour)
                 # print('trades', trades)
                 trades_arr = trades_arr + trades
                 start_hour += interval_timestamp
@@ -62,21 +60,25 @@ class BinanceDataSource(DataSource):
             df = pd.DataFrame(trades_arr)
             df = df[['T','p']]
         else:
-            binance_interval = self.__get_binance_interval(interval)
-            klines = self.client.get_historical_klines(instrument, binance_interval, time_start, time_stop)
+            binance_interval = self.__get_binance_interval(instrument_file.interval)
+            klines = self.client.get_historical_klines(instrument_file.instrument, 
+                    binance_interval, instrument_file.time_start, instrument_file.time_stop)
             df = pd.DataFrame(klines).iloc[:-1, [0,1]]
             # if interval != STRATEGY_INTERVALS.tick.value:
             #     df = validate_dataframe_timestamps(df, interval, time_start, time_stop)
 
-        df.to_csv(join(downloaded_data_path, instrument_file_name), index=False, header=False)
+            # print('binance shape after dl: ', df.shape)
+            # print('head', str(df.head(1)))
+            # print('tail', str(df.tail(1)))
 
-        # except Exception as e: 
-        #     self._log('Excepted', e)
-        #     return False
+        df.to_csv(join(downloaded_data_path, instrument_file.to_filename()), 
+                index=False, header=False)
 
-        return True
 
-    def __get_binance_interval(self, interval: str):
+    def _get_interval_miliseconds(self, interval: str) -> Union[int,None]: 
+        return interval_to_milliseconds(self.__get_binance_interval(interval))
+
+    def __get_binance_interval(self, interval: str) -> str :
         if interval == 'minute': return Client.KLINE_INTERVAL_1MINUTE
         if interval == 'minute3': return Client.KLINE_INTERVAL_3MINUTE
         if interval == 'minute5': return Client.KLINE_INTERVAL_5MINUTE

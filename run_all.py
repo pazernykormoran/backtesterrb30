@@ -146,4 +146,5 @@ else:
 - test out the async downloading files and handle situation if all data sources would has async staff.
 - add get cache function
 - przerobic logikę pobierania na jakas latwiejsza np po prosta call funkcjo download dla symbolu ktora sprawdza ktore pliki trzeba pobrac 
+- do kazdego elementu z data_schema daj mozliwosc display chart oraz w log scale or not.
 """

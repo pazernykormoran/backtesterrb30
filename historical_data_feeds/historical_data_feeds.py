@@ -93,7 +93,6 @@ class HistoricalDataFeeds(ZMQ):
 
     async def __historical_data_loop_ticks(self):
         # waiting for zero mq ports starts up
-        print('historical loop')
         await asyncio.sleep(0.5)
         while True:
             # if self.__data_downloaded(self.__data_to_download): 
@@ -123,8 +122,6 @@ class HistoricalDataFeeds(ZMQ):
                             super()._send(SERVICES.python_engine, 'historical_sending_locked')
                             while self.__sending_locked:
                                 await asyncio.sleep(0.01)
-                #     self._log('=================== datapart has finished')
-                # self._log('=================== Historical data has finished')
 
                 super()._send(SERVICES.python_engine, 'data_finish')
                 break
@@ -293,12 +290,7 @@ class HistoricalDataFeeds(ZMQ):
     async def __download_symbol_files(self, files: List[InstrumentFile], source: HISTORICAL_SOURCES):
         data_source_client: DataSource = self.__get_data_source_client(source.value)
         for file in files:
-            await data_source_client.download_instrument(self.downloaded_data_path, 
-                                                            file.to_filename(), 
-                                                            file.instrument, 
-                                                            file.interval, 
-                                                            file.time_start, 
-                                                            file.time_stop)
+            await data_source_client.download_instrument(self.downloaded_data_path, file)
 
 
     def __prepare_loading_data_structure(self, file_names_to_load) -> dict:

@@ -7,7 +7,7 @@ class Model(Engine):
     def __init__(self, config):
         super().__init__(config)
         self.counter = 0
-        self._set_buffer_length(200)
+        self._set_buffer_length(2)
 
     #override
     async def on_feed(self, data: list):

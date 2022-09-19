@@ -6,8 +6,18 @@ from libs.utils.data_imports import *
 # datetime_start = datetime(2022,8,1)
 # datatime_finish = datetime(2022,8,2)
 
-datetime_start = datetime(2020,8,4)
-datatime_finish = datetime(2022,8,6)
+# datetime_start = datetime(2020,8,4)
+# datatime_finish = datetime(2022,8,6)
+
+# datetime_start = datetime(2020,8,4)
+# datatime_finish = datetime(2022,8,6)
+
+# error in exante download length last timestamp:
+datetime_start = datetime(2021,1,4)
+datatime_finish = datetime(2021,12,6)
+
+# datetime_start = datetime(2021,1,4)
+# datatime_finish = datetime(2021,12,8)
 
 data={
     'log_scale_valuation_chart': True,
