@@ -27,7 +27,7 @@ class DukascopyDataSource(DataSource):
         if interval == 'month': return 'mn1'
 
 
-    async def validate_instrument_data(self, data: DataSymbol):
+    async def _validate_instrument_data(self, data: DataSymbol):
         # https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/master/src/utils/instrument-meta-data/generated/raw-meta-data-2022-04-23.json
         # response = requests.get("http://api.open-notify.org/astros.json")
         from_datetime_timestamp = int(round(datetime.timestamp(data.backtest_date_start) * 1000))
@@ -48,8 +48,8 @@ class DukascopyDataSource(DataSource):
 
         return True
 
-    async def download_instrument_data(self, downloaded_data_path: str, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
-        self._log('_download_ducascopy_data', instrument_file_name)
+    async def _download_instrument_data(self, downloaded_data_path: str, instrument_file_name:str, instrument: str, interval: str, time_start: int, time_stop: int):
+        self._log('Downloading dukascopy data', instrument_file_name)
         """
         documentation: 
         https://github.com/Leo4815162342/dukascopy-node

@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import time as tm
 import numpy as np
 from typing import List, Union
+from datetime import datetime
 
 class Backtester(ZMQ):
     
@@ -192,7 +193,7 @@ class Backtester(ZMQ):
 
     async def __trade_event(self, msg):
         trade: Trade = Trade(**msg)
-        self._log(f"Received trade: {trade}")
+        self._log(f"Received trade: timestamp={datetime.fromtimestamp(trade.timestamp/1000)}, quantity={trade.quantity}, price={trade.price}")
         self.__trade(trade)
 
     async def __close_all_trades_event(self, msg):

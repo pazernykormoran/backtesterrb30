@@ -61,19 +61,19 @@
 #     fig.canvas.flush_events()
 
 #====================================================
-from xnt.http_api import HTTPApi, current_api, AuthMethods
-from os import getenv
-from dotenv import load_dotenv
-load_dotenv()
-import json
+# from xnt.http_api import HTTPApi, current_api, AuthMethods
+# from os import getenv
+# from dotenv import load_dotenv
+# load_dotenv()
+# import json
 
-exante_app_id=getenv("exante_app_id")
-exante_access_key=getenv("exante_access_key")
+# exante_app_id=getenv("exante_app_id")
+# exante_access_key=getenv("exante_access_key")
 
-client = HTTPApi(AuthMethods.BASIC, appid=exante_app_id, acckey=exante_access_key)
+# client = HTTPApi(AuthMethods.BASIC, appid=exante_app_id, acckey=exante_access_key)
 
-accs = client.get_user_accounts('3.0')
-print(accs)
+# accs = client.get_user_accounts('3.0')
+# print(accs)
 # abc = client.get_currencies('3.0')
 # print(abc)
 # print('')
@@ -86,3 +86,19 @@ print(accs)
 # instrument_by_type = client.get_symbols_by_exch('NASDAQ')
 # print('instrument_by_type downloaded')
 # print('jsoning.')
+
+# from datetime import datetime, timezone
+# d = datetime.now()
+# d= d.replace(tzinfo=timezone.utc)
+# print(d.tzinfo is not None and d.tzinfo.utcoffset(d) is not None)
+
+# import time
+# t = time.time()
+# print('')
+# print(t*1000)
+
+objectos = {
+    1: "asd"
+}
+
+print(objectos[0])

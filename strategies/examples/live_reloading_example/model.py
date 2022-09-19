@@ -1,17 +1,4 @@
 from libs.utils.model_imports import *
-from random import randint
-
-async def live_reloading_function(data, state, _trigger_event, _debug_breakpoint):
-    if state['counter'] % 30 == 0:
-        quant = randint(-2,2)
-        if quant != 0:
-            message = {
-                'value': quant
-            }
-            await _debug_breakpoint()
-            _trigger_event(message)
-    state['counter'] += 1
-
 
 class Model(Engine):
     
@@ -22,7 +9,7 @@ class Model(Engine):
         }
         self._set_buffer_length(200)
         self.live_reloading_module = self._add_reloading_module(
-                'strategies.'+self.config.strategy_name+'.model')
+                'strategies.'+self.config.strategy_name+'.live_reloading.live_reloading')
         
     #override
     async def on_feed(self, data: list):

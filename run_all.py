@@ -140,4 +140,10 @@ else:
 - przy pobieraniu swiec uzupelniaj jednak dane o brakujące swiece...
 - add some safety function checking if downloaded data is in the proper order.
 - add predicted donwloading time for exante and others
+- use close price as well just before end of session.
+- playing in many main instruments.
+- test commented piece of code in exante module
+- test out the async downloading files and handle situation if all data sources would has async staff.
+- add get cache function
+- przerobic logikę pobierania na jakas latwiejsza np po prosta call funkcjo download dla symbolu ktora sprawdza ktore pliki trzeba pobrac 
 """

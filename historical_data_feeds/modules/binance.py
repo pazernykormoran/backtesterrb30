@@ -19,7 +19,7 @@ class BinanceDataSource(DataSource):
         self.client = Client(binance_api_key, binance_api_secret)
 
     #override
-    async def validate_instrument_data(self, data: DataSymbol):
+    async def _validate_instrument_data(self, data: DataSymbol):
         #validate if instrument exists:
         exchange_info = self.client.get_exchange_info()
         if data.symbol not in [s['symbol'] for s in exchange_info['symbols']]:
@@ -27,7 +27,10 @@ class BinanceDataSource(DataSource):
             return False
         #validate it timestamps perios is right:
         from_datetime_timestamp = int(round(datetime.timestamp(data.backtest_date_start) * 1000))
-        binance_interval = self.__get_binance_interval(data.interval.value)
+        if data.interval == BINANCE_INTERVALS.tick:
+            binance_interval = Client.KLINE_INTERVAL_1MINUTE
+        else:
+            binance_interval = self.__get_binance_interval(data.interval.value)
         first_timestamp = self.client._get_earliest_valid_timestamp(data.symbol, binance_interval)
         if first_timestamp > from_datetime_timestamp:
             self._log("Error. First avaliable date of " , data.symbol, "is" , datetime.fromtimestamp(first_timestamp/1000.0))
@@ -35,14 +38,14 @@ class BinanceDataSource(DataSource):
         return True
     
     #override
-    async def download_instrument_data(self,
+    async def _download_instrument_data(self,
                         downloaded_data_path: str, 
                         instrument_file_name:str, 
                         instrument: str, 
                         interval: str, 
                         time_start: int, 
                         time_stop: int) -> bool:
-        self._log('downloading binance data', instrument_file_name)
+        self._log('Downloading binance data', instrument_file_name)
         # try:
         if interval == 'tick': 
 

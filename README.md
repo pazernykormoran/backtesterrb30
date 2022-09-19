@@ -110,7 +110,7 @@ class Model(Engine):
         self.counter += 1
 ~~~
 
-Below you can check alternative example with live reloading function that allows you live developement in debug mode:
+Below you can check alternative example with live reloading function that allows you live developement in debug mode. The live_reloading_function can be in any outside module. All Model attributes that you want to use in this function must be passed by arguments.
 ~~~
 from libs.utils.model_imports import *
 from random import randint

@@ -11,7 +11,7 @@ class Model(Engine):
 
     #override
     async def on_feed(self, data: list):
-        if self.counter % 30 == 0:
+        if self.counter % 10 == 0:
             quant = randint(-2,2)
             if quant != 0:
                 message = {
