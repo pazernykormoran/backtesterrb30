@@ -41,3 +41,64 @@
 # for s in exchange_info['symbols']:
 #     print(s['symbol'])
 # ===========================================
+
+# import matplotlib.pyplot as plt
+# import numpy as np
+
+# x = np.linspace(0, 6*np.pi, 100)
+# y = np.sin(x)
+
+# # You probably won't need this if you're embedding things in a tkinter plot...
+# plt.ion()
+
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# line1, = ax.plot(x, y, 'r-') # Returns a tuple of line objects, thus the comma
+
+# for phase in np.linspace(0, 10*np.pi, 500):
+#     line1.set_ydata(np.sin(x + phase))
+#     fig.canvas.draw()
+#     fig.canvas.flush_events()
+
+#====================================================
+# from xnt.http_api import HTTPApi, current_api, AuthMethods
+# from os import getenv
+# from dotenv import load_dotenv
+# load_dotenv()
+# import json
+
+# exante_app_id=getenv("exante_app_id")
+# exante_access_key=getenv("exante_access_key")
+
+# client = HTTPApi(AuthMethods.BASIC, appid=exante_app_id, acckey=exante_access_key)
+
+# accs = client.get_user_accounts('3.0')
+# print(accs)
+# abc = client.get_currencies('3.0')
+# print(abc)
+# print('')
+# # symbols = client.get_symbols()
+# # print(symbols)
+# exchanges = client.get_exchanges()
+# print('exchanges')
+# print(exchanges)
+
+# instrument_by_type = client.get_symbols_by_exch('NASDAQ')
+# print('instrument_by_type downloaded')
+# print('jsoning.')
+
+# from datetime import datetime, timezone
+# d = datetime.now()
+# d= d.replace(tzinfo=timezone.utc)
+# print(d.tzinfo is not None and d.tzinfo.utcoffset(d) is not None)
+
+# import time
+# t = time.time()
+# print('')
+# print(t*1000)
+
+objectos = {
+    1: "asd"
+}
+
+print(objectos[0])

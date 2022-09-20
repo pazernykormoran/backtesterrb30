@@ -4,116 +4,130 @@ from asyncio import AbstractEventLoop
 import zmq
 import zmq.asyncio
 import asyncio
-from libs.list_of_services.list_of_services import SERVICES
-from libs.zmq.service import Service
-from libs.interfaces.config import Config
+from libs.utils.list_of_services import SERVICES
+from libs.utils.service import Service
+from libs.interfaces.utils.config import Config
 from os import _exit
 from pydantic import BaseModel
+from json import dumps, loads
+
 
 class ZMQ(Service, ABC):
 
-    _is_running: bool
-    _is_active: bool
+    __is_running: bool
+    __is_active: bool
 
-    _commands: Dict[str, Callable]
+    __commands: Dict[str, Callable]
 
     # override
     def __init__(self, config: Config, logger=print):
         super().__init__(config, logger)
         self.config=config
-        self._is_running = False
-        self._is_active = False
+        self.__is_running = False
+        self.__is_active = False
 
-        self._pub = None
-        self._subs = []
+        self.__pub = None
+        self.__subs = []
         
 
-        self._commands = {'start': self._start,
+        self.__commands = {'start': self._start,
                           'pause': self._pause,
                           'stop': self._stop}
 
     # override
     def run(self):
-        self._init_sockets(self.config)
-        self._is_running = True
-        self._is_active = True
+        self.__init_sockets(self.config)
+        self.__is_running = True
+        self.__is_active = True
         super().run()
 
+
     # override
-    def _send(self, service: SERVICES, msg: dict or BaseModel, *args):
-        if isinstance(msg,BaseModel):
-            msg = msg.dict()
-        if self._is_active:
+    def _send(self, service: SERVICES, msg: str, *args):
+        if self.__is_active:
             data = [service.value.encode('utf-8'), msg.encode('utf-8')]
             for arg in args:
+                if isinstance(arg,BaseModel):
+                    arg = arg.dict()
+                arg = dumps(arg)
                 data.append(arg.encode('utf-8'))
-            self._pub.send_multipart(data)
+            self.__pub.send_multipart(data)
+
 
     @abstractmethod
     def _handle_zmq_message(self, msg: str):
         pass
 
-    def _init_sockets(self, config: Config):
-        sub_context = zmq.asyncio.Context()
-        pub_context = zmq.Context()
-        for sub in config.sub:
-            s = sub_socket(sub_context, 'tcp://' + config.ip + ':' + str(sub.port), sub.topic)
-            self._subs.append(s)
-        self._pub = pub_socket(pub_context, 'tcp://*:' + str(config.pub.port))
+    def _register(self, command: str, func: Callable):
+        self.__commands[command] = func
 
 
     def _create_listeners(self, loop:AbstractEventLoop):
         self._log('Start main loop')
-        for sub in self._subs:
-            loop.create_task(self._listen_zmq(sub))
+        for sub in self.__subs:
+            loop.create_task(self.__listen_zmq(sub))
 
 
-    async def _listen_zmq(self, sub):
-        while self._is_running:
+    async def __listen_zmq(self, sub):
+        while self.__is_running:
 
-            if self._is_active:
+            if self.__is_active:
                 data = await sub.recv_multipart()
                 if data:
-                    self._handle(data)
+                    await self.__handle(data)
+                await asyncio.sleep(0.00001)
             else:
                 await asyncio.sleep(0.01)
-        self._deinit()
+        self.__deinit()
 
-    def _handle(self, data):
+
+    def __init_sockets(self, config: Config):
+        sub_context = zmq.asyncio.Context()
+        pub_context = zmq.Context()
+        for sub in config.sub:
+            s = sub_socket(sub_context, 'tcp://' + config.ip + ':' + str(sub.port), sub.topic)
+            self.__subs.append(s)
+        self.__pub = pub_socket(pub_context, 'tcp://*:' + str(config.pub.port))
+
+
+    async def __handle(self, data):
         data = [x.decode('utf-8') for x in data]
         if len(data) >= 2:
             topic, cmd, *args = data
-            func = self._commands.get(cmd)
+            func = self.__commands.get(cmd)
             if func:
                 # self._log(f'Receive "{cmd}" command')
                 if args:
-                    func(*args)
+                    args_loaded = []
+                    for arg in args:
+                        args_loaded.append(loads(arg))
+                    await func(*args_loaded)
                 else:
-                    func()
+                    await func()
             else:
                 self._log(f"Command '{cmd}' not registered")
-
         self._handle_zmq_message(data)
 
-    def _deinit(self):
-        for pub in self._pubs.values():
-            pub.close()
+
+    def __deinit(self):
+        self.__pub.close()
+
 
     def _stop(self):
         self._log("Service stoped")
-        self._is_running = False
+        self.__is_running = False
         _exit(1)
+
 
     def _start(self):
         self._log("Service started")
-        self._is_active = True
+        self.__is_active = True
+
 
     def _pause(self):
         self._log("Service paused")
-        self._is_active = False
+        self.__is_active = False
 
-    def register(self, command: str, func: Callable):
-        self._commands[command] = func
 
 def sub_socket(context: zmq.asyncio.Context(), url: str, topic: str):
     sub = context.socket(zmq.SUB)

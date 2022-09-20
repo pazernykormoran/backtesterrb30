@@ -6,6 +6,7 @@ sudo pip3 install pydantic
 sudo pip3 install python-binance
 sudo pip3 install pandas
 sudo pip3 install matplotlib
+sudo pip3 install keyboard
 
 sudo apt install -y nodejs
 sudo apt install -y npm

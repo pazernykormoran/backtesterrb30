@@ -1,132 +1,230 @@
 
 from abc import abstractmethod
 import asyncio
-from json import dumps, loads
-from typing import Callable, List
+from typing import List, Union
+from libs.interfaces.python_backtester.custom_chart import CustomChart
+from libs.interfaces.python_backtester.data_finish import DataFinish 
+from libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint 
+from libs.interfaces.python_engine.custom_chart_element import CustomChartElement
 from libs.zmq.zmq import ZMQ
-from libs.list_of_services.list_of_services import SERVICES
+from libs.utils.list_of_services import SERVICES
 import pandas as pd
-from libs.data_feeds.data_feeds import DataSchema
-from importlib import import_module
-from libs.interfaces.utils import JSONSerializable
+from libs.interfaces.utils.data_schema import DataSchema
+from importlib import import_module, reload
+from libs.utils.json_serializable import JSONSerializable
+import keyboard
 
 
 class Engine(ZMQ):
-    # override
-
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
         self.__data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__data_buffer_dict = [ [] for col in self.__columns]
 
-        self.__data_buffer_pandas = pd.DataFrame(columns=self.__columns)
-        self.__data_buffer = []
         self.__buffer_length = 100
+        self.__custom_charts: List[CustomChart] = []
+        self.__debug_mode = False
+        self.__debug_next_pressed = False
+        self.__reloading_modules = []
+        self.__send_breakpoint_after_feed = False
+        self.__backtest_finished = False
+        self.__code_stopped_debug = False
 
-        self.register("data_feed", self.__data_feed_event_3)
-        self.register("historical_sending_locked", self.__historical_sending_locked_event)
-        self.register("data_finish", self.__data_finish_event)
+        super()._register("data_feed", self.__data_feed_event)
+        super()._register("historical_sending_locked", self.__historical_sending_locked_event)
+        super()._register("data_finish", self.__data_finish_event)
+
+    # public methods:
+    # ==================================================================
 
     @abstractmethod
-    def on_feed(self, data):
+    async def on_feed(self, data):
         pass
+
 
     def on_data_finish(self):
         pass
 
-    # override
-    def _loop(self):
-        loop = asyncio.get_event_loop()
-        # loop.create_task(self._listen_zmq())
-        self._create_listeners(loop)
-        loop.create_task(self.__some_loop())
-        loop.run_forever()
-        loop.close()
-
-    async def __some_loop(self):
-        while True:
-            await asyncio.sleep(2)
-            # self._log('somethind')
-
-    # override
-    def _handle_zmq_message(self, message):
-        pass
 
     def _get_columns(self):
+        """
+        Function return column names of data_schema.
+        """
         return self.__columns
 
-    def _set_buffer_length(self, length: int):
-        self.__buffer_length = length
-
-    def _trigger_event(self, event: JSONSerializable):
-        msg = {
-            'price': self.__get_main_intrument_price_3(),
-            'timestamp': self.__data_buffer_dict[0][-1],
-            'message': event
-        }
-        self._send(SERVICES.python_executor,'event', dumps(msg))
 
     def _get_main_intrument_number(self):
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
         return num + 1
 
-    def __get_main_intrument_price(self):
-         # first function
-        num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
-        return self.__data_buffer[-1][num+1]
 
-    def __get_main_intrument_price_2(self):
-        num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
-        return self.__data_buffer_pandas.iloc[-1, num+1]
+    def _set_buffer_length(self, length: int):
+        self.__buffer_length = length
 
-    def __get_main_intrument_price_3(self, price_delay_steps = -1):
+
+    def _trigger_event(self, event: JSONSerializable):
+        """
+        Function sends custom message to trade executor service.
+        """
+        msg = {
+            'price': self.__get_main_intrument_price(),
+            'timestamp': self.__data_buffer_dict[0][-1],
+            'message': event
+        }
+        super()._send(SERVICES.python_executor,'event', msg)
+    
+
+    def _add_custom_chart(self, 
+                    chart: List[CustomChartElement], 
+                    name: str, 
+                    display_on_price_chart: Union[bool, None] = None, 
+                    log_scale: Union[bool, None] = None, 
+                    color: Union[str, None] = None):
+        """
+        Function allows adding custom chart to your strategy.
+        Function gets:
+            - display_on_price_chart: variable indicates if chart should be displayed
+                in the main chart with prices
+            - log_scale: variable indicates if chart should be in the log scale. 
+                Skipped if display_on_price_chart is true because information about this chart is 
+                set in data_schema file
+            - color: color of matplotlib chart for example 'red', 'blue' ..
+        """
+        chart_obj = {
+            'chart': chart,
+            'display_on_price_chart': display_on_price_chart,
+            'name': name
+        }
+        if display_on_price_chart: chart_obj['display_on_price_chart'] = display_on_price_chart
+        if log_scale: chart_obj['log_scale'] = log_scale
+        if color: chart_obj['color'] = color
+        self.__custom_charts.append(chart_obj)
+
+    
+    async def _debug_breakpoint(self):
+        """
+        Function causes breakpoint if debug mode is turned on.
+        """
+        if self.__debug_mode == True:
+            self.__code_stopped_debug = True
+            while True:
+                if self.__debug_mode == False:
+                    for module in self.__reloading_modules:
+                        reload(module)
+                    self.__code_stopped_debug = False
+                    return
+                if self.__debug_next_pressed == True:
+                    for module in self.__reloading_modules:
+                        reload(module)
+                    self.__debug_next_pressed = False
+                    self.__send_breakpoint_after_feed = True
+                    self.__code_stopped_debug = False
+                    return 
+                await asyncio.sleep(0.1)
+
+
+    def _add_reloading_module(self, module_path: str):
+        """
+            Function gets path to module
+            Function returning added module
+        """
+        module = import_module(module_path)
+        self.__reloading_modules.append(module)
+        return module
+
+    # ==================================================================
+    # end of public methods
+    
+
+    #private methods:
+
+    def _send(): pass
+    def _register(): pass
+    def _create_listeners(): pass
+
+
+    # override
+    def _loop(self):
+        loop = asyncio.get_event_loop()
+        super()._create_listeners(loop)
+        loop.create_task(self.__keyboard_listener())
+        loop.run_forever()
+        loop.close()
+
+
+    # override
+    def _handle_zmq_message(self, message):
+        pass
+
+
+    def __send_debug_breakpoint(self):
+        breakpoint_params= {}
+        breakpoint_params['last_timestamp'] = self.__data_buffer_dict[0][-1]
+        breakpoint_params['main_instrument_price'] = self.__get_main_intrument_price()
+        breakpoint_params['custom_charts'] = self.__custom_charts
+        self._log('sending debug breakpoint')
+        super()._send(SERVICES.python_executor,'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
+
+    def __get_main_intrument_price(self, price_delay_steps = -1):
+        if len(self.__data_buffer_dict[0]) == 0: 
+            self._log('No data has yet received.')
+            return 0
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
         return self.__data_buffer_dict[num+1][price_delay_steps]
 
+
+    async def __keyboard_listener(self):
+        self._log('To enter debug mode press "ctrl+d"')
+        while True:
+            if keyboard.is_pressed('ctrl+d'): 
+                if self.__debug_mode == False:
+                    self._log('You have entered Debug mode \n\
+                                 -> press "n" to next step\n\
+                                 -> press "q" to leave debug mode')
+                    self.__debug_mode = True
+                while keyboard.is_pressed('d'):
+                    await asyncio.sleep(0.1)
+            if keyboard.is_pressed('ctrl+n'):
+                if self.__debug_mode == True and self.__debug_next_pressed == False and self.__code_stopped_debug:
+                    self._log('next step ... \n\
+                                -> press "q" to leave debug mode')
+                    self.__debug_next_pressed = True
+                while keyboard.is_pressed('n'):
+                    await asyncio.sleep(0.1)
+            if keyboard.is_pressed('ctrl+q'):
+                if self.__debug_mode == True:
+                    self._log('You have leaved Debug mode \n\
+                                -> press "d" to enter debug mode again')
+                    self.__debug_mode = False
+                while keyboard.is_pressed('q'):
+                    await asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)
+
+
     #COMMANDS
-    def __data_feed_event_2(self, new_data_row):
-        # using this function everythink runs 10 time slower.
-        new_data_row = loads(new_data_row)
-        if self.__data_buffer_pandas.shape[0]>self.__buffer_length:
-            self.__data_buffer_pandas.drop(self.__data_buffer_pandas.head(1).index,inplace=True)
-        new_data_df = pd.DataFrame([new_data_row], columns=self.__columns)
-        # print('shape of new df, ', new_data_df.shape)
-        self.__data_buffer_pandas = pd.concat([self.__data_buffer_pandas, new_data_df])
-        self.on_feed(self.__data_buffer_pandas)
 
-
-    def __data_feed_event_3(self, new_data_row):
-        new_data_row = loads(new_data_row)
-        # self.__data_buffer.append(new_data_row)
+    async def __data_feed_event(self, new_data_row):
         for i, v in enumerate(new_data_row):
             self.__data_buffer_dict[i].append(v)
         if len(self.__data_buffer_dict[0])>self.__buffer_length:
             for i, v in enumerate(new_data_row):
                 self.__data_buffer_dict[i].pop(0)
-            self.on_feed(self.__data_buffer_dict)
-
-
-    def __data_feed_event(self, new_data_row):
-        new_data_row = loads(new_data_row)
-        self.__data_buffer.append(new_data_row)
-        if len(self.__data_buffer)>self.__buffer_length:
-            self.__data_buffer.pop(0)
-            self.on_feed(self.__data_buffer)
+            await self.on_feed(self.__data_buffer_dict)
+            if self.__send_breakpoint_after_feed: 
+                self.__send_debug_breakpoint()
+                self.__send_breakpoint_after_feed = False
         
         
-    def __historical_sending_locked_event(self):
-        # self._log('sending unlocked to historical data feeds')
-        self._send(SERVICES.historical_data_feeds,'unlock_historical_sending')
+    async def __historical_sending_locked_event(self):
+        super()._send(SERVICES.historical_data_feeds,'unlock_historical_sending')
 
     
-    def __data_finish_event(self, finish_params):
+    async def __data_finish_event(self):
         self.on_data_finish()
-        finish_params = loads(finish_params)
-        if len(self.__data_buffer_dict[0]) == 0: 
-            self._log('No data has received')
-            finish_params['main_instrument_price'] = 0
-        else:
-            finish_params['main_instrument_price'] = self.__get_main_intrument_price_3()
-        
-        self._send(SERVICES.python_backtester, 'data_finish', dumps(finish_params))
+        self.__debug_mode = False
+        self.__backtest_finished = True
+        finish_params = {}
+        finish_params['custom_charts'] = self.__custom_charts
+        finish_params['main_instrument_price'] = self.__get_main_intrument_price()
+        super()._send(SERVICES.python_backtester, 'data_finish', DataFinish(**finish_params))

@@ -1,10 +1,6 @@
 from pydantic import BaseModel
 from typing import List
-
-class NetInfo(BaseModel):
-    topic: str
-    port: int
-
+from libs.interfaces.utils.net_info import NetInfo
 
 class Config(BaseModel):
     name: str

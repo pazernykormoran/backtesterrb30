@@ -1,4 +1,4 @@
-from libs.necessery_imports.executor_imports import *
+from libs.utils.executor_imports import *
 
 class TradeExecutor(Executor):
 

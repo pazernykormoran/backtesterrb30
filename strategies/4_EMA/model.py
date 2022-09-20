@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import joblib
 
-from libs.necessery_imports.model_imports import *
+from libs.utils.model_imports import *
 from random import randint
 import os
 import pandas_ta as pta
@@ -19,7 +19,7 @@ class Model(Engine):
 
         self.rsi_arr = []
 
-    def on_feed(self, buffor: list):
+    async def on_feed(self, buffor: list):
         df = pd.DataFrame(np.array(buffor).T, columns=self._get_columns())
         col = self._get_columns()[-1]
         ema_8 = df[col].ewm(span=8).mean().values[-1]
