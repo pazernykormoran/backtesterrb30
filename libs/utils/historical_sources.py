@@ -57,11 +57,19 @@ class EXANTE_INTERVALS(Enum):
                 cls.minute,
                cls.minute5]
 
+class COINGECKO_INTERVALS(Enum):
+    day4='day4'
+
+    @classmethod
+    def get_small_intervals(cls):
+        return []
+
 
 class HISTORICAL_SOURCES(Enum):
     binance='binance'
     ducascopy='ducascopy'
     rb30disk='rb30disk'
     exante='exante'
+    coingecko='coingecko'
 
-HISTORICAL_INTERVALS_UNION = Union[BINANCE_INTERVALS, DUKASCOPY_INTERVALS, EXANTE_INTERVALS]
+HISTORICAL_INTERVALS_UNION = Union[BINANCE_INTERVALS, DUKASCOPY_INTERVALS, EXANTE_INTERVALS, COINGECKO_INTERVALS]

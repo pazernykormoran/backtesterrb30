@@ -27,12 +27,12 @@ class DataSource():
     async def download_instrument(self,
                         downloaded_data_path: str, 
                         instrument_file: InstrumentFile): 
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.1)
         await self._download_instrument_data(downloaded_data_path, instrument_file)
         
 
     async def validate_instrument(self, data: DataSymbol) -> bool:
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.1)
         return await self._validate_instrument_data(data)
 
     @abstractmethod

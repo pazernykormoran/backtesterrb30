@@ -36,7 +36,7 @@ class BinanceDataSource(DataSource):
             binance_interval = self.__get_binance_interval(data.interval.value)
         first_timestamp = self.client._get_earliest_valid_timestamp(data.symbol, binance_interval)
         if first_timestamp > from_datetime_timestamp:
-            self._log("Error. First avaliable date of " , data.symbol, "is" , datetime.fromtimestamp(first_timestamp/1000.0))
+            self._log("Error. First avaliable date of " , data.symbol, "is" , datetime.utcfromtimestamp(first_timestamp/1000.0))
             return False
         return True
     

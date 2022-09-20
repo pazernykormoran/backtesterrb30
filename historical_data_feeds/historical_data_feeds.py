@@ -1,6 +1,7 @@
 
 import asyncio
 from typing import List
+from historical_data_feeds.modules.coingecko import CoingeckoDataSource
 from libs.interfaces.python_backtester.data_start import DataStart
 from libs.zmq.zmq import ZMQ
 from libs.utils.list_of_services import SERVICES, SERVICES_ARRAY
@@ -44,6 +45,7 @@ class HistoricalDataFeeds(ZMQ):
         self.__register_data_source(HISTORICAL_SOURCES.exante, ExanteDataSource)
         self.__register_data_source(HISTORICAL_SOURCES.ducascopy, DukascopyDataSource)
         self.__register_data_source(HISTORICAL_SOURCES.rb30disk, RB30DataSource)
+        self.__register_data_source(HISTORICAL_SOURCES.coingecko, CoingeckoDataSource)
 
         # register commands
         self._register("unlock_historical_sending", self.__unlock_historical_sending_event)

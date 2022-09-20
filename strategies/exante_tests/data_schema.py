@@ -32,6 +32,15 @@ data={
             'backtest_date_stop': datatime_finish,
             'trigger_feed': True,
             'interval': EXANTE_INTERVALS.hour
+        },
+        {
+            'symbol': 'bitcoin',
+            'historical_data_source': HISTORICAL_SOURCES.coingecko,
+            'main': False,
+            'backtest_date_start': datetime_start,
+            'backtest_date_stop': datatime_finish,
+            'trigger_feed': False,
+            'interval': COINGECKO_INTERVALS.day4
         }
     ]
 }
