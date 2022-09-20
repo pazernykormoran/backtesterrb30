@@ -18,5 +18,6 @@ class Model(Engine):
                     'value': quant
                 }
                 self._trigger_event(message)
+                await self._debug_breakpoint()
         self.counter += 1
 

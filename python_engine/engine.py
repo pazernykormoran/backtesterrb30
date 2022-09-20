@@ -175,7 +175,7 @@ class Engine(ZMQ):
 
 
     async def __keyboard_listener(self):
-        self._log('To enter debug mode press "d"')
+        self._log('To enter debug mode press "ctrl+d"')
         while True:
             if keyboard.is_pressed('ctrl+d'): 
                 if self.__debug_mode == False:

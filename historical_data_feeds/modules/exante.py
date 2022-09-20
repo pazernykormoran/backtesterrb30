@@ -34,26 +34,26 @@ class ExanteDataSource(DataSource):
     #override
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         #TODO check if volume necessery or not.
-        # data_type = DataType.QUOTES
+        data_type = DataType.QUOTES
 
-        # start_validation_time = time()
-        # candles = None
-        # while True:
-        #     candles = self.client.get_ohlc(symbol=data.symbol, 
-        #                 duration=60, start=1, end=time()*1000, version='3.0', 
-        #                 limit=1, agg_type=data_type)
-        #     if candles != None or time() - start_validation_time > 61:
-        #         break
-        #     self._log('Performing Exante validation going to take up to 1 minute')
-        #     await asyncio.sleep(10)
-        # if candles == None:
-        #     self._log('Error. Instrument "'+data.symbol+'" probably does not exists on exante.')
-        #     return False
-        # # from_datetime_timestamp = int(from_datetime.timestamp() * 1000)
-        # first_datetime = candles[0].timestamp
-        # if first_datetime > data.backtest_date_start:
-        #     self._log("Error. First avaliable date of " , data.symbol, "is" , first_datetime)
-        #     return False
+        start_validation_time = time()
+        candles = None
+        while True:
+            candles = self.client.get_ohlc(symbol=data.symbol, 
+                        duration=60, start=1, end=time()*1000, version='3.0', 
+                        limit=1, agg_type=data_type)
+            if candles != None or time() - start_validation_time > 61:
+                break
+            self._log('Performing Exante validation going to take up to 1 minute')
+            await asyncio.sleep(10)
+        if candles == None:
+            self._log('Error. Instrument "'+data.symbol+'" probably does not exists on exante.')
+            return False
+        # from_datetime_timestamp = int(from_datetime.timestamp() * 1000)
+        first_datetime = candles[0].timestamp
+        if first_datetime > data.backtest_date_start:
+            self._log("Error. First avaliable date of " , data.symbol, "is" , first_datetime)
+            return False
         return True
 
     async def __wait(self):
@@ -66,7 +66,7 @@ class ExanteDataSource(DataSource):
                         instrument_file: InstrumentFile):
         self._log('Downloading exante data', instrument_file.to_filename())
         # try:
-        # await self.__wait()
+        await self.__wait()
         if instrument_file.interval == 'tick': 
             limit = 5000
             floating_start = instrument_file.time_start

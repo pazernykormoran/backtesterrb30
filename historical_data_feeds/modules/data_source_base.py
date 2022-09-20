@@ -11,7 +11,7 @@ class DataSource():
         self._allow_synchronous_download = allow_synchronous_download
         self._log = logger
 
-    def _raise_error(error_message):
+    def _raise_error(self, error_message):
         raise Exception(error_message)
 
     def __validate_dataframe(self, 
