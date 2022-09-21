@@ -8,9 +8,8 @@ from libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
 from libs.interfaces.python_engine.custom_chart_element import CustomChartElement
 from libs.zmq.zmq import ZMQ
 from libs.utils.list_of_services import SERVICES
-import pandas as pd
 from libs.interfaces.utils.data_schema import DataSchema
-from importlib import import_module, reload
+from libs.utils.module_loaders import import_data_schema, import_spec_module, reload_spec_module
 from libs.utils.json_serializable import JSONSerializable
 import keyboard
 
@@ -18,7 +17,7 @@ import keyboard
 class Engine(ZMQ):
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.__data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
+        self.__data_schema: DataSchema = import_data_schema(self.config.strategy_name)
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__data_buffer_dict = [ [] for col in self.__columns]
 
@@ -110,13 +109,22 @@ class Engine(ZMQ):
             self.__code_stopped_debug = True
             while True:
                 if self.__debug_mode == False:
-                    for module in self.__reloading_modules:
-                        reload(module)
+                    for spec, module in self.__reloading_modules:
+                        # reload(module)
+                        reload_spec_module(spec, module)
+                        # spec.loader.exec_module(module)
+
+                        # module = SourceFileLoader('strategies.hackaton1.reloading_module.reloading_methods', '/home/george/workspace/project/Retire-Before-30/Engine-RB30/strategies/hackaton1/reloading_module/reloading_methods.py')
+
                     self.__code_stopped_debug = False
                     return
                 if self.__debug_next_pressed == True:
-                    for module in self.__reloading_modules:
-                        reload(module)
+                    for spec, module in self.__reloading_modules:
+                        # reload(module)
+                        reload_spec_module(spec, module)
+                        spec.loader.exec_module(module)
+                        # module = SourceFileLoader('strategies.hackaton1.reloading_module.reloading_methods', '/home/george/workspace/project/Retire-Before-30/Engine-RB30/strategies/hackaton1/reloading_module/reloading_methods.py')
+
                     self.__debug_next_pressed = False
                     self.__send_breakpoint_after_feed = True
                     self.__code_stopped_debug = False
@@ -129,8 +137,9 @@ class Engine(ZMQ):
             Function gets path to module
             Function returning added module
         """
-        module = import_module(module_path)
-        self.__reloading_modules.append(module)
+        spec, module = import_spec_module(module_path)
+        self.__reloading_modules.append((spec, module))
+        reload_spec_module(spec,module)
         return module
 
     # ==================================================================

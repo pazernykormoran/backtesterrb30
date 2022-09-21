@@ -1,15 +1,9 @@
-from typing import Dict, Tuple, Type
 from os import getenv, system
 from dotenv import load_dotenv
-import importlib
-from libs.zmq.zmq import ZMQ
-from enum import Enum
+from libs.utils.module_loaders import import_data_schema, import_model_module, import_executor_module
 from sys import argv
-from pydantic import BaseModel
-import time
 from libs.utils.list_of_services import SERVICES_ARRAY
 from libs.interfaces.utils.data_schema import DataSchema
-from datetime import datetime
 
 #TODO hardcoded backtest mode: 
 backtest_state='true'
@@ -70,9 +64,9 @@ def create_port_configurations():
         
         
 def validate_strategy(strategy_name):
-    data_schema: DataSchema = importlib.import_module('strategies.'+strategy_name+'.data_schema').DATA
-    model_module = importlib.import_module('strategies.'+strategy_name+'.model')
-    executor_module = importlib.import_module('strategies.'+strategy_name+'.executor')
+    data_schema: DataSchema = import_data_schema(strategy_name)
+    model_module = import_model_module(strategy_name)
+    executor_module = import_executor_module(strategy_name)
     class Asd:
         name = "test",
         strategy_name = strategy_name

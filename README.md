@@ -24,11 +24,20 @@ All the data related to your strategy like models,
 ## Data schema
 
 In "data_schema.py" configure your input data schema and strategy intervals using "DataSchema" interface and list of avaliable instruments avaliable in adequate data source.
-Avaliable data sources: 
-- [ binance ] avaliable instruments in "historical_data_feeds/binance_instruments.txt"
-- [ ducascopy ] avaliable instruments in https://github.com/Leo4815162342/dukascopy-node
-- [ exante ] avaliable instruments in https://drive.google.com/drive/folders/1qJAGedEWhGehG2Hh48ITgE7LjGWwyzOw?usp=sharing
 
+Avaliable data sources: 
+- [ binance ] 
+  - avaliable instruments in "historical_data_feeds/binance_instruments.txt"
+- [ ducascopy ] 
+  - avaliable instruments in https://github.com/Leo4815162342/dukascopy-node
+- [ exante ] 
+  - avaliable instruments in https://drive.google.com/drive/folders/1qJAGedEWhGehG2Hh48ITgE7LjGWwyzOw?usp=sharing
+  - used package: https://github.com/xntltd/python-http-api
+- [ coingecko ] 
+  - avaliable instruments in https://docs.google.com/spreadsheets/d/1wTTuxXt8n9q7C4NDXqQpI3wpKu1_5bGVmP9Xz0XGSyU/edit?usp=sharingdescription
+  - description in: https://www.coingecko.com/en/api/documentation
+  - used package: https://github.com/man-c/pycoingecko
+  
 Variables in data elements explanation: 
 - [ symbol ] - string representing one of instruments from provided data source.
 - [ historical_data_source ] - HISTORICAL_SOURCES enum element.

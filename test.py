@@ -1,4 +1,3 @@
-# import importlib
 
 # # Contrived example of generating a module named as a string
 # full_module_name = "serve"
@@ -29,6 +28,7 @@
 
 # ===========================================
 # # # # # binance avaliable instruments
+# from datetime import datetime
 # from binance.client import Client
 # from os import getenv
 # from dotenv import load_dotenv
@@ -38,6 +38,10 @@
 # api_key=getenv("binance_api_key")
 # client = Client(api_key, api_secret)
 # exchange_info = client.get_exchange_info()
+# klines = client.get_historical_klines('BTCUSDT', 
+#         Client.KLINE_INTERVAL_1MONTH, 1609718400000, 1638921600000)
+# for kl in klines:
+#     print(datetime.utcfromtimestamp(kl[0]/1000))
 # for s in exchange_info['symbols']:
 #     print(s['symbol'])
 # ===========================================
@@ -97,8 +101,37 @@
 # print('')
 # print(t*1000)
 
-objectos = {
-    1: "asd"
-}
+# class Asd():
+    
+#     def __init__(self):
+#         pass
 
-print(objectos[0])
+#     def set_com_broker(self, com_broker):
+#         self.com_broker = com_broker
+
+#     def service_call(self):
+#         print('service call')
+#         self.com_broker.broker_call()
+
+
+# class Broker():
+#     def __init__(self, service):
+#         self.service = service
+
+#     def broker_call(self):
+#         print('broker call')
+#         self.service.service_call()
+
+# asd = Asd()
+
+# broker = Broker(asd)
+
+# asd.set_com_broker(broker)
+
+# asd.service_call()
+# =========================================
+# from importlib.machinery import SourceFileLoader
+
+# foo = SourceFileLoader("module.name", "/home/george/workspace/project/Retire-Before-30/Engine-RB30/test2.py").load_module()
+# foo.asd()
+# ============================================

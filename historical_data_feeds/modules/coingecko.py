@@ -9,12 +9,15 @@ from libs.utils.historical_sources import COINGECKO_INTERVALS
 from libs.utils.timestamps import datetime_to_timestamp, timestamp_to_datetime
 from pycoingecko import CoinGeckoAPI
 from libs.utils.singleton import singleton
+import time
+import asyncio
 
 @singleton
 class CoingeckoDataSource(DataSource):
     def __init__(self, logger=print):
         super().__init__(False, logger)
         self.client = CoinGeckoAPI()
+        self.__last_request_time = 0
 
     #override
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
@@ -39,6 +42,10 @@ class CoingeckoDataSource(DataSource):
                         instrument_file: InstrumentFile) -> bool:
         self._log('Downloading coingecko data', instrument_file.to_filename())
         if instrument_file.interval == COINGECKO_INTERVALS.day4.value:
+            actual_time = time.time()
+            if actual_time - self.__last_request_time < 0.025:
+                self._log('waitin')
+                await asyncio.sleep(0.025 - (actual_time - self.__last_request_time))
             candles = self.client.get_coin_ohlc_by_id(instrument_file.instrument, vs_currency='usd', days='max')
             df = pd.DataFrame(candles)
             df = df[df[0] >= instrument_file.time_start]

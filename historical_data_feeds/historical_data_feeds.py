@@ -15,7 +15,7 @@ from historical_data_feeds.modules.exante import *
 from libs.interfaces.utils.config import Config
 from libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from libs.utils.timestamps import datetime_to_timestamp
-from importlib import import_module
+from libs.utils.module_loaders import import_data_schema
 from datetime import datetime, timezone
 from os import path, mkdir, getenv
 from os import listdir
@@ -31,7 +31,7 @@ class HistoricalDataFeeds(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.__data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
+        self.__data_schema: DataSchema = import_data_schema(self.config.strategy_name)
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__historical_sources_array = [i for i in dir(HISTORICAL_SOURCES) if not i.startswith('__')]
         self.__data_sources_classes = {}

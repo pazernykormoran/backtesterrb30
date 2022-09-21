@@ -8,7 +8,7 @@ from libs.interfaces.python_backtester.trade import Trade
 from libs.interfaces.python_backtester.money_state import MoneyState
 from libs.interfaces.python_backtester.data_finish import DataFinish, CustomChart
 from libs.interfaces.utils.data_schema import DataSchema
-from importlib import import_module
+from libs.utils.module_loaders import import_data_schema
 from libs.utils.list_of_services import SERVICES, SERVICES_ARRAY
 import pandas as pd
 from os.path import join
@@ -24,7 +24,7 @@ class Backtester(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.data_schema: DataSchema = import_module('strategies.'+self.config.strategy_name+'.data_schema').DATA
+        self.data_schema: DataSchema = import_data_schema(self.config.strategy_name)
         
         self.main_instrument_chart = []
         # self.cumulated_money_chart: List[MoneyState] = []
