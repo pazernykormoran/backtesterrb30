@@ -1,9 +1,9 @@
 from os import getenv, system
 from dotenv import load_dotenv
-from libs.utils.module_loaders import import_data_schema, import_model_module, import_executor_module
+from backtesterRB30.libs.utils.module_loaders import import_data_schema, import_model_module, import_executor_module
 from sys import argv
-from libs.utils.list_of_services import SERVICES_ARRAY
-from libs.interfaces.utils.data_schema import DataSchema
+from backtesterRB30.libs.utils.list_of_services import SERVICES_ARRAY
+from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
 
 #TODO hardcoded backtest mode: 
 backtest_state='true'

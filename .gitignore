@@ -9,3 +9,6 @@ package-lock.json
 package.json
 .vscode
 Strategies-RB30
+build
+dist
+backtesterRB30.egg-info

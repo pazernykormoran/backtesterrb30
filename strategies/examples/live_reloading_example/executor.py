@@ -1,4 +1,4 @@
-from libs.utils.executor_imports import *
+from backtesterRB30.libs.utils.executor_imports import *
 
 class TradeExecutor(Executor):
 

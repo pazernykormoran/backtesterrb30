@@ -1,4 +1,4 @@
-from libs.utils.model_imports import *
+from backtesterRB30.libs.utils.model_imports import *
 
 class Model(Engine):
     

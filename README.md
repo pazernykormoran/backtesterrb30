@@ -47,7 +47,7 @@ Variables in data elements explanation:
 - [ trigger_feed ] - Decision if this data feeds triggers on_feed function in your model with new buffer update. At least one instrument must have trigger_feed set on True.
 - [ interval ] - Element of intervals enum corresponding to provided historical data source.
 ~~~
-from libs.utils.data_imports import *
+from backtesterRB30.libs.utils.data_imports import *
 
 data={
     'data':[
@@ -97,7 +97,7 @@ Avaliable methods to use:
 
 Below you can check basic example with random trades:
 ~~~
-from libs.utils.model_imports import *
+from backtesterRB30.libs.utils.model_imports import *
 from random import randint
 
 class Model(Engine):
@@ -121,7 +121,7 @@ class Model(Engine):
 
 Below you can check alternative example with live reloading function that allows you live developement in debug mode. The live_reloading_function can be in any outside module. All Model attributes that you want to use in this function must be passed by arguments.
 ~~~
-from libs.utils.model_imports import *
+from backtesterRB30.libs.utils.model_imports import *
 from random import randint
 
 async def live_reloading_function(data, state, _trigger_event, _debug_breakpoint):
@@ -171,7 +171,7 @@ Avaliable methods to use:
 
 Below you can check simple executor class that triggers trade based on Model message:
 ~~~
-from libs.utils.executor_imports import *
+from backtesterRB30.libs.utils.executor_imports import *
 
 class TradeExecutor(Executor):
 
