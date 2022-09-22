@@ -1,7 +1,7 @@
-from backtesterRB30.libs.utils.model_imports import *
+import backtesterRB30 as bt
 from random import randint
 
-class Model(Engine):
+class Model(bt.Engine):
     
     def __init__(self, config):
         super().__init__(config)

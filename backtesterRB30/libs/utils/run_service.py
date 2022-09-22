@@ -1,11 +1,12 @@
-from os import getenv
+import os
 from backtesterRB30.libs.utils.service import Service
 
 def run_service(microservice_name: str, service_class: Service):
-    strategy_path = getenv('STRATEGY_PATH')
-    sub_ports = [int(p) for p in getenv(microservice_name+'_subs').split(',')]
-    pub_port = int(getenv(microservice_name+'_pubs'))
-    backtest_state = getenv('backtest_state')
+    here = os.getcwd()
+    strategy_path = os.path.join(here, os.getenv('STRATEGY_PATH'))
+    sub_ports = [int(p) for p in os.getenv(microservice_name+'_subs').split(',')]
+    pub_port = int(os.getenv(microservice_name+'_pubs'))
+    backtest_state = os.getenv('backtest_state')
     from backtesterRB30.libs.interfaces.utils.config import Config
 
     config = {

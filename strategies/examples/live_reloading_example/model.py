@@ -1,6 +1,7 @@
-from backtesterRB30.libs.utils.model_imports import *
+import backtesterRB30 as bt
+from os.path import join
 
-class Model(Engine):
+class Model(bt.Engine):
     
     def __init__(self, config):
         super().__init__(config)
@@ -9,7 +10,7 @@ class Model(Engine):
         }
         self._set_buffer_length(200)
         self.live_reloading_module = self._add_reloading_module(
-                self.config.strategy_path+'live_reloading/live_reloading.py')
+                join(self.config.strategy_path, 'live_reloading/live_reloading.py'))
         
     #override
     async def on_feed(self, data: list):
