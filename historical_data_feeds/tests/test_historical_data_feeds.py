@@ -3,7 +3,7 @@ from  historical_data_feeds.historical_data_feeds import HistoricalDataFeeds
 
 class TestConfig:
     name = "test",
-    strategy_name = 'hackaton1'
+    strategy_path = 'hackaton1'
 
 class TestHistoricalDataFeeds(unittest.TestCase):
 

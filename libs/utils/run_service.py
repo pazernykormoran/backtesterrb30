@@ -2,7 +2,7 @@ from os import getenv
 from libs.utils.service import Service
 
 def run_service(microservice_name: str, service_class: Service):
-    strategy_name = getenv('STRATEGY_NAME')
+    strategy_path = getenv('STRATEGY_PATH')
     sub_ports = [int(p) for p in getenv(microservice_name+'_subs').split(',')]
     pub_port = int(getenv(microservice_name+'_pubs'))
     backtest_state = getenv('backtest_state')
@@ -22,7 +22,7 @@ def run_service(microservice_name: str, service_class: Service):
                 "port": pub_port
             } ,
         "backtest": True if backtest_state == 'true' else False,
-        "strategy_name": strategy_name
+        "strategy_path": strategy_path
     }
 
     service = service_class(Config(**config))

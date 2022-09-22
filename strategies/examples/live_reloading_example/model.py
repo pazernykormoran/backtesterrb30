@@ -9,7 +9,7 @@ class Model(Engine):
         }
         self._set_buffer_length(200)
         self.live_reloading_module = self._add_reloading_module(
-                'strategies.'+self.config.strategy_name+'.live_reloading.live_reloading')
+                self.config.strategy_path+'live_reloading/live_reloading.py')
         
     #override
     async def on_feed(self, data: list):

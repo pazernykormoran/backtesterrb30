@@ -8,4 +8,4 @@ class Config(BaseModel):
     sub: List[NetInfo]
     pub: NetInfo
     backtest: bool
-    strategy_name: str
+    strategy_path: str

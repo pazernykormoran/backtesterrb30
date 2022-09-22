@@ -24,7 +24,7 @@ class Backtester(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.data_schema: DataSchema = import_data_schema(self.config.strategy_name)
+        self.data_schema: DataSchema = import_data_schema(self.config.strategy_path)
         
         self.main_instrument_chart = []
         # self.cumulated_money_chart: List[MoneyState] = []

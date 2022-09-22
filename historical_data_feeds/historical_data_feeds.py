@@ -31,7 +31,7 @@ class HistoricalDataFeeds(ZMQ):
 
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
-        self.__data_schema: DataSchema = import_data_schema(self.config.strategy_name)
+        self.__data_schema: DataSchema = import_data_schema(self.config.strategy_path)
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__historical_sources_array = [i for i in dir(HISTORICAL_SOURCES) if not i.startswith('__')]
         self.__data_sources_classes = {}

@@ -23,11 +23,11 @@ if not file_exists:
 
 
 load_dotenv()
-strategy_name = getenv('STRATEGY_NAME')
-if not strategy_name or strategy_name == '':
+strategy_path = getenv('STRATEGY_PATH')
+if not strategy_path or strategy_path == '':
     print('Error: provide strategy name in .env file like: \nstrategy=name_of_strategy')
     exit()
-print('running strategy name: ', strategy_name)
+print('running strategy name: ', strategy_path)
 
 
 services_array = SERVICES_ARRAY
@@ -63,19 +63,19 @@ def create_port_configurations():
             f.write(subs_str)
         
         
-def validate_strategy(strategy_name):
-    data_schema: DataSchema = import_data_schema(strategy_name)
-    model_module = import_model_module(strategy_name)
-    executor_module = import_executor_module(strategy_name)
+def validate_strategy(strategy_path):
+    data_schema: DataSchema = import_data_schema(strategy_path)
+    model_module = import_model_module(strategy_path)
+    executor_module = import_executor_module(strategy_path)
     class Asd:
         name = "test",
-        strategy_name = strategy_name
+        strategy_path = strategy_path
     config = Asd()
     model = model_module.Model(config)
     executor = executor_module.TradeExecutor(config)
 
 print('validating strategy')
-validate_strategy(strategy_name)
+validate_strategy(strategy_path)
 print('preparing microservice ports configuration')
 create_port_configurations()
 with open('.additional_configs', 'a') as f:
