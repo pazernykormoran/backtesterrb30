@@ -10,7 +10,7 @@ Engine-RB30 is a framework to backtest and run live your market strategies.
 
 1. provide .env file with name of strategy existing in strategies folder like:
 ~~~
-strategy="examples.basic_example"
+STRATEGY_NAME="examples.basic_example"
 ~~~
 1. To install dependencies locally run: "bash install_dependencies_locally.sh"
 

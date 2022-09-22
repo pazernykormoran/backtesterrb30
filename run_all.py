@@ -31,7 +31,7 @@ if not file_exists:
 load_dotenv()
 strategy_name = getenv('STRATEGY_NAME')
 if not strategy_name or strategy_name == '':
-    print('Error: provide strategy name in .env file like: \nstrategy=name_of_strategy')
+    print('Error: provide strategy name in .env file like: \nSTRATEGY_NAME="examples.basic_example"')
     exit()
 print('running strategy name: ', strategy_name)
 
