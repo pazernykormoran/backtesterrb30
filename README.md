@@ -2,105 +2,29 @@
 
 # Description
 
-Engine-RB30 is a framework to backtest and run live your market strategies.
+Engine-RB30 is a framework to backtest and run live your market strategies. Working only on linux.
 
 ![Picture](./Figure_1.png)
 
 # Quick start
 
-1. provide .env file with name of strategy existing in strategies folder like:
+
+### Create strategy files
+
+    .
+    ├── strategy_name                    
+    │   ├── model.py           
+    │   ├── executor.py          
+    │   └── data_schema.py 
+    ├── run.py            
+    └── .env
+
+model.py:
 ~~~
-STRATEGY_PATH="/home/name/workspace/strategies/hackaton1"
-~~~
-1. To install dependencies locally run: "bash install_dependencies_locally.sh"
-
-2. Run local backtest with command: "python3 run_all.py"
-
-# Strategy implementation using python engine
-
-In folder "strategies" add folder with your strategy name and create three files: "data_schema.py", "executor.py", "model.py"
-All the data related to your strategy like models, 
-
-## Data schema
-
-In "data_schema.py" configure your input data schema and strategy intervals using "DataSchema" interface and list of avaliable instruments avaliable in adequate data source.
-
-Avaliable data sources: 
-- [ binance ] 
-  - avaliable instruments in "historical_data_feeds/binance_instruments.txt"
-- [ ducascopy ] 
-  - avaliable instruments in https://github.com/Leo4815162342/dukascopy-node
-- [ exante ] 
-  - avaliable instruments in https://drive.google.com/drive/folders/1qJAGedEWhGehG2Hh48ITgE7LjGWwyzOw?usp=sharing
-  - used package: https://github.com/xntltd/python-http-api
-- [ coingecko ] 
-  - avaliable instruments in https://docs.google.com/spreadsheets/d/1wTTuxXt8n9q7C4NDXqQpI3wpKu1_5bGVmP9Xz0XGSyU/edit?usp=sharingdescription
-  - description in: https://www.coingecko.com/en/api/documentation
-  - used package: https://github.com/man-c/pycoingecko
-  
-Variables in data elements explanation: 
-- [ symbol ] - string representing one of instruments from provided data source.
-- [ historical_data_source ] - HISTORICAL_SOURCES enum element.
-- [ main ] - instrument on which transactions are made on. Only one instrument must have main set on True.
-- [ backtest_date_start ] - start of historical data
-- [ backtest_date_stop ] - end of historical data
-- [ trigger_feed ] - Decision if this data feeds triggers on_feed function in your model with new buffer update. At least one instrument must have trigger_feed set on True.
-- [ interval ] - Element of intervals enum corresponding to provided historical data source.
-~~~
-from backtesterRB30.libs.utils.data_imports import *
-
-data={
-    'data':[
-        {
-            'symbol': '2914jpjpy',
-            'historical_data_source': HISTORICAL_SOURCES.ducascopy,
-            'main': False,
-            'backtest_date_start': datetime(2021,5,1),
-            'backtest_date_stop': datetime(2022,8,1),
-            'trigger_feed': False,
-            'interval': DUKASCOPY_INTERVALS.hour,
-        },
-        {
-            'symbol': 'iefususd',
-            'historical_data_source': HISTORICAL_SOURCES.ducascopy,
-            'main': True,
-            'backtest_date_start': datetime(2021,5,1),
-            'backtest_date_stop': datetime(2022,8,1),
-            'trigger_feed': True,
-            'interval': DUKASCOPY_INTERVALS.hour
-        }
-    ]
-}
-DATA = validate_config(data)
-~~~
-
-## Model class
-
-In "model.py" configure your model class named Model ingeriting from Engine.
-Override "on_feed" function which is triggered every interval you have choosen.
-In this class, you can use "_trigger_event" function inheritet from Engine class. This function triggers your "on_event" method in executor file.
-In this class, you can use "_set_buffer_length" which sets buffer length that is provided to on_feed method.
-
-Avaliable methods to overload: 
-- "of_feed"
-- "on_data_finish"
-
-Avaliable methods to use: 
-- "_get_columns" - Gets instrument names in proper order fitting to data provided to "on_feed" method.
-- "_get_main_intrument_number" - Gets number of instrument in your data array that is main instrument.
-- "_set_buffer_length" - Sets data buffer length provided to "on_feed" method
-- "_trigger_event" - Triggers Trade executor "event" method.
-- "_add_custom_chart" - Adds custom chart printed in summary.
-- "_debug_breakpoint" - Adds breakpoint where your code stops in debug mode.
-- "_add_reloading_module" - Add module that is going to be live reloaded while using debug mode.
-- "_log" - triggers console log
-
-Below you can check basic example with random trades:
-~~~
-from backtesterRB30.libs.utils.model_imports import *
+import backtesterRB30 as bt
 from random import randint
 
-class Model(Engine):
+class Model(bt.Engine):
     
     def __init__(self, config):
         super().__init__(config)
@@ -119,61 +43,11 @@ class Model(Engine):
         self.counter += 1
 ~~~
 
-Below you can check alternative example with live reloading function that allows you live developement in debug mode. The live_reloading_function can be in any outside module. All Model attributes that you want to use in this function must be passed by arguments.
+executor.py:
 ~~~
-from backtesterRB30.libs.utils.model_imports import *
-from random import randint
+import backtesterRB30 as bt
 
-async def live_reloading_function(data, state, _trigger_event, _debug_breakpoint):
-    if state['counter'] % 30 == 0:
-        quant = randint(-2,2)
-        if quant != 0:
-            message = {
-                'value': quant
-            }
-            await _debug_breakpoint()
-            _trigger_event(message)
-    state['counter'] += 1
-
-
-class Model(Engine):
-    
-    def __init__(self, config):
-        super().__init__(config)
-        self.state = {
-            'counter': 0
-        }
-        self._set_buffer_length(200)
-        self.live_reloading_module = self._add_reloading_module(
-                'strategies.'+self.config.strategy_name+'.model')
-        
-    #override
-    async def on_feed(self, data: list):
-        await self.live_reloading_module.live_reloading_function(
-                data, self.state, self._trigger_event, self._debug_breakpoint)
-
-
-~~~
-
-## Executor class
-
-In "executor.py" configure your trade executor class named TradeExecutor inheriting from Executor.
-Override "on_event" triggered while your implemented model returns event. In this class, you can use "_trade" function inheritet from Executor class.
-
-All avaliable methods to overload: 
-- "on_event"
-
-Avaliable methods to use: 
-- "_trade"
-- "_close_all_trades"
-- "_get_number_of_actions"
-- "_log"
-
-Below you can check simple executor class that triggers trade based on Model message:
-~~~
-from backtesterRB30.libs.utils.executor_imports import *
-
-class TradeExecutor(Executor):
+class TradeExecutor(bt.Executor):
 
     def __init__(self, config):
         super().__init__(config)
@@ -183,6 +57,51 @@ class TradeExecutor(Executor):
         self._trade(message['value'])
 ~~~
 
+data_schema.py:
+~~~
+import backtesterRB30 as bt
+from datetime import datetime
+
+data={
+    'log_scale_valuation_chart': True,
+    'data':[
+        {
+            'symbol': '2914jpjpy',
+            'historical_data_source': bt.HISTORICAL_SOURCES.ducascopy,
+            'main': False,
+            'backtest_date_start': datetime(2021,5,1),
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': False,
+            'interval': bt.DUKASCOPY_INTERVALS.hour,
+        },
+        {
+            'symbol': 'iefususd',
+            'historical_data_source': bt.HISTORICAL_SOURCES.ducascopy,
+            'main': True,
+            'backtest_date_start': datetime(2021,5,1),
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': True,
+            'interval': bt.DUKASCOPY_INTERVALS.hour
+        }
+    ]
+}
+DATA = bt.validate_config(data)
+~~~
+
+run.py:
+~~~
+from backtesterRB30 import run_all_microservices
+run_all_microservices()
+~~~
+
+.env:
+~~~
+STRATEGY_PATH="strategy_name"
+~~~
+run it calling:
+> python3 run.py
+
+#
 # Debug mode
 
 ## Usage of debug mode
