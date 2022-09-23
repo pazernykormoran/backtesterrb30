@@ -99,9 +99,19 @@ run_all_microservices()
 STRATEGY_PATH="strategy_name"
 ~~~
 run it calling:
-> python3 run.py
+> sudo python3 run.py
 
 #
+# Requirements
+For package working you have to have node and npm with npx installed.
+~~~
+sudo apt  install curl
+curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+sudo apt install -y nodejs
+sudo apt install -y npm
+npm install dukascopy-node --save
+~~~
+
 # Debug mode
 
 ## Usage of debug mode

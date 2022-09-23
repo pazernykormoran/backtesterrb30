@@ -8,8 +8,10 @@ import pandas as pd
 from backtesterRB30.historical_data_feeds.modules.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from os import getenv
+from os import getenv, getcwd
 from backtesterRB30.libs.utils.singleton import singleton
+import importlib.resources
+import json
 
 # from backtesterRB30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
 
@@ -43,8 +45,10 @@ class DukascopyDataSource(DataSource):
         # https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/master/src/utils/instrument-meta-data/generated/raw-meta-data-2022-04-23.json
         # response = requests.get("http://api.open-notify.org/astros.json")
         from_datetime_timestamp = int(round(datetime.timestamp(data.backtest_date_start) * 1000))
-        f = open('temporary_ducascopy_list.json')
-        instrument_list = load(f)['instruments']
+        # f = open('temporary_ducascopy_list.json')
+        # instrument_list = load(f)['instruments']
+        with importlib.resources.open_text("backtesterRB30", "temporary_ducascopy_list.json") as file:
+            instrument_list = json.load(file)['instruments']
         #validate if instrument exists:
         if data.symbol.upper() not in [v['historical_filename'] for k, v in instrument_list.items()]:
             self._log('Error. Instrument "'+data.symbol+'" does not exists on ducascopy.')
@@ -72,7 +76,8 @@ class DukascopyDataSource(DataSource):
         duca_interval = self.__get_ducascopy_interval(instrument_file.interval)
         from_param = datetime.fromtimestamp(instrument_file.time_start//1000.0).strftime("%Y-%m-%d")
         to_param = datetime.fromtimestamp(instrument_file.time_stop//1000.0).strftime("%Y-%m-%d")
-        cache_path = './cache_ducascopy'
+        here = getcwd()
+        cache_path = join(here, 'cache_dukascopy')
         system('rm -r ' + cache_path)
         string_params = [
             ' -i '+ instrument_file.instrument,
@@ -95,7 +100,8 @@ class DukascopyDataSource(DataSource):
             df = df.iloc[1:, [0,2]]
         else:
             df = df.iloc[1:, [0,1]]
-        remove(join(cache_path, name_of_created_file))
+        if name_of_created_file and name_of_created_file != '':
+            remove(join(cache_path, name_of_created_file))
         # print('Dukascopy df shape after dl', df.shape)
         # print('head', str(df.head(1)))
         # print('tail', str(df.tail(1)))

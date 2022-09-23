@@ -28,7 +28,7 @@ run_file_commands_array = [
     'trap ctrl_c INT\n'
     'function ctrl_c() {\n'
     '        echo "** Trapped CTRL-C"\n'
-    '        killall python3 \n'
+    '        sudo killall python3 \n'
     '        exit 2\n'
     '}\n'
     'sudo python3 serve.py python_backtester &\n'
@@ -135,9 +135,9 @@ def run_all_microservices():
     with open('.additional_configs', 'a') as f:
         f.write('backtest_state='+backtest_state)
     if backtest_state:
-        system('sudo bash run.sh') 
+        system('bash run.sh') 
     else:
         print('live strategies not implemented')
         
     # print('starting all containers')
-    # system('sudo docker-compose up --build --remove-orphans')
+    # system('docker-compose up --build --remove-orphans')
