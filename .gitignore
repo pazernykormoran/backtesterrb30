@@ -3,6 +3,7 @@
 .additional_configs
 **/data_historical_downloaded
 cache_ducascopy
+cache_dukascopy
 node_modules
 download
 package-lock.json
