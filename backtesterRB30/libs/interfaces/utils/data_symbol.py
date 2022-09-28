@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-from typing import Optional, Union
 from datetime import datetime
+from pydantic import BaseModel
+from typing import Optional
 from backtesterRB30.libs.utils.historical_sources import HISTORICAL_INTERVALS_UNION, HISTORICAL_SOURCES
 
 class DataSymbol(BaseModel):

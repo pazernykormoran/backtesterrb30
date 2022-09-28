@@ -5,7 +5,7 @@ from binance.helpers import interval_to_milliseconds
 from datetime import datetime
 import pandas as pd
 from os.path import join
-from backtesterRB30.historical_data_feeds.modules.data_source_base import DataSource
+from backtesterRB30.historical_data_feeds.modules.data_source_base import DataSource, UnregularIntervalMiliseconds
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from backtesterRB30.libs.utils.historical_sources import BINANCE_INTERVALS
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
@@ -75,7 +75,11 @@ class BinanceDataSource(DataSource):
                 index=False, header=False)
 
 
-    def _get_interval_miliseconds(self, interval: str) -> Union[int,None]: 
+    def _get_interval_miliseconds(self, interval: str) -> Union[int, UnregularIntervalMiliseconds]: 
+        if interval == BINANCE_INTERVALS.tick.value: return UnregularIntervalMiliseconds.smaller_than_minute
+        if interval == BINANCE_INTERVALS.day3.value: return UnregularIntervalMiliseconds.bigger_than_day
+        if interval == BINANCE_INTERVALS.week.value: return UnregularIntervalMiliseconds.bigger_than_day
+        if interval == BINANCE_INTERVALS.month.value: return UnregularIntervalMiliseconds.bigger_than_day
         return interval_to_milliseconds(self.__get_binance_interval(interval))
 
     def __get_binance_interval(self, interval: str) -> str :
