@@ -2,9 +2,7 @@
 
 # Description
 
-Engine-RB30 is a framework to backtest and run live your market strategies.
-
-![Picture](./Figure_1.png)
+Engine-RB30 is a framework for stock market analysis.
 
 # Quick start
 
@@ -26,7 +24,7 @@ All the data related to your strategy like models,
 In "data_schema.py" configure your input data schema and strategy intervals using "DataSchema" interface and list of avaliable instruments avaliable in adequate data source.
 Avaliable data sources: 
 - [ binance ] avaliable instruments in "historical_data_feeds/binance_instruments.txt"
-- [ ducascopy ] avaliable instruments in https://github.com/Leo4815162342/dukascopy-node
+- [ dukascopy ] avaliable instruments in https://github.com/Leo4815162342/dukascopy-node
 - [ exante ] avaliable instruments in https://drive.google.com/drive/folders/1qJAGedEWhGehG2Hh48ITgE7LjGWwyzOw?usp=sharing
 
 Variables in data elements explanation: 
