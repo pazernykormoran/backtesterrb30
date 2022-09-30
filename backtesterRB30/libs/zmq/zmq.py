@@ -49,7 +49,7 @@ class ZMQ(Service, ABC):
             for arg in args:
                 if isinstance(arg,BaseModel):
                     arg = arg.dict()
-                arg = dumps(arg)
+                arg = dumps(arg, default=str)
                 data.append(arg.encode('utf-8'))
             self.__pub.send_multipart(data)
 

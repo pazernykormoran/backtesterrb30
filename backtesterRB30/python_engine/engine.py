@@ -4,7 +4,8 @@ import asyncio
 from typing import List, Union
 from backtesterRB30.libs.interfaces.python_backtester.custom_chart import CustomChart
 from backtesterRB30.libs.interfaces.python_backtester.data_finish import DataFinish 
-from backtesterRB30.libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint 
+from backtesterRB30.libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
+from backtesterRB30.libs.interfaces.python_backtester.last_feed import LastFeed
 from backtesterRB30.libs.interfaces.python_engine.custom_chart_element import CustomChartElement
 from backtesterRB30.libs.zmq.zmq import ZMQ
 from backtesterRB30.libs.utils.list_of_services import SERVICES
@@ -19,7 +20,7 @@ class Engine(ZMQ):
         super().__init__(config, logger)
         self.__data_schema: DataSchema = import_data_schema(self.config.strategy_path)
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
-        self.__data_buffer_dict = [ [] for col in self.__columns]
+        self.__data_buffer = [ [] for col in self.__columns]
 
         self.__buffer_length = 100
         self.__custom_charts: List[CustomChart] = []
@@ -61,17 +62,24 @@ class Engine(ZMQ):
     def _set_buffer_length(self, length: int):
         self.__buffer_length = length
 
+    def __send_last_feed(self, service: SERVICES):
+        last_feed = {
+            'last_feed': [v[-1] for v in self.__data_buffer]
+        }
+        super()._send(service, 'last_feed', LastFeed(**last_feed))
 
     def _trigger_event(self, event: JSONSerializable):
         """
         Function sends custom message to trade executor service.
         """
-        msg = {
-            'price': self.__get_main_intrument_price(),
-            'timestamp': self.__data_buffer_dict[0][-1],
-            'message': event
-        }
-        super()._send(SERVICES.python_executor,'event', msg)
+        # msg = {
+        #     'price': self.__get_main_intrument_price(),
+        #     'timestamp': self.__data_buffer[0][-1],
+        #     'message': event,
+        #     'last_feed': 
+        # }
+        self.__send_last_feed(SERVICES.python_executor)
+        super()._send(SERVICES.python_executor,'event', event)
     
 
     def _add_custom_chart(self, 
@@ -169,18 +177,19 @@ class Engine(ZMQ):
 
     def __send_debug_breakpoint(self):
         breakpoint_params= {}
-        breakpoint_params['last_timestamp'] = self.__data_buffer_dict[0][-1]
-        breakpoint_params['main_instrument_price'] = self.__get_main_intrument_price()
+        # breakpoint_params['last_timestamp'] = self.__data_buffer[0][-1]
+        # breakpoint_params['main_instrument_price'] = self.__get_main_intrument_price()
         breakpoint_params['custom_charts'] = self.__custom_charts
         self._log('sending debug breakpoint')
+        self.__send_last_feed(SERVICES.python_executor)
         super()._send(SERVICES.python_executor,'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
 
     def __get_main_intrument_price(self, price_delay_steps = -1):
-        if len(self.__data_buffer_dict[0]) == 0: 
+        if len(self.__data_buffer[0]) == 0: 
             self._log('No data has yet received.')
             return 0
         num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
-        return self.__data_buffer_dict[num+1][price_delay_steps]
+        return self.__data_buffer[num+1][price_delay_steps]
 
 
     async def __keyboard_listener(self):
@@ -215,11 +224,11 @@ class Engine(ZMQ):
 
     async def __data_feed_event(self, new_data_row):
         for i, v in enumerate(new_data_row):
-            self.__data_buffer_dict[i].append(v)
-        if len(self.__data_buffer_dict[0])>self.__buffer_length:
+            self.__data_buffer[i].append(v)
+        if len(self.__data_buffer[0])>self.__buffer_length:
             for i, v in enumerate(new_data_row):
-                self.__data_buffer_dict[i].pop(0)
-            await self.on_feed(self.__data_buffer_dict)
+                self.__data_buffer[i].pop(0)
+            await self.on_feed(self.__data_buffer)
             if self.__send_breakpoint_after_feed: 
                 self.__send_debug_breakpoint()
                 self.__send_breakpoint_after_feed = False
@@ -235,5 +244,7 @@ class Engine(ZMQ):
         self.__backtest_finished = True
         finish_params = {}
         finish_params['custom_charts'] = self.__custom_charts
-        finish_params['main_instrument_price'] = self.__get_main_intrument_price()
+        # finish_params['main_instrument_price'] = self.__get_main_intrument_price()
+        self.__send_last_feed(SERVICES.python_backtester)
         super()._send(SERVICES.python_backtester, 'data_finish', DataFinish(**finish_params))
+

@@ -6,8 +6,10 @@ from backtesterRB30.libs.utils.historical_sources import HISTORICAL_INTERVALS_UN
 class DataSymbol(BaseModel):
     symbol: str
     historical_data_source: HISTORICAL_SOURCES
-    main: bool
+    # main: bool
     interval: HISTORICAL_INTERVALS_UNION
     backtest_date_start: datetime
     backtest_date_stop: datetime
-    trigger_feed: Optional[bool]
+    trigger_feed: bool = False
+    with_volume: bool = False
+    display_chart_in_summary: bool = False

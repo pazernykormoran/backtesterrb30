@@ -1,4 +1,6 @@
 import backtesterRB30 as bt
+from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
+from random import randint
 
 class TradeExecutor(bt.Executor):
 
@@ -7,5 +9,5 @@ class TradeExecutor(bt.Executor):
 
     #override
     def on_event(self, message):
-        self._trade(message['value'])
+        self._trade(message['value'], self._get_data_schema().data[randint(0,1)])
 

@@ -34,7 +34,10 @@ class ExanteDataSource(DataSource):
     #override
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         #TODO check if volume necessery or not.
+
         data_type = DataType.QUOTES
+        if data.with_volume == True:
+            data_type = DataType.TRADES
 
         start_validation_time = time()
         candles = None
@@ -44,10 +47,10 @@ class ExanteDataSource(DataSource):
                         limit=1, agg_type=data_type)
             if candles != None or time() - start_validation_time > 61:
                 break
-            self._log('Performing Exante validation going to take up to 1 minute')
+            self._log('Performing Exante validation for this instrument going to take up to 1 minute')
             await asyncio.sleep(10)
         if candles == None:
-            self._log('Error. Instrument "'+data.symbol+'" probably does not exists on exante.')
+            self._log('Error. Instrument "'+data.symbol+'" probably does not exists on exante with this configuration. Try without volume')
             return False
         # from_datetime_timestamp = int(from_datetime.timestamp() * 1000)
         first_datetime = candles[0].timestamp

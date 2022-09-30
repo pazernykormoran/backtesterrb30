@@ -93,6 +93,22 @@ class HistoricalDataFeeds(ZMQ):
                 self.__stop_all_services()
         return client
 
+    def __send_start_params(self):
+        self.__start_time = tm.time()
+        file_names_grouped = []
+        for symbol in self.__data_schema.data:
+            file_names_grouped.append({
+                "symbol": symbol.symbol,
+                "source": symbol.historical_data_source.value,
+                "files": self.__get_instrument_files(symbol)
+            })
+        start_params = {
+            'file_names': file_names_grouped,
+            'start_time': self.__start_time
+        }
+        super()._send(SERVICES.python_backtester, 'data_start', DataStart(**start_params))
+        return
+
     async def __historical_data_loop_ticks(self):
         # waiting for zero mq ports starts up
         await asyncio.sleep(0.5)
@@ -103,14 +119,8 @@ class HistoricalDataFeeds(ZMQ):
                 
                 sending_counter = 0
                 self._log('Starting data loop')
-                self.__start_time = tm.time()
-                
-                start_params = {
-                    'file_names': [file.to_filename() for file in self.__get_instrument_files([symbol for symbol in self.__data_schema.data if symbol.main == True][0])],
-                    'start_time': self.__start_time
-                }
-                super()._send(SERVICES.python_backtester, 'data_start', DataStart(**start_params))
-
+                self.__send_start_params()
+                # return
                 last_row = []
                 for _, one_year_array in self.data_parts.items():
                     self._log('Synchronizing part of data')
@@ -132,7 +142,7 @@ class HistoricalDataFeeds(ZMQ):
     def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbol], loop: asyncio.AbstractEventLoop):
         self._log('Data_schema validation')
         data_valid = True
-        number_of_mains = 0
+        # number_of_mains = 0
         number_of_trigger_feeders = 0
         for data in data_symbol_array:
             data_source_client: DataSource = self.__get_data_source_client(data.historical_data_source.value)
@@ -155,14 +165,14 @@ class HistoricalDataFeeds(ZMQ):
             if data.historical_data_source.value not in self.__historical_sources_array: 
                 self._log('Error. This historical_data_source not implemented yet')
                 data_valid = False
-            if data.main == True:
-                number_of_mains += 1
+            # if data.main == True:
+            #     number_of_mains += 1
             if data.trigger_feed == True:
                 number_of_trigger_feeders += 1
 
-        if number_of_mains != 1:
-            self._log('Error. Your "data_schema.py" must have one main instrument')
-            data_valid = False
+        # if number_of_mains != 1:
+        #     self._log('Error. Your "data_schema.py" must have one main instrument')
+        #     data_valid = False
         if number_of_trigger_feeders < 1:
             self._log('Error. Your "data_schema.py" must have at least one instrument that triggers feeds')
             data_valid = False

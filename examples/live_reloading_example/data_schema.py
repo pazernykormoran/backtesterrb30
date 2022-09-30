@@ -12,6 +12,7 @@ data={
             'backtest_date_stop': datetime(2022,8,1),
             'trigger_feed': False,
             'interval': bt.DUKASCOPY_INTERVALS.hour,
+            'display_chart_in_summary': True
         },
         {
             'symbol': 'iefususd',
