@@ -2,25 +2,30 @@ from typing import Union
 from datetime import datetime
 import pandas as pd
 from os.path import join
-from backtesterRB30.historical_data_feeds.modules.data_source_base import DataSource
+from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.utils.historical_sources import COINGECKO_INTERVALS
+# from backtesterRB30.libs.utils.historical_sources import COINGECKO_INTERVALS
 from backtesterRB30.libs.utils.timestamps import datetime_to_timestamp, timestamp_to_datetime
 from pycoingecko import CoinGeckoAPI
 from backtesterRB30.libs.utils.singleton import singleton
 import time
 import asyncio
+from enum import Enum
 
-@singleton
+class COINGECKO_INTERVALS_2(Enum):
+    day4='day4'
+
 class CoingeckoDataSource(DataSource):
+    INTERVALS= COINGECKO_INTERVALS_2
+    NAME='coingecko'
+
     def __init__(self, logger=print):
         super().__init__(False, logger)
         self.client = CoinGeckoAPI()
         self.__last_request_time = 0
 
     #override
-    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
+    async def _validate_instrument_data(self, data) -> bool:
         try:
             candles = self.client.get_coin_ohlc_by_id(data.symbol, vs_currency='usd', days='max')
         except Exception as e:
@@ -41,7 +46,7 @@ class CoingeckoDataSource(DataSource):
                         downloaded_data_path: str, 
                         instrument_file: InstrumentFile) -> bool:
         self._log('Downloading coingecko data', instrument_file.to_filename())
-        if instrument_file.interval == COINGECKO_INTERVALS.day4.value:
+        if instrument_file.interval == COINGECKO_INTERVALS_2.day4.value:
             actual_time = time.time()
             if actual_time - self.__last_request_time < 0.025:
                 self._log('waitin')
@@ -58,5 +63,5 @@ class CoingeckoDataSource(DataSource):
                 index=False, header=False)
 
     def _get_interval_miliseconds(self, interval: str) -> Union[int,None]: 
-        if interval == COINGECKO_INTERVALS.day4.value: return 1000*60*60*24*4
+        if interval == COINGECKO_INTERVALS_2.day4.value: return 1000*60*60*24*4
 

@@ -1,26 +1,25 @@
 
 import asyncio
 from typing import List
-from backtesterRB30.historical_data_feeds.modules.coingecko import CoingeckoDataSource
+from backtesterRB30.historical_data_feeds.data_sources.coingecko.coingecko import CoingeckoDataSource
+from backtesterRB30.historical_data_feeds.data_sources.data_sources_list import HISTORICAL_SOURCES
 from backtesterRB30.libs.interfaces.python_backtester.data_start import DataStart
 from backtesterRB30.libs.zmq.zmq import ZMQ
 from backtesterRB30.libs.utils.list_of_services import SERVICES, SERVICES_ARRAY
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.utils.historical_sources import HISTORICAL_SOURCES
-from backtesterRB30.historical_data_feeds.modules.binance import *
-from backtesterRB30.historical_data_feeds.modules.dukascopy import *
-from backtesterRB30.historical_data_feeds.modules.rb30_disk import *
-from backtesterRB30.historical_data_feeds.modules.exante import *
-from backtesterRB30.libs.interfaces.utils.config import Config
+# from backtesterRB30.libs.utils.historical_sources import HISTORICAL_SOURCES
+from backtesterRB30.historical_data_feeds.data_sources.binance.binance import BinanceDataSource
+from backtesterRB30.historical_data_feeds.data_sources.dukascopy.dukascopy import DukascopyDataSource
+from backtesterRB30.historical_data_feeds.data_sources.rb30.rb30_disk import RB30DataSource
+from backtesterRB30.historical_data_feeds.data_sources.exante.exante import ExanteDataSource
+from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-from backtesterRB30.libs.utils.timestamps import datetime_to_timestamp
 from backtesterRB30.libs.utils.module_loaders import import_data_schema
-from datetime import datetime, timezone
-from os import path, mkdir, getenv
+from datetime import datetime
+from os import path, mkdir
 from os import listdir
 from os.path import isfile, join
-from binance import Client
 import pandas as pd
 from os import mkdir
 import time as tm
@@ -34,18 +33,10 @@ class HistoricalDataFeeds(ZMQ):
         self.__data_schema: DataSchema = import_data_schema(self.config.strategy_path)
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__historical_sources_array = [i for i in dir(HISTORICAL_SOURCES) if not i.startswith('__')]
-        self.__data_sources_classes = {}
         self.__data_sources = {}
         self.__sending_locked = False
         self.__start_time = 0
         self.__data_to_download_2 = None
-
-        #register data sources classes
-        self.__register_data_source(HISTORICAL_SOURCES.binance, BinanceDataSource)
-        self.__register_data_source(HISTORICAL_SOURCES.exante, ExanteDataSource)
-        self.__register_data_source(HISTORICAL_SOURCES.ducascopy, DukascopyDataSource)
-        self.__register_data_source(HISTORICAL_SOURCES.rb30disk, RB30DataSource)
-        self.__register_data_source(HISTORICAL_SOURCES.coingecko, CoingeckoDataSource)
 
         # register commands
         self._register("unlock_historical_sending", self.__unlock_historical_sending_event)
@@ -66,25 +57,19 @@ class HistoricalDataFeeds(ZMQ):
 
     def __validate_and_download(self, loop: asyncio.AbstractEventLoop):
         for source in self.__historical_sources_array:
-            if source in [data.historical_data_source.value for data in self.__data_schema.data]:
-                self.__data_sources[source]: DataSource = self.__data_sources_classes[source](self._log)
+            if source in [data.historical_data_source for data in self.__data_schema.data]:
+                self.__data_sources[source]: DataSource = getattr(HISTORICAL_SOURCES, source)(self._log)
         if not self.__validate_data_schema_instruments(self.__data_schema.data, loop): 
             self.__stop_all_services()
         self.__validate_downloaded_data_folder()
-
-        # self.__file_names_to_load, self.__data_to_download =  self.__check_if_all_data_exists(self.__data_schema.data)
-        # if len(self.__data_to_download) > 0:
-        #     if not self.__download_data(self.__data_to_download, loop):
-        #         self._log('Error while downloading')
-        #         self.__stop_all_services()
         for symbol in self.__data_schema.data:
             loop.create_task(self.__download_symbol_data(symbol))
-
-        # self.data_parts = self.__prepare_loading_data_structure(self.__file_names_to_load)
         self.data_parts = self.__prepare_loading_data_structure_2()
 
-    def __register_data_source(self, source_name: HISTORICAL_SOURCES, data_source_class):
-        self.__data_sources_classes[source_name.value] = data_source_class
+
+    # def __register_data_source(self, source_name: HISTORICAL_SOURCES, data_source_class):
+    #     self.__data_sources_classes[source_name.value] = data_source_class
+
 
     def __get_data_source_client(self, historical_source: str) -> DataSource:
         client = self.__data_sources[historical_source]
@@ -93,13 +78,14 @@ class HistoricalDataFeeds(ZMQ):
                 self.__stop_all_services()
         return client
 
+
     def __send_start_params(self):
         self.__start_time = tm.time()
         file_names_grouped = []
         for symbol in self.__data_schema.data:
             file_names_grouped.append({
                 "symbol": symbol.symbol,
-                "source": symbol.historical_data_source.value,
+                "source": symbol.historical_data_source,
                 "files": self.__get_instrument_files(symbol)
             })
         start_params = {
@@ -108,6 +94,7 @@ class HistoricalDataFeeds(ZMQ):
         }
         super()._send(SERVICES.python_backtester, 'data_start', DataStart(**start_params))
         return
+
 
     async def __historical_data_loop_ticks(self):
         # waiting for zero mq ports starts up
@@ -139,13 +126,14 @@ class HistoricalDataFeeds(ZMQ):
                 break
             await asyncio.sleep(5)
 
+
     def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbol], loop: asyncio.AbstractEventLoop):
         self._log('Data_schema validation')
         data_valid = True
         # number_of_mains = 0
         number_of_trigger_feeders = 0
         for data in data_symbol_array:
-            data_source_client: DataSource = self.__get_data_source_client(data.historical_data_source.value)
+            data_source_client: DataSource = self.__get_data_source_client(data.historical_data_source)
             res = loop.run_until_complete(data_source_client.validate_instrument(data))
             if not res:
                 self._log('Error while validation.')
@@ -162,17 +150,12 @@ class HistoricalDataFeeds(ZMQ):
                 data.backtest_date_start.microsecond] != [0,0,0,0]:
                 self._log('Error. Provide your "backtest_date_start" and "backtest_date_stop" in a day accuracy like: "backtest_date_start": datetime(2020,6,1)')
                 data_valid = False
-            if data.historical_data_source.value not in self.__historical_sources_array: 
+            if data.historical_data_source not in self.__historical_sources_array: 
                 self._log('Error. This historical_data_source not implemented yet')
                 data_valid = False
-            # if data.main == True:
-            #     number_of_mains += 1
             if data.trigger_feed == True:
                 number_of_trigger_feeders += 1
 
-        # if number_of_mains != 1:
-        #     self._log('Error. Your "data_schema.py" must have one main instrument')
-        #     data_valid = False
         if number_of_trigger_feeders < 1:
             self._log('Error. Your "data_schema.py" must have at least one instrument that triggers feeds')
             data_valid = False
@@ -180,11 +163,11 @@ class HistoricalDataFeeds(ZMQ):
         return data_valid
 
 
-    def __data_downloaded(self, full_data_to_download):
-        files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
-        data_to_download = list(set(full_data_to_download) - set(files_in_directory))
-        # self._log('Data is being downloaded ...', str( (len(full_data_to_download) - len(data_to_download) ) / len(full_data_to_download) * 100 )+'%')
-        return data_to_download == []
+    # def __data_downloaded(self, full_data_to_download):
+    #     files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
+    #     data_to_download = list(set(full_data_to_download) - set(files_in_directory))
+    #     # self._log('Data is being downloaded ...', str( (len(full_data_to_download) - len(data_to_download) ) / len(full_data_to_download) * 100 )+'%')
+    #     return data_to_download == []
 
 
     def __data_downloaded_2(self, files_to_download: List[InstrumentFile]):
@@ -194,26 +177,28 @@ class HistoricalDataFeeds(ZMQ):
         data_to_download = list(set([f.to_filename() for f in files_to_download]) - set(files_in_directory))
         return data_to_download == []
 
+
     def __validate_downloaded_data_folder(self):
         if not path.exists(self.downloaded_data_path):
             mkdir(self.downloaded_data_path)
     
-    def __check_if_all_data_exists(self, data_symbol_array: DataSymbol):
-        """
-        data scheme
-        <symbol>__<source>__<interval>__<date-from>__<date-to>
-        all instruments are downloaded in year files.
-        """
-        file_names: List[str] = []
-        loading_structure = []
-        for symbol in data_symbol_array:
-            files = self.__get_file_names(symbol)
-            loading_structure.append(file_names)
-            file_names = file_names+files
-        self._log('file names', file_names)
-        files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
-        files_to_download = list(set(file_names) - set(files_in_directory))
-        return file_names, files_to_download
+
+    # def __check_if_all_data_exists(self, data_symbol_array: DataSymbol):
+    #     """
+    #     data scheme
+    #     <symbol>__<source>__<interval>__<date-from>__<date-to>
+    #     all instruments are downloaded in year files.
+    #     """
+    #     file_names: List[str] = []
+    #     loading_structure = []
+    #     for symbol in data_symbol_array:
+    #         files = self.__get_file_names(symbol)
+    #         loading_structure.append(file_names)
+    #         file_names = file_names+files
+    #     self._log('file names', file_names)
+    #     files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
+    #     files_to_download = list(set(file_names) - set(files_in_directory))
+    #     return file_names, files_to_download
 
     def __check_symbol_data_exists(self, data_symbol: DataSymbol) -> List[InstrumentFile]:
         """
@@ -227,6 +212,7 @@ class HistoricalDataFeeds(ZMQ):
         files_to_download = list(set([f.to_filename() for f in files]) - set(files_in_directory))
         files_to_download = [InstrumentFile.from_filename(file) for file in files_to_download]
         return files_to_download
+
 
     def __get_instrument_files(self, symbol: DataSymbol) -> List[str]:
         instrument_files: List[InstrumentFile] = []
@@ -255,41 +241,42 @@ class HistoricalDataFeeds(ZMQ):
                         symbol.backtest_date_stop))
         return instrument_files
      
-    def __get_file_names(self, symbol: DataSymbol) -> List[str]:
-        date_from_date_to: List[str] = []
-        file_names: List[str] = []
-        if symbol.backtest_date_start.year < symbol.backtest_date_stop.year:
-            date_from_date_to.append(str(int(round(datetime.timestamp(symbol.backtest_date_start) * 1000))) + "__"
-                                    + str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year+1,1,1, tzinfo=timezone.utc)) * 1000))))
-            for i in range(symbol.backtest_date_stop.year - symbol.backtest_date_start.year - 1):
-                date_from_date_to.append(str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year + i + 1, 1, 1, tzinfo=timezone.utc)) * 1000))) + "__" 
-                                    + str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year + i + 2, 1, 1, tzinfo=timezone.utc)) * 1000))))
-            date_from_date_to.append(str(int(round(datetime.timestamp(datetime(symbol.backtest_date_stop.year,1,1, tzinfo=timezone.utc)) * 1000))) + "__" 
-                                    + str(int(round(datetime.timestamp(symbol.backtest_date_stop) * 1000))))
-        else:
-            date_from_date_to.append(str(int(round(datetime.timestamp(symbol.backtest_date_start) * 1000))) + "__" 
-                                    + str(int(round(datetime.timestamp(symbol.backtest_date_stop) * 1000))))
 
-        for dates in date_from_date_to:
-            file_names.append(symbol.historical_data_source.value + "__" 
-                                + symbol.symbol + "__" 
-                                + symbol.interval.value + "__" 
-                                + dates + '.csv')
-        return file_names
+    # def __get_file_names(self, symbol: DataSymbol) -> List[str]:
+    #     date_from_date_to: List[str] = []
+    #     file_names: List[str] = []
+    #     if symbol.backtest_date_start.year < symbol.backtest_date_stop.year:
+    #         date_from_date_to.append(str(int(round(datetime.timestamp(symbol.backtest_date_start) * 1000))) + "__"
+    #                                 + str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year+1,1,1, tzinfo=timezone.utc)) * 1000))))
+    #         for i in range(symbol.backtest_date_stop.year - symbol.backtest_date_start.year - 1):
+    #             date_from_date_to.append(str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year + i + 1, 1, 1, tzinfo=timezone.utc)) * 1000))) + "__" 
+    #                                 + str(int(round(datetime.timestamp(datetime(symbol.backtest_date_start.year + i + 2, 1, 1, tzinfo=timezone.utc)) * 1000))))
+    #         date_from_date_to.append(str(int(round(datetime.timestamp(datetime(symbol.backtest_date_stop.year,1,1, tzinfo=timezone.utc)) * 1000))) + "__" 
+    #                                 + str(int(round(datetime.timestamp(symbol.backtest_date_stop) * 1000))))
+    #     else:
+    #         date_from_date_to.append(str(int(round(datetime.timestamp(symbol.backtest_date_start) * 1000))) + "__" 
+    #                                 + str(int(round(datetime.timestamp(symbol.backtest_date_stop) * 1000))))
+
+    #     for dates in date_from_date_to:
+    #         file_names.append(symbol.historical_data_source.value + "__" 
+    #                             + symbol.symbol + "__" 
+    #                             + symbol.interval.value + "__" 
+    #                             + dates + '.csv')
+    #     return file_names
 
 
-    def __download_data(self, data_to_download, loop: asyncio.AbstractEventLoop) -> bool:
-        print('len data to downlod', len(data_to_download))
-        for instrument_file_name in data_to_download:
-            data_instrument = instrument_file_name[:-4]
-            source, instrment, interval, time_start, time_stop = tuple(data_instrument.split('__'))
-            data_source_client: DataSource = self.__get_data_source_client(source)
-            loop.create_task(data_source_client.download_instrument(self.downloaded_data_path, 
-                                                            instrument_file_name, 
-                                                            instrment, interval, 
-                                                            int(time_start), 
-                                                            int(time_stop)))
-        return True
+    # def __download_data(self, data_to_download, loop: asyncio.AbstractEventLoop) -> bool:
+    #     print('len data to downlod', len(data_to_download))
+    #     for instrument_file_name in data_to_download:
+    #         data_instrument = instrument_file_name[:-4]
+    #         source, instrment, interval, time_start, time_stop = tuple(data_instrument.split('__'))
+    #         data_source_client: DataSource = self.__get_data_source_client(source)
+    #         loop.create_task(data_source_client.download_instrument(self.downloaded_data_path, 
+    #                                                         instrument_file_name, 
+    #                                                         instrment, interval, 
+    #                                                         int(time_start), 
+    #                                                         int(time_stop)))
+    #     return True
 
     async def __download_symbol_data(self, symbol: DataSymbol):
         files_to_download: List[InstrumentFile] = self.__check_symbol_data_exists(symbol)
@@ -299,24 +286,24 @@ class HistoricalDataFeeds(ZMQ):
         await self.__download_symbol_files(files_to_download, symbol.historical_data_source)
 
 
-    async def __download_symbol_files(self, files: List[InstrumentFile], source: HISTORICAL_SOURCES):
-        data_source_client: DataSource = self.__get_data_source_client(source.value)
+    async def __download_symbol_files(self, files: List[InstrumentFile], source: str):
+        data_source_client: DataSource = self.__get_data_source_client(source)
         for file in files:
             await data_source_client.download_instrument(self.downloaded_data_path, file)
 
 
-    def __prepare_loading_data_structure(self, file_names_to_load) -> dict:
-        files_collection = {}
-        for instrument_file_name in file_names_to_load:
-            data_instrument = instrument_file_name[:-4]
-            source, instrument, interval, time_start, time_stop = tuple(data_instrument.split('__'))
-            if not time_stop in files_collection:
-                files_collection[time_stop] = []
-            files_collection[time_stop].append({
-                "instrument": instrument, 
-                "instrument_file_name": instrument_file_name
-                }) 
-        return files_collection
+    # def __prepare_loading_data_structure(self, file_names_to_load) -> dict:
+    #     files_collection = {}
+    #     for instrument_file_name in file_names_to_load:
+    #         data_instrument = instrument_file_name[:-4]
+    #         source, instrument, interval, time_start, time_stop = tuple(data_instrument.split('__'))
+    #         if not time_stop in files_collection:
+    #             files_collection[time_stop] = []
+    #         files_collection[time_stop].append({
+    #             "instrument": instrument, 
+    #             "instrument_file_name": instrument_file_name
+    #             }) 
+    #     return files_collection
 
     def __prepare_loading_data_structure_2(self) -> dict:
         files_collection = {}
@@ -386,44 +373,44 @@ class HistoricalDataFeeds(ZMQ):
         return list_of_dfs
 
 
-    def __prepare_dataframes_to_synchronize(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[dict]:
-        list_of_dfs = []
-        for data_element in self.__data_schema.data:
-            columns = ['timestamp', data_element.symbol]
-            file_name = 'none'
-            actual_raw = [0,0]
-            prev_raw = [0,0]
-            for element in files_array:
-                if data_element.symbol == element['instrument']:
-                    file_name = element['instrument_file_name']
-            if file_name == 'none':
-                # No file in this period for this instrument. Set empty dataframe.
-                df = pd.DataFrame([], columns=columns)
-            else:
-                # File exists. Load dataframe.
-                df = pd.read_csv(join(downloaded_data_path, file_name), index_col=None, header=None, names=columns)
-                # append last raw it if exists
-                if last_row != []:
-                    # self._log('appending last row')
-                    last_raw_mapped = self.__map_raw_to_instruments(last_row, self.__columns)
-                    prev_raw[0] = last_raw_mapped["timestamp"]
-                    prev_raw[1] = last_raw_mapped[data_element.symbol]
-            obj = {
-                "trigger_feed": data_element.trigger_feed,
-                "rows_iterator": df.iterrows(),
-                "actual_raw": actual_raw,
-                "prev_raw": prev_raw,
-                "consumed": False
-            }            
-            #prepare to load:
-            if obj['actual_raw'][0] == 0:
-                try:
-                    i, v = next(obj['rows_iterator'])
-                    obj['actual_raw'] = list(v)
-                except StopIteration:
-                    obj['consumed'] = True
-            list_of_dfs.append(obj)
-        return list_of_dfs
+    # def __prepare_dataframes_to_synchronize(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[dict]:
+    #     list_of_dfs = []
+    #     for data_element in self.__data_schema.data:
+    #         columns = ['timestamp', data_element.symbol]
+    #         file_name = 'none'
+    #         actual_raw = [0,0]
+    #         prev_raw = [0,0]
+    #         for element in files_array:
+    #             if data_element.symbol == element['instrument']:
+    #                 file_name = element['instrument_file_name']
+    #         if file_name == 'none':
+    #             # No file in this period for this instrument. Set empty dataframe.
+    #             df = pd.DataFrame([], columns=columns)
+    #         else:
+    #             # File exists. Load dataframe.
+    #             df = pd.read_csv(join(downloaded_data_path, file_name), index_col=None, header=None, names=columns)
+    #             # append last raw it if exists
+    #             if last_row != []:
+    #                 # self._log('appending last row')
+    #                 last_raw_mapped = self.__map_raw_to_instruments(last_row, self.__columns)
+    #                 prev_raw[0] = last_raw_mapped["timestamp"]
+    #                 prev_raw[1] = last_raw_mapped[data_element.symbol]
+    #         obj = {
+    #             "trigger_feed": data_element.trigger_feed,
+    #             "rows_iterator": df.iterrows(),
+    #             "actual_raw": actual_raw,
+    #             "prev_raw": prev_raw,
+    #             "consumed": False
+    #         }            
+    #         #prepare to load:
+    #         if obj['actual_raw'][0] == 0:
+    #             try:
+    #                 i, v = next(obj['rows_iterator'])
+    #                 obj['actual_raw'] = list(v)
+    #             except StopIteration:
+    #                 obj['consumed'] = True
+    #         list_of_dfs.append(obj)
+    #     return list_of_dfs
 
     def __synchronize_dataframes(self, list_of_dfs: List[dict], last_row: list) -> List[list]:
         rows = []
@@ -464,14 +451,14 @@ class HistoricalDataFeeds(ZMQ):
                 # print(row)
         return rows
         
-    def __load_data_frame_ticks(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[list]:
-        """
-        Function is geting files array from one period that are going to be loaded. 
-        Function returns synchronized data in list of lists which are ready to send to engine.
-        """
-        list_of_dfs = self.__prepare_dataframes_to_synchronize(downloaded_data_path, last_row, files_array)
-        rows = self.__synchronize_dataframes(list_of_dfs, last_row)
-        return rows
+    # def __load_data_frame_ticks(self, downloaded_data_path: str, last_row: list, files_array: list) -> List[list]:
+    #     """
+    #     Function is geting files array from one period that are going to be loaded. 
+    #     Function returns synchronized data in list of lists which are ready to send to engine.
+    #     """
+    #     list_of_dfs = self.__prepare_dataframes_to_synchronize(downloaded_data_path, last_row, files_array)
+    #     rows = self.__synchronize_dataframes(list_of_dfs, last_row)
+    #     return rows
 
     def __load_data_frame_ticks_2(self, downloaded_data_path: str, last_row: list, files_array: List[InstrumentFile]) -> List[list]:
         """

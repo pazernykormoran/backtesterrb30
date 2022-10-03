@@ -5,10 +5,12 @@ import json
 from backtesterRB30.libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
 from backtesterRB30.libs.interfaces.python_backtester.last_feed import LastFeed
 from backtesterRB30.libs.interfaces.python_backtester.trade import Trade
+from backtesterRB30.libs.interfaces.python_executor.executor_position import ExecutorPosition
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 from backtesterRB30.libs.utils.module_loaders import import_data_schema
 from backtesterRB30.libs.zmq.zmq import ZMQ
+from typing import List
 
 from backtesterRB30.libs.utils.list_of_services import SERVICES
 
@@ -20,21 +22,19 @@ class Executor(ZMQ):
         # self.__event_price = 0
         # self.__event_timestamp = 0
         # self.__event_last_feed = []
-        self.__number_of_actions = 0
+        # self.__number_of_actions = 0
         self.__current_capital = 0
         self.__current_invested = 0
         self.__start_amout_of_usd = 10000
-        self.__avaliable_usd = 10000
-        self.__current_position_value = 12
         
-        self.__positions = [{
+        self.__positions: List[ExecutorPosition] = [{
             'instrument': 'inst',
             'number_of_actions': 123,
             'current_value': 12
         }]
 
         super()._register("event", self.__event_event)
-        super()._register("set_number_of_actions", self.__set_number_of_actions_event)
+        # super()._register("set_number_of_actions", self.__set_number_of_actions_event)
         super()._register("set_current_capital_event", self.__set_current_capital_event)
         super()._register("set_current_invested_event", self.__set_current_invested_event)
         super()._register("debug_breakpoint", self.__debug_breakpoint_event)
@@ -52,26 +52,33 @@ class Executor(ZMQ):
     def _get_data_schema(self):
         return self.__data_schema
 
+    def _get_data_symbol_by_custom_name(self, custom_name: str):
+        if type(custom_name) != str:
+            raise Exception('Provided name is not string')
+        arr = [d for d in self.__data_schema.data if d.custom_name == custom_name]
+        if len(arr) == 0:
+            raise Exception('No data symbol with such custom name')
+        if len(arr) >1 : 
+            raise Exception('Two elements with the same custom name')
+        return arr[0]
+
+
     def _trade(self, trade_value: float, data_symbol: DataSymbol, price = None, timestamp = None) -> bool:
         if not price and not timestamp:
             price = 0 
             timestamp = 0
         if price and not timestamp or timestamp and not price:
             raise Exception('Provide both price and timestamp or none of them.')
-        if trade_value > self.__avaliable_usd + self.__current_capital - self.__current_invested:
+        if trade_value > self.__start_amout_of_usd + self.__current_capital - self.__current_invested:
             raise Exception('To big amout of trade')
         if self.config.backtest == True:
             trade_params = {
                 'value': trade_value,
                 'price': price,
                 'timestamp': timestamp,
-                'data_symbol': data_symbol
+                'symbol': data_symbol.symbol,
+                'source': data_symbol.historical_data_source
             }
-            # print('')
-            tr = Trade(**trade_params)
-            import json
-            # print(json.dumps(tr.dict()['data_symbol']['historical_data_source']))
-            # print(type(tr.dict()['data_symbol']))
             super()._send(SERVICES.python_backtester, 'trade', Trade(**trade_params))
             return True
         else:
@@ -81,19 +88,14 @@ class Executor(ZMQ):
 
     def _close_all_trades(self):
         if self.config.backtest == True:
-            # close_all_trades_params = {
-            #     'price': self.__event_price,
-            #     'timestamp': self.__event_timestamp
-            # }
-            
             super()._send(SERVICES.python_backtester, 'close_all_trades')
         else:
             # TODO trade in real broker
             pass
 
 
-    def _get_number_of_actions(self):
-        return self.__number_of_actions
+    # def _get_number_of_actions(self):
+    #     return self.__number_of_actions
 
     # ==================================================================
     # end of public methods
@@ -122,14 +124,10 @@ class Executor(ZMQ):
     #COMMANDS
 
     async def __event_event(self, msg):
-        # msg = ModelEvent(**msg)
-        # self.__event_price = msg.price
-        # self.__event_timestamp = msg.timestamp
-        # # self.__event_last_feed = msg.last_feed
         self.on_event(msg)
 
-    async def __set_number_of_actions_event(self, number: int):
-        self.__number_of_actions = number
+    # async def __set_number_of_actions_event(self, number: int):
+    #     self.__number_of_actions = number
 
     async def __set_current_capital_event(self, number: int):
         self.__current_capital = number

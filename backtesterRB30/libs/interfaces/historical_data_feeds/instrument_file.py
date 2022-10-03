@@ -1,7 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel
-
-from backtesterRB30.libs.utils.historical_sources import HISTORICAL_SOURCES, HISTORICAL_INTERVALS_UNION
+from enum import Enum
+# from backtesterRB30.libs.utils.historical_sources import HISTORICAL_SOURCES, HISTORICAL_INTERVALS_UNION
 from backtesterRB30.libs.utils.timestamps import datetime_to_timestamp
 
 class InstrumentFile(BaseModel):
@@ -33,13 +33,13 @@ class InstrumentFile(BaseModel):
     
     @classmethod
     def from_params(cls, 
-                source: HISTORICAL_SOURCES, 
+                source: str, 
                 instrument: str, 
-                interval: HISTORICAL_INTERVALS_UNION, 
+                interval: Enum, 
                 time_start: datetime,
                 time_stop: datetime):
         dict_instrument_file = {
-            'source': source.value,
+            'source': source,
             'instrument': instrument,
             'interval': interval.value,
             'time_start': datetime_to_timestamp(time_start),

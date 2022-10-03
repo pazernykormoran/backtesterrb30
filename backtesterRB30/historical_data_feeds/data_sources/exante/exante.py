@@ -4,17 +4,27 @@ import pandas as pd
 from os.path import join
 from time import time, sleep
 from datetime import datetime
-from backtesterRB30.historical_data_feeds.modules.data_source_base import DataSource
+from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-from backtesterRB30.libs.utils.historical_sources import EXANTE_INTERVALS
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
+# from backtesterRB30.libs.utils.historical_sources import EXANTE_INTERVALS
 from backtesterRB30.libs.utils.singleton import singleton
-from backtesterRB30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
+from backtesterRB30.historical_data_feeds.data_sources.utils import validate_dataframe_timestamps
 from os import getenv
 import asyncio
+from enum import Enum
 
-@singleton
+class EXANTE_INTERVALS_2(str, Enum):
+    tick: str='tick'
+    minute: str='minute'
+    minute5: str='minute5'
+    minute30: str='minute30'
+    hour: str='hour'
+    day: str='day'
+
 class ExanteDataSource(DataSource):
+    INTERVALS= EXANTE_INTERVALS_2
+    NAME='exante'
+    
     def __init__(self, logger=print):
         super().__init__(True, logger)
         exante_app_id=getenv("exante_app_id")
@@ -32,7 +42,7 @@ class ExanteDataSource(DataSource):
         return int(self.__get_exante_interval(interval).value * 1000)
 
     #override
-    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
+    async def _validate_instrument_data(self, data) -> bool:
         #TODO check if volume necessery or not.
 
         data_type = DataType.QUOTES

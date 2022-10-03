@@ -1,7 +1,7 @@
 from random import randint
 
 async def live_reloading_function(data, state, _trigger_event, _debug_breakpoint):
-    if state['counter'] % 30 == 0:
+    if state['counter'] % 100 == 0:
         quant = randint(-2,2)
         if quant != 0:
             message = {

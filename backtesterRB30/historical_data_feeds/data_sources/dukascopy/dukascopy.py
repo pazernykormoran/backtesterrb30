@@ -5,18 +5,32 @@ from os.path import join
 import shutil
 from typing import Union
 import pandas as pd
-from backtesterRB30.historical_data_feeds.modules.data_source_base import DataSource
+from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 from os import getenv, getcwd
 from backtesterRB30.libs.utils.singleton import singleton
 import importlib.resources
 import json
+from enum import Enum
 
 # from backtesterRB30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
 
-@singleton
+class DUKASCOPY_INTERVALS_2(str, Enum):
+    tick: str='tick'
+    minute: str='minute'
+    minute5: str='minute5'
+    minute15: str='minute15'
+    minute30: str='minute30'
+    hour: str='hour'
+    hour4: str='hour4'
+    day: str='day'
+    month: str='month'
+
 class DukascopyDataSource(DataSource):
+    INTERVALS= DUKASCOPY_INTERVALS_2
+    NAME='dukascopy'
+
+
     def __init__(self, logger=print):
         super().__init__(False, logger)
 
@@ -41,7 +55,7 @@ class DukascopyDataSource(DataSource):
         if interval == 'month': return None
 
 
-    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
+    async def _validate_instrument_data(self, data) -> bool:
         # https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/master/src/utils/instrument-meta-data/generated/raw-meta-data-2022-04-23.json
         # response = requests.get("http://api.open-notify.org/astros.json")
         from_datetime_timestamp = int(round(datetime.timestamp(data.backtest_date_start) * 1000))
@@ -51,7 +65,7 @@ class DukascopyDataSource(DataSource):
             instrument_list = json.load(file)['instruments']
         #validate if instrument exists:
         if data.symbol.upper() not in [v['historical_filename'] for k, v in instrument_list.items()]:
-            self._log('Error. Instrument "'+data.symbol+'" does not exists on ducascopy.')
+            self._log('Error. Instrument "'+data.symbol+'" does not exists on dukascopy.')
             return False
 
         #validate it timestamps perios is right:

@@ -7,6 +7,7 @@ from backtesterRB30.libs.interfaces.python_backtester.data_finish import DataFin
 from backtesterRB30.libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
 from backtesterRB30.libs.interfaces.python_backtester.last_feed import LastFeed
 from backtesterRB30.libs.interfaces.python_engine.custom_chart_element import CustomChartElement
+from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 from backtesterRB30.libs.zmq.zmq import ZMQ
 from backtesterRB30.libs.utils.list_of_services import SERVICES
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
@@ -21,14 +22,14 @@ class Engine(ZMQ):
         self.__data_schema: DataSchema = import_data_schema(self.config.strategy_path)
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__data_buffer = [ [] for col in self.__columns]
-
+        for sym, arr in zip(self.__data_schema.data, self.__data_buffer[1:]):
+            sym.additional_properties['buffer'] = arr
         self.__buffer_length = 100
         self.__custom_charts: List[CustomChart] = []
         self.__debug_mode = False
         self.__debug_next_pressed = False
         self.__reloading_modules = []
         self.__send_breakpoint_after_feed = False
-        self.__backtest_finished = False
         self.__code_stopped_debug = False
 
         super()._register("data_feed", self.__data_feed_event)
@@ -47,6 +48,21 @@ class Engine(ZMQ):
         pass
 
 
+    def _get_data_schema(self):
+        return self.__data_schema
+
+
+    def _get_data_symbol_by_custom_name(self, custom_name: str) -> DataSymbol:
+        if type(custom_name) != str:
+            raise Exception('Provided name is not string')
+        arr = [d for d in self.__data_schema.data if d.custom_name == custom_name]
+        if len(arr) == 0:
+            raise Exception('No data symbol with such custom name')
+        if len(arr) >1 : 
+            raise Exception('Two elements with the same custom name')
+        return arr[0]
+
+
     def _get_columns(self):
         """
         Function return column names of data_schema.
@@ -54,30 +70,14 @@ class Engine(ZMQ):
         return self.__columns
 
 
-    def _get_main_intrument_number(self):
-        num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
-        return num + 1
-
-
     def _set_buffer_length(self, length: int):
         self.__buffer_length = length
 
-    def __send_last_feed(self, service: SERVICES):
-        last_feed = {
-            'last_feed': [v[-1] for v in self.__data_buffer]
-        }
-        super()._send(service, 'last_feed', LastFeed(**last_feed))
 
     def _trigger_event(self, event: JSONSerializable):
         """
         Function sends custom message to trade executor service.
         """
-        # msg = {
-        #     'price': self.__get_main_intrument_price(),
-        #     'timestamp': self.__data_buffer[0][-1],
-        #     'message': event,
-        #     'last_feed': 
-        # }
         self.__send_last_feed(SERVICES.python_executor)
         super()._send(SERVICES.python_executor,'event', event)
     
@@ -175,21 +175,19 @@ class Engine(ZMQ):
         pass
 
 
+    def __send_last_feed(self, service: SERVICES):
+        last_feed = {
+            'last_feed': [v[-1] for v in self.__data_buffer]
+        }
+        super()._send(service, 'last_feed', LastFeed(**last_feed))
+
+
     def __send_debug_breakpoint(self):
         breakpoint_params= {}
-        # breakpoint_params['last_timestamp'] = self.__data_buffer[0][-1]
-        # breakpoint_params['main_instrument_price'] = self.__get_main_intrument_price()
         breakpoint_params['custom_charts'] = self.__custom_charts
         self._log('sending debug breakpoint')
         self.__send_last_feed(SERVICES.python_executor)
         super()._send(SERVICES.python_executor,'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
-
-    def __get_main_intrument_price(self, price_delay_steps = -1):
-        if len(self.__data_buffer[0]) == 0: 
-            self._log('No data has yet received.')
-            return 0
-        num = [i for i, v in enumerate(self.__data_schema.data) if v.main == True][0]
-        return self.__data_buffer[num+1][price_delay_steps]
 
 
     async def __keyboard_listener(self):
@@ -198,22 +196,22 @@ class Engine(ZMQ):
             if keyboard.is_pressed('ctrl+d'): 
                 if self.__debug_mode == False:
                     self._log('You have entered Debug mode \n\
-                                 -> press "n" to next step\n\
-                                 -> press "q" to leave debug mode')
+                                 -> press "ctrl+n" to next step\n\
+                                 -> press "ctrl+q" to leave debug mode')
                     self.__debug_mode = True
                 while keyboard.is_pressed('d'):
                     await asyncio.sleep(0.1)
             if keyboard.is_pressed('ctrl+n'):
                 if self.__debug_mode == True and self.__debug_next_pressed == False and self.__code_stopped_debug:
                     self._log('next step ... \n\
-                                -> press "q" to leave debug mode')
+                                -> press "ctrl+q" to leave debug mode')
                     self.__debug_next_pressed = True
                 while keyboard.is_pressed('n'):
                     await asyncio.sleep(0.1)
             if keyboard.is_pressed('ctrl+q'):
                 if self.__debug_mode == True:
                     self._log('You have leaved Debug mode \n\
-                                -> press "d" to enter debug mode again')
+                                -> press "ctrl+d" to enter debug mode again')
                     self.__debug_mode = False
                 while keyboard.is_pressed('q'):
                     await asyncio.sleep(0.1)
@@ -241,7 +239,6 @@ class Engine(ZMQ):
     async def __data_finish_event(self):
         self.on_data_finish()
         self.__debug_mode = False
-        self.__backtest_finished = True
         finish_params = {}
         finish_params['custom_charts'] = self.__custom_charts
         # finish_params['main_instrument_price'] = self.__get_main_intrument_price()

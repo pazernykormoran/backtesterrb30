@@ -1,7 +1,6 @@
 from abc import abstractmethod
 from typing import Union
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 import asyncio
 import pandas as pd
 
@@ -31,7 +30,7 @@ class DataSource():
         await self._download_instrument_data(downloaded_data_path, instrument_file)
         
 
-    async def validate_instrument(self, data: DataSymbol) -> bool:
+    async def validate_instrument(self, data) -> bool:
         await asyncio.sleep(0.1)
         return await self._validate_instrument_data(data)
 
@@ -40,7 +39,7 @@ class DataSource():
         pass
 
     @abstractmethod
-    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
+    async def _validate_instrument_data(self, data) -> bool:
         pass
     
     @abstractmethod

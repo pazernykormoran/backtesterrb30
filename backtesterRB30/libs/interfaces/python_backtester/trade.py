@@ -6,4 +6,6 @@ class Trade(BaseModel):
     timestamp: int
     value: float
     price: float
-    data_symbol: DataSymbol
+    symbol: str
+    source: str
+    # data_symbol: DataSymbol

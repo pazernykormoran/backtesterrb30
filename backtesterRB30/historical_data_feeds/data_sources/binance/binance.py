@@ -5,16 +5,37 @@ from binance.helpers import interval_to_milliseconds
 from datetime import datetime
 import pandas as pd
 from os.path import join
-from backtesterRB30.historical_data_feeds.modules.data_source_base import DataSource
+from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-from backtesterRB30.libs.utils.historical_sources import BINANCE_INTERVALS
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
+# from backtesterRB30.libs.utils.historical_sources import BINANCE_INTERVALS
+# from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterRB30.historical_data_feeds.data_sources.utils import validate_dataframe_timestamps
 from os import getenv
 from backtesterRB30.libs.utils.singleton import singleton
+from enum import Enum
 
-@singleton
+class BINANCE_INTERVALS_2(str, Enum):
+    tick: str='tick'
+    minute: str='minute'
+    minute3: str='minute3'
+    minute5: str='minute5'
+    minute15: str='minute15'
+    minute30: str='minute30'
+    hour: str='hour'
+    hour2: str='hour2'
+    hour4: str='hour4'
+    hour6: str='hour6'
+    hour8: str='hour8'
+    hour12: str='hour12'
+    day: str='day'
+    day3: str='day3'
+    week: str='week'
+    month: str='month'
+
 class BinanceDataSource(DataSource):
+    INTERVALS= BINANCE_INTERVALS_2
+    NAME='binance'
+
     def __init__(self, logger=print):
         super().__init__(False, logger)
         binance_api_secret=getenv("binance_api_secret")
@@ -22,7 +43,7 @@ class BinanceDataSource(DataSource):
         self.client = Client(binance_api_key, binance_api_secret)
 
     #override
-    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
+    async def _validate_instrument_data(self, data) -> bool:
         #validate if instrument exists:
         exchange_info = self.client.get_exchange_info()
         if data.symbol not in [s['symbol'] for s in exchange_info['symbols']]:
@@ -30,7 +51,7 @@ class BinanceDataSource(DataSource):
             return False
         #validate it timestamps perios is right:
         from_datetime_timestamp = int(round(datetime.timestamp(data.backtest_date_start) * 1000))
-        if data.interval == BINANCE_INTERVALS.tick:
+        if data.interval == BINANCE_INTERVALS_2.tick:
             binance_interval = Client.KLINE_INTERVAL_1MINUTE
         else:
             binance_interval = self.__get_binance_interval(data.interval.value)
