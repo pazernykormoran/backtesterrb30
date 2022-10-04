@@ -3,8 +3,16 @@
 .additional_configs
 **/data_historical_downloaded
 cache_ducascopy
+cache_dukascopy
 node_modules
 download
 package-lock.json
 package.json
 .vscode
+Strategies-RB30
+build
+dist
+backtesterRB30.egg-info
+env_backtester
+run.sh
+serve.py
