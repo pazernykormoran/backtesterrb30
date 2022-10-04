@@ -2,9 +2,7 @@
 
 # Description
 
-Engine-RB30 is a framework to backtest and your market strategies. Working only on linux.
-
-<!-- ![Picture](./Figure_1.png) -->
+Engine-RB30 is a framework for stock market analysis.
 
 # Quick start
 
