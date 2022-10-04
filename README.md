@@ -2,22 +2,63 @@
 
 # Description
 
-Engine-RB30 is a framework for stock market analysis.
+Backtester-RB30 is a framework for stock market analysis.
 
 # Quick start
 
 
-### Create strategy files
+## Create strategy files
 
     .
     ├── strategy_name                    
     │   ├── model.py           
     │   ├── executor.py          
     │   └── data_schema.py 
-    ├── run.py            
+    ├── run_all.py            
     └── .env
 
-model.py:
+### data_schema.py:
+Here you define your input array to strategy.
+Avaliable data sources: 
+- [ binance ] avaliable instruments in "historical_data_feeds/data_sources/binance/binance_instruments.txt"
+- [ dukascopy ] avaliable instruments in https://github.com/Leo4815162342/dukascopy-node
+- [ coingecko ] avaliable instruments in https://www.coingecko.com/
+- [ exante ] avaliable instruments in https://drive.google.com/drive/folders/1qJAGedEWhGehG2Hh48ITgE7LjGWwyzOw?usp=sharing
+
+~~~
+import backtesterRB30 as bt
+from datetime import datetime
+
+data={
+    'log_scale_valuation_chart': True,
+    'data':[
+        {
+            'symbol': '2914jpjpy',
+            'historical_data_source': bt.HISTORICAL_SOURCES.dukascopy,
+            'main': False,
+            'backtest_date_start': datetime(2021,5,1),
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': False,
+            'interval': bt.HISTORICAL_SOURCES.dukascopy.INTERVALS.hour,
+            'display_chart_in_summary': True
+        },
+        {
+            'symbol': 'iefususd',
+            'historical_data_source': bt.HISTORICAL_SOURCES.dukascopy,
+            'main': True,
+            'backtest_date_start': datetime(2021,5,1),
+            'backtest_date_stop': datetime(2022,8,1),
+            'trigger_feed': True,
+            'interval': bt.HISTORICAL_SOURCES.dukascopy.INTERVALS.hour,
+            'display_chart_in_summary': True
+        }
+    ]
+}
+DATA = bt.validate_config(data)
+~~~
+
+### model.py:
+Model module "on_feed" function is being called every interval of your strategy. You can use "_trigger_event" function to send any message to executor module.
 ~~~
 import backtesterRB30 as bt
 from random import randint
@@ -41,9 +82,11 @@ class Model(bt.Engine):
         self.counter += 1
 ~~~
 
-executor.py:
+### executor.py:
+Executor module manages transactions and current money level. You can use "_trade" function here.
 ~~~
 import backtesterRB30 as bt
+from random import randint
 
 class TradeExecutor(bt.Executor):
 
@@ -52,52 +95,21 @@ class TradeExecutor(bt.Executor):
 
     #override
     def on_event(self, message):
-        self._trade(message['value'])
+        self._trade(message['value'], self._get_data_schema().data[randint(0,1)])
 ~~~
 
-data_schema.py:
-~~~
-import backtesterRB30 as bt
-from datetime import datetime
-
-data={
-    'log_scale_valuation_chart': True,
-    'data':[
-        {
-            'symbol': '2914jpjpy',
-            'historical_data_source': bt.HISTORICAL_SOURCES.ducascopy,
-            'main': False,
-            'backtest_date_start': datetime(2021,5,1),
-            'backtest_date_stop': datetime(2022,8,1),
-            'trigger_feed': False,
-            'interval': bt.DUKASCOPY_INTERVALS.hour,
-        },
-        {
-            'symbol': 'iefususd',
-            'historical_data_source': bt.HISTORICAL_SOURCES.ducascopy,
-            'main': True,
-            'backtest_date_start': datetime(2021,5,1),
-            'backtest_date_stop': datetime(2022,8,1),
-            'trigger_feed': True,
-            'interval': bt.DUKASCOPY_INTERVALS.hour
-        }
-    ]
-}
-DATA = bt.validate_config(data)
-~~~
-
-run.py:
+### run.py:
 ~~~
 from backtesterRB30 import run_all_microservices
 run_all_microservices()
 ~~~
 
-.env:
+### .env:
 ~~~
 STRATEGY_PATH="strategy_name"
 ~~~
-run it calling:
-> sudo python3 run.py
+## run it calling:
+> sudo python3 run_all.py
 
 #
 # Requirements
@@ -113,18 +125,16 @@ npm install dukascopy-node --save
 # Debug mode
 
 ## Usage of debug mode
-Framework gives you access to debug mode that allows you printing summary charts and descriptions every step of your debug. To enable use debug while implementing your strategy follow below steps:
+Framework gives you access to debug mode that allows you printing summary charts and descriptions every step of your debug. To enable using debug mode while implementing your strategy follow below steps:
 - Use "_debug_breakpoint" method somewhere in your "on_feed" method. This works as breakpoint while debugging. The code will stop in this place.
-- Press "ctrl+d" in any moment during backtest loop. This will cause entering debug mode and stopping the code in the nearest moment when your code occurs "_debug_breakpoint" function. You should also se summary and charts printed for current moment of backtest.
-- Press "ctrl+n" for next.
+- Press "ctrl+d" in any moment during backtest loop. This will cause entering debug mode and stopping the code in the nearest moment when your code occurs "_debug_breakpoint" function.
+- Press "ctrl+n" for next. You should see summary and charts printed for current moment of backtest.
 - Press "ctrl+q" for quit debug mode.
 
 #TODO gif
 
-## Live code reloads
+## Live code reloads in debug mode
 Debug mode enables user to develop his strategies live with backtest running in debud mode. Thats only possible importable modules to bo live reloaded. To achive this use "_add_reloading_module(path_to_module)" in the init function in your Model class. As an argument to the function pass the path to the module you are goint to be reloaded after every step of your debug.
-
-To preview how it works you can run example strategy in "TODO"
 
 example:
 
@@ -138,32 +148,7 @@ If you are implementing piece of code that can be usefull in other strategies, u
 Your communication interfaces include in "libs/interfaces" folder.
 
 # Data source implementation
-1. In "libs/utils/historical_sources.py 
-   1. add your source to HISTORICAL_SOURCES enum
-   2. add enum class with your avaliable intervals by analogy to BINANCE_INTERVALS.
-   3. add your intervals enum to HISTORICAL_INTERVALS_UNION
-2. Add class to "historical_data_feeds/modules" folder.
-3. Register your class in historical_data_feeds/historical_data_feeds.py calling "__register_data_source" function.
 
-# Microservice implementation
+2. Add folder to "historical_data_feeds/data_sources". Create file with class inheriting from "DataSource" abstract class.
+3. Register your class in "historical_data_feeds/data_sources/data_sources_list.py" 
 
-1. Add your folder with microservice named as your microservice name.
-2. Add your microservice to libs/list_of_services enum.
-3. Add your microservice in run.sh
-
-Scheme of run file:
-~~~
-#TODO
-~~~
-
-Scheme of service file:
-~~~
-#TODO
-~~~
-
-# Features TODO
-
-1. Live data feeds. Necessery is integration with fix api and real broker.
-2. Trades executor with real broker. 
-3. Possibility to trade in more than one instrument
-4. Add more data sources 

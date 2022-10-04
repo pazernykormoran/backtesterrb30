@@ -1,5 +1,4 @@
 import backtesterRB30 as bt
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 from random import randint
 
 class TradeExecutor(bt.Executor):
