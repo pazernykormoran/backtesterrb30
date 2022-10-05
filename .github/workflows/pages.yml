@@ -33,6 +33,19 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v2
 
+      # Setup python
+      - name: Setup python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+          
+          
+      # Install dependencies:
+      - name: Install Dependencies
+        run: |
+          python -m pip install -U sphinx
+          python -m pip install sphinx-rtd-theme
+
       - name: Build docs
         run: |
           cd docs_config
