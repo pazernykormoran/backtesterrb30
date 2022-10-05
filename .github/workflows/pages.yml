@@ -58,10 +58,9 @@ jobs:
           git config --local user.name "Github Actions"
           git commit -m 'deploy'
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: './docs_config/_build/html'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v1
+          folder: './docs_config/_build/html' # The folder the action should deploy.
+
+
