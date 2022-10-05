@@ -42,7 +42,7 @@ class Engine(ZMQ):
 
     @abstractmethod
     async def on_feed(self, data):
-        """Returns3 a list containing :class:`bluepy.btle.Characteristic`
+        """Returns4 a list containing :class:`bluepy.btle.Characteristic`
         objects for the peripheral. If no arguments are given, will return all
         characteristics. If startHnd and/or endHnd are given, the list is
         restricted to characteristics whose handles are within the given range.
