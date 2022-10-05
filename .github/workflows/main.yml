@@ -45,7 +45,7 @@ jobs:
           cd _build/html
           git init
           touch .nojekyll
-          git add -a
+          git add -A
           git config --local user.email "actions@github.com"
           git config --local user.name "Github Actions"
           git commit -m 'deploy'
