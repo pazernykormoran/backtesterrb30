@@ -4,8 +4,21 @@
 
 Backtester-RB30 is a framework for stock market analysis.
 
+# Installation
+
+> sudo pip3 install git+https://github.com/pazernykormoran/Backtester-RB30
+
 # Quick start
 
+Create .env file inside repository:
+~~~
+STRATEGY_PATH="examples/basic_example"
+~~~
+
+Run example strategy calling:
+> sudo python3 run_all.py
+
+# Strategy implementation
 
 ## Create strategy files
 
@@ -59,6 +72,11 @@ DATA = bt.validate_config(data)
 
 ### model.py:
 Model module "on_feed" function is being called every interval of your strategy. You can use "_trigger_event" function to send any message to executor module.
+
+More about avaliable functions: 
+
+https://pazernykormoran.github.io/Backtester-RB30/backtesterRB30.python_engine.html
+
 ~~~
 import backtesterRB30 as bt
 from random import randint
@@ -84,6 +102,10 @@ class Model(bt.Engine):
 
 ### executor.py:
 Executor module manages transactions and current money level. You can use "trade" function here.
+
+More about avaliable functions:
+
+https://pazernykormoran.github.io/Backtester-RB30/backtesterRB30.python_executor.html
 ~~~
 import backtesterRB30 as bt
 from random import randint
