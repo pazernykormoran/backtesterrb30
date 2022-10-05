@@ -16,3 +16,4 @@ backtesterRB30.egg-info
 env_backtester
 run.sh
 serve.py
+_build

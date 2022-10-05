@@ -135,7 +135,7 @@ STRATEGY_PATH="strategy_name"
 
 #
 # Requirements
-For package working you have to have node and npm with npx installed.
+For dukascopy data source working you have to have node and npm with npx installed.
 ~~~
 sudo apt  install curl
 curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -

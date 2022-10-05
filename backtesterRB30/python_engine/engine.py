@@ -42,6 +42,63 @@ class Engine(ZMQ):
 
     @abstractmethod
     async def on_feed(self, data):
+        """Function is being called when new data frame appears.
+        While defining strategy you have to override this function
+        and define your strategy logic here. 
+
+        :param data: data buffer defined in :class:`DataSchema`
+        :type data: list
+        """
+        pass
+
+    @abstractmethod
+    def on_data_finish(self):
+        """Function is being called in backtest mode when historical data are finished
+        """
+        pass
+
+
+    def get_data_schema(self) -> DataSchema:
+        """Returns data_schema defined in your strategy files in `data_schema.py`
+        Data schema contains list of :class:`DataSymbol` objects. In every :class:`DataSymbol` object, 
+        you can use `get_buffer()` function to get current buffer connected to this symbol.
+
+        :return: :class:`DataSchema` object combined with this strategy.
+        :rtype: DataSchema
+        """
+        return self.__data_schema
+
+
+    def get_data_symbol_by_custom_name(self, custom_name: str) -> DataSymbol:
+        """Returns a :class:`DataSymbol` object using `custom_name` defined
+        in `data_schema.py`, `custom_name` must be unique.
+
+        :param custom_name: custom name defined in `data_schema.py` file.
+        :type custom_name: str
+        :return: :class:`DataSymbol` object
+        :rtype: DataSymbol
+        """
+        if type(custom_name) != str:
+            raise Exception('Provided name is not string')
+        arr = [d for d in self.__data_schema.data if d.custom_name == custom_name]
+        if len(arr) == 0:
+            raise Exception('No data symbol with such custom name')
+        if len(arr) >1 : 
+            raise Exception('Two elements with the same custom name')
+        return arr[0]
+
+
+    def get_columns(self) -> List[str]:
+        """Returns a list of instrument names based on all instruments in `DataSchema`.
+        Do not use it as identifiers! Names can be the same in other data sources.
+
+        :return: List of returned :class:`str` objects
+        :rtype: list
+        """
+        return self.__columns
+
+
+    def set_buffer_length(self, length: int):
         """Returns a list containing :class:`bluepy.btle.Characteristic`
         objects for the peripheral. If no arguments are given, will return all
         characteristics. If startHnd and/or endHnd are given, the list is
@@ -56,43 +113,11 @@ class Engine(ZMQ):
         :return: List of returned :class:`bluepy.btle.Characteristic` objects
         :rtype: list
         """
-        pass
-
-
-    def on_data_finish(self):
-        pass
-
-
-    def get_data_schema(self):
-        return self.__data_schema
-
-
-    def get_data_symbol_by_custom_name(self, custom_name: str) -> DataSymbol:
-        if type(custom_name) != str:
-            raise Exception('Provided name is not string')
-        arr = [d for d in self.__data_schema.data if d.custom_name == custom_name]
-        if len(arr) == 0:
-            raise Exception('No data symbol with such custom name')
-        if len(arr) >1 : 
-            raise Exception('Two elements with the same custom name')
-        return arr[0]
-
-
-    def get_columns(self):
-        """
-        Function return column names of data_schema.
-        """
-        return self.__columns
-
-
-    def set_buffer_length(self, length: int):
         self.__buffer_length = length
 
  
     def trigger_event(self, event: JSONSerializable):
-        """
-        Function sends custom message to trade executor service.
-        """
+
         self.__send_last_feed(SERVICES.python_executor)
         super()._send(SERVICES.python_executor,'event', event)
     
@@ -103,16 +128,7 @@ class Engine(ZMQ):
                     display_on_price_chart: Union[bool, None] = None, 
                     log_scale: Union[bool, None] = None, 
                     color: Union[str, None] = None):
-        # """
-        # Function allows adding custom chart to your strategy.
-        # Function gets:
-        #     - display_on_price_chart: variable indicates if chart should be displayed
-        #         in the main chart with prices
-        #     - log_scale: variable indicates if chart should be in the log scale. 
-        #         Skipped if display_on_price_chart is true because information about this chart is 
-        #         set in data_schema file
-        #     - color: color of matplotlib chart for example 'red', 'blue' ..
-        # """
+
         chart_obj = {
             'chart': chart,
             'display_on_price_chart': display_on_price_chart,
@@ -125,9 +141,7 @@ class Engine(ZMQ):
 
     
     async def debug_breakpoint(self):
-        """
-        Function causes breakpoint if debug mode is turned on.
-        """
+
         if self.__debug_mode == True:
             self.__code_stopped_debug = True
             while True:
@@ -156,10 +170,7 @@ class Engine(ZMQ):
 
 
     def add_reloading_module(self, module_path: str):
-        """
-            Function gets path to module
-            Function returning added module
-        """
+
         spec, module = import_spec_module(module_path)
         self.__reloading_modules.append((spec, module))
         reload_spec_module(spec,module)
