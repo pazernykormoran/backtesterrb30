@@ -88,7 +88,7 @@ class Engine(ZMQ):
     def set_buffer_length(self, length: int):
         self.__buffer_length = length
 
-
+ 
     def trigger_event(self, event: JSONSerializable):
         """
         Function sends custom message to trade executor service.
