@@ -57,7 +57,7 @@ jobs:
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: gh-pages-2
+          branch: gh-pages
           force: true
           directory: ./docs_config/_build/html
 
