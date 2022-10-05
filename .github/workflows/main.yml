@@ -34,5 +34,7 @@ jobs:
         run: |
           echo build docs
           cd docs_config
+          apt-get install python3-sphinx
           make html
           cp -r ./_build/html/* ../docs/
+          
