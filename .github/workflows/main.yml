@@ -33,6 +33,7 @@ jobs:
       - name: Build docs
         run: |
           echo build docs
+          ls
           cd docs_config
           apt-get install python3-sphinx
           make html
