@@ -58,10 +58,12 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "Github Actions"
           git commit -m 'deploy'
-
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@v4
+          
+      - name: GitHub Push
+        uses: ad-m/github-push-action@v0.6.0
         with:
-          folder: './docs_config/_build/html' # The folder the action should deploy.
-
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          force: true
+          directory: ./docs_config/_build/html
 
