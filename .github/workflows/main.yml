@@ -23,22 +23,40 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
+
       # Setup python
       - name: Setup python
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
+          
+          
       # Install dependencies:
       - name: Install Dependencies
         run: |
           python -m pip install -U sphinx
           python -m pip install sphinx-rtd-theme
         
-      # Runs a set of commands using the runners shell
+        
       - name: Build docs
         run: |
           cd docs_config
           make html
-          cp -r ./_build/html* ../docs/
+          cd _build/html
+          git init
+          touch .nojekyll
+          git add -A
+          git config --local user.email "actions@github.com"
+          git config --local user.name "Github Actions"
+          git commit -m 'deploy'
+          
+          
+      - name: GitHub Push
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          force: true
+          directory: ./docs_config/_build/html
 
           
