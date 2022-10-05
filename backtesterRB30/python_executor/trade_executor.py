@@ -15,6 +15,7 @@ from typing import List
 from backtesterRB30.libs.utils.list_of_services import SERVICES
 
 class Executor(ZMQ):
+    """Python Trade executor"""
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
         self.__data_schema: DataSchema = import_data_schema(self.config.strategy_path)
@@ -46,13 +47,27 @@ class Executor(ZMQ):
 
     @abstractmethod
     def on_event(self, message):
+        """Returns a list containing :class:`bluepy.btle.Characteristic`
+        objects for the peripheral. If no arguments are given, will return all
+        characteristics. If startHnd and/or endHnd are given, the list is
+        restricted to characteristics whose handles are within the given range.
+
+        :param startHnd: Start index, defaults to 1
+        :type startHnd: int, optional
+        :param endHnd: End index, defaults to 0xFFFF
+        :type endHnd: int, optional
+        :param uuids: a list of UUID strings, defaults to None
+        :type uuids: list, optional
+        :return: List of returned :class:`bluepy.btle.Characteristic` objects
+        :rtype: list
+        """
         self._log('method should be implemented in strategy function')
         pass
 
-    def _get_data_schema(self):
+    def get_data_schema(self):
         return self.__data_schema
 
-    def _get_data_symbol_by_custom_name(self, custom_name: str):
+    def get_data_symbol_by_custom_name(self, custom_name: str):
         if type(custom_name) != str:
             raise Exception('Provided name is not string')
         arr = [d for d in self.__data_schema.data if d.custom_name == custom_name]
@@ -63,7 +78,7 @@ class Executor(ZMQ):
         return arr[0]
 
 
-    def _trade(self, trade_value: float, data_symbol: DataSymbol, price = None, timestamp = None) -> bool:
+    def trade(self, trade_value: float, data_symbol: DataSymbol, price = None, timestamp = None) -> bool:
         if not price and not timestamp:
             price = 0 
             timestamp = 0
@@ -86,7 +101,7 @@ class Executor(ZMQ):
             pass
 
 
-    def _close_all_trades(self):
+    def close_all_trades(self):
         if self.config.backtest == True:
             super()._send(SERVICES.python_backtester, 'close_all_trades')
         else:

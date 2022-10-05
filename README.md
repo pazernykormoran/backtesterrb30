@@ -68,7 +68,7 @@ class Model(bt.Engine):
     def __init__(self, config):
         super().__init__(config)
         self.counter = 0
-        self._set_buffer_length(200)
+        self.set_buffer_length(200)
 
     #override
     async def on_feed(self, data: list):
@@ -78,12 +78,12 @@ class Model(bt.Engine):
                 message = {
                     'value': quant
                 }
-                self._trigger_event(message)
+                self.trigger_event(message)
         self.counter += 1
 ~~~
 
 ### executor.py:
-Executor module manages transactions and current money level. You can use "_trade" function here.
+Executor module manages transactions and current money level. You can use "trade" function here.
 ~~~
 import backtesterRB30 as bt
 from random import randint
@@ -95,7 +95,7 @@ class TradeExecutor(bt.Executor):
 
     #override
     def on_event(self, message):
-        self._trade(message['value'], self._get_data_schema().data[randint(0,1)])
+        self.trade(message['value'], self.get_data_schema().data[randint(0,1)])
 ~~~
 
 ### run.py:
@@ -126,15 +126,15 @@ npm install dukascopy-node --save
 
 ## Usage of debug mode
 Framework gives you access to debug mode that allows you printing summary charts and descriptions every step of your debug. To enable using debug mode while implementing your strategy follow below steps:
-- Use "_debug_breakpoint" method somewhere in your "on_feed" method. This works as breakpoint while debugging. The code will stop in this place.
-- Press "ctrl+d" in any moment during backtest loop. This will cause entering debug mode and stopping the code in the nearest moment when your code occurs "_debug_breakpoint" function.
+- Use "debug_breakpoint" method somewhere in your "on_feed" method. This works as breakpoint while debugging. The code will stop in this place.
+- Press "ctrl+d" in any moment during backtest loop. This will cause entering debug mode and stopping the code in the nearest moment when your code occurs "debug_breakpoint" function.
 - Press "ctrl+n" for next. You should see summary and charts printed for current moment of backtest.
 - Press "ctrl+q" for quit debug mode.
 
 #TODO gif
 
 ## Live code reloads in debug mode
-Debug mode enables user to develop his strategies live with backtest running in debud mode. Thats only possible importable modules to bo live reloaded. To achive this use "_add_reloading_module(path_to_module)" in the init function in your Model class. As an argument to the function pass the path to the module you are goint to be reloaded after every step of your debug.
+Debug mode enables user to develop his strategies live with backtest running in debud mode. Thats only possible importable modules to bo live reloaded. To achive this use "add_reloading_module(path_to_module)" in the init function in your Model class. As an argument to the function pass the path to the module you are goint to be reloaded after every step of your debug.
 
 example:
 

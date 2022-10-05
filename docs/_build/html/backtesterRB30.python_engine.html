@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>backtesterRB30.python_engine package &mdash; Backtester-RB30 0.0.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="backtesterRB30.python_executor package" href="backtesterRB30.python_executor.html" />
+    <link rel="prev" title="backtesterRB30 package" href="backtesterRB30.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Backtester-RB30
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Backtester-RB30</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="backtesterRB30.html">backtesterRB30 package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="backtesterRB30.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">backtesterRB30.python_engine package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="backtesterRB30.python_executor.html">backtesterRB30.python_executor package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="backtesterRB30.html#module-backtesterRB30">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Backtester-RB30</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="modules.html">Backtester-RB30</a> &raquo;</li>
+          <li><a href="backtesterRB30.html">backtesterRB30 package</a> &raquo;</li>
+      <li>backtesterRB30.python_engine package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/backtesterRB30.python_engine.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="backtesterrb30-python-engine-package">
+<h1>backtesterRB30.python_engine package<a class="headerlink" href="#backtesterrb30-python-engine-package" title="Permalink to this heading"></a></h1>
+<div class="section" id="module-backtesterRB30.python_engine.engine">
+<span id="backtesterrb30-python-engine-engine-module"></span><h2>backtesterRB30.python_engine.engine module<a class="headerlink" href="#module-backtesterRB30.python_engine.engine" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">backtesterRB30.python_engine.engine.</span></span><span class="sig-name descname"><span class="pre">Engine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config:</span> <span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger=&lt;built-in</span> <span class="pre">function</span> <span class="pre">print&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ZMQ</span></code></p>
+<p>Python Engine</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine.add_custom_chart">
+<span class="sig-name descname"><span class="pre">add_custom_chart</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">chart</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">CustomChartElement</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_on_price_chart</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">color</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine.add_custom_chart" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine.add_reloading_module">
+<span class="sig-name descname"><span class="pre">add_reloading_module</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine.add_reloading_module" title="Permalink to this definition"></a></dt>
+<dd><p>Function gets path to module
+Function returning added module</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine.debug_breakpoint">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">debug_breakpoint</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine.debug_breakpoint" title="Permalink to this definition"></a></dt>
+<dd><p>Function causes breakpoint if debug mode is turned on.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine.get_columns">
+<span class="sig-name descname"><span class="pre">get_columns</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine.get_columns" title="Permalink to this definition"></a></dt>
+<dd><p>Function return column names of data_schema.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine.get_data_schema">
+<span class="sig-name descname"><span class="pre">get_data_schema</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine.get_data_schema" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine.get_data_symbol_by_custom_name">
+<span class="sig-name descname"><span class="pre">get_data_symbol_by_custom_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">custom_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataSymbol</span></span></span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine.get_data_symbol_by_custom_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine.on_data_finish">
+<span class="sig-name descname"><span class="pre">on_data_finish</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine.on_data_finish" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine.on_feed">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">on_feed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine.on_feed" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a list containing <code class="xref py py-class docutils literal notranslate"><span class="pre">bluepy.btle.Characteristic</span></code>
+objects for the peripheral. If no arguments are given, will return all
+characteristics. If startHnd and/or endHnd are given, the list is
+restricted to characteristics whose handles are within the given range.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>startHnd</strong> (<em>int</em><em>, </em><em>optional</em>) – Start index, defaults to 1</p></li>
+<li><p><strong>endHnd</strong> (<em>int</em><em>, </em><em>optional</em>) – End index, defaults to 0xFFFF</p></li>
+<li><p><strong>uuids</strong> (<em>list</em><em>, </em><em>optional</em>) – a list of UUID strings, defaults to None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>List of returned <code class="xref py py-class docutils literal notranslate"><span class="pre">bluepy.btle.Characteristic</span></code> objects</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine.set_buffer_length">
+<span class="sig-name descname"><span class="pre">set_buffer_length</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">length</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine.set_buffer_length" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="backtesterRB30.python_engine.engine.Engine.trigger_event">
+<span class="sig-name descname"><span class="pre">trigger_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#backtesterRB30.python_engine.engine.Engine.trigger_event" title="Permalink to this definition"></a></dt>
+<dd><p>Function sends custom message to trade executor service.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="backtesterRB30.html" class="btn btn-neutral float-left" title="backtesterRB30 package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="backtesterRB30.python_executor.html" class="btn btn-neutral float-right" title="backtesterRB30.python_executor package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, pazerny_kormoran.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -8,5 +8,5 @@ class TradeExecutor(bt.Executor):
 
     #override
     def on_event(self, message):
-        self._trade(message['value'], self._get_data_schema().data[randint(0,1)])
+        self.trade(message['value'], self.get_data_schema().data[randint(0,1)])
 

@@ -17,6 +17,7 @@ import keyboard
 
 
 class Engine(ZMQ):
+    """Python Engine"""
     def __init__(self, config: dict, logger=print):
         super().__init__(config, logger)
         self.__data_schema: DataSchema = import_data_schema(self.config.strategy_path)
@@ -41,6 +42,20 @@ class Engine(ZMQ):
 
     @abstractmethod
     async def on_feed(self, data):
+        """Returns a list containing :class:`bluepy.btle.Characteristic`
+        objects for the peripheral. If no arguments are given, will return all
+        characteristics. If startHnd and/or endHnd are given, the list is
+        restricted to characteristics whose handles are within the given range.
+
+        :param startHnd: Start index, defaults to 1
+        :type startHnd: int, optional
+        :param endHnd: End index, defaults to 0xFFFF
+        :type endHnd: int, optional
+        :param uuids: a list of UUID strings, defaults to None
+        :type uuids: list, optional
+        :return: List of returned :class:`bluepy.btle.Characteristic` objects
+        :rtype: list
+        """
         pass
 
 
@@ -48,11 +63,11 @@ class Engine(ZMQ):
         pass
 
 
-    def _get_data_schema(self):
+    def get_data_schema(self):
         return self.__data_schema
 
 
-    def _get_data_symbol_by_custom_name(self, custom_name: str) -> DataSymbol:
+    def get_data_symbol_by_custom_name(self, custom_name: str) -> DataSymbol:
         if type(custom_name) != str:
             raise Exception('Provided name is not string')
         arr = [d for d in self.__data_schema.data if d.custom_name == custom_name]
@@ -63,18 +78,18 @@ class Engine(ZMQ):
         return arr[0]
 
 
-    def _get_columns(self):
+    def get_columns(self):
         """
         Function return column names of data_schema.
         """
         return self.__columns
 
 
-    def _set_buffer_length(self, length: int):
+    def set_buffer_length(self, length: int):
         self.__buffer_length = length
 
 
-    def _trigger_event(self, event: JSONSerializable):
+    def trigger_event(self, event: JSONSerializable):
         """
         Function sends custom message to trade executor service.
         """
@@ -82,22 +97,22 @@ class Engine(ZMQ):
         super()._send(SERVICES.python_executor,'event', event)
     
 
-    def _add_custom_chart(self, 
+    def add_custom_chart(self, 
                     chart: List[CustomChartElement], 
                     name: str, 
                     display_on_price_chart: Union[bool, None] = None, 
                     log_scale: Union[bool, None] = None, 
                     color: Union[str, None] = None):
-        """
-        Function allows adding custom chart to your strategy.
-        Function gets:
-            - display_on_price_chart: variable indicates if chart should be displayed
-                in the main chart with prices
-            - log_scale: variable indicates if chart should be in the log scale. 
-                Skipped if display_on_price_chart is true because information about this chart is 
-                set in data_schema file
-            - color: color of matplotlib chart for example 'red', 'blue' ..
-        """
+        # """
+        # Function allows adding custom chart to your strategy.
+        # Function gets:
+        #     - display_on_price_chart: variable indicates if chart should be displayed
+        #         in the main chart with prices
+        #     - log_scale: variable indicates if chart should be in the log scale. 
+        #         Skipped if display_on_price_chart is true because information about this chart is 
+        #         set in data_schema file
+        #     - color: color of matplotlib chart for example 'red', 'blue' ..
+        # """
         chart_obj = {
             'chart': chart,
             'display_on_price_chart': display_on_price_chart,
@@ -109,7 +124,7 @@ class Engine(ZMQ):
         self.__custom_charts.append(chart_obj)
 
     
-    async def _debug_breakpoint(self):
+    async def debug_breakpoint(self):
         """
         Function causes breakpoint if debug mode is turned on.
         """
@@ -140,7 +155,7 @@ class Engine(ZMQ):
                 await asyncio.sleep(0.1)
 
 
-    def _add_reloading_module(self, module_path: str):
+    def add_reloading_module(self, module_path: str):
         """
             Function gets path to module
             Function returning added module
