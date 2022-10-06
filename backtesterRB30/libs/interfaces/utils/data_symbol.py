@@ -1,13 +1,9 @@
-from pydantic import BaseModel
-from typing import Optional, Union
+from typing import Optional, Any
 from datetime import datetime
 from backtesterRB30.libs.interfaces.utils.custom_base_model import CustomBaseModel
-# from backtesterRB30.libs.utils.historical_sources import HISTORICAL_INTERVALS_UNION, HISTORICAL_SOURCES
-from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
 from enum import Enum
 
 class DataSymbol(CustomBaseModel):
-    custom_name: Optional[str]
     symbol: str
     # historical_data_source: HISTORICAL_SOURCES
     historical_data_source: str
@@ -18,6 +14,8 @@ class DataSymbol(CustomBaseModel):
     trigger_feed: bool = False
     with_volume: bool = False
     display_chart_in_summary: bool = False
+    custom_name: Optional[str]
+    custom_data: Optional[Any]
 
     def get_buffer(self) -> list:
         if 'buffer' in self.additional_properties:

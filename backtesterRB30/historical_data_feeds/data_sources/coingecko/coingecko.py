@@ -4,6 +4,7 @@ import pandas as pd
 from os.path import join
 from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 # from backtesterRB30.libs.utils.historical_sources import COINGECKO_INTERVALS
 from backtesterRB30.libs.utils.timestamps import datetime_to_timestamp, timestamp_to_datetime
 from pycoingecko import CoinGeckoAPI
@@ -25,7 +26,7 @@ class CoingeckoDataSource(DataSource):
         self.__last_request_time = 0
 
     #override
-    async def _validate_instrument_data(self, data) -> bool:
+    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         try:
             candles = self.client.get_coin_ohlc_by_id(data.symbol, vs_currency='usd', days='max')
         except Exception as e:

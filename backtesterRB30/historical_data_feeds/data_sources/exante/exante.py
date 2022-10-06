@@ -6,6 +6,7 @@ from time import time, sleep
 from datetime import datetime
 from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 # from backtesterRB30.libs.utils.historical_sources import EXANTE_INTERVALS
 from backtesterRB30.libs.utils.singleton import singleton
 from backtesterRB30.historical_data_feeds.data_sources.utils import validate_dataframe_timestamps
@@ -42,7 +43,7 @@ class ExanteDataSource(DataSource):
         return int(self.__get_exante_interval(interval).value * 1000)
 
     #override
-    async def _validate_instrument_data(self, data) -> bool:
+    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         #TODO check if volume necessery or not.
 
         data_type = DataType.QUOTES

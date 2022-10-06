@@ -11,6 +11,7 @@ from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import
 # from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 from backtesterRB30.historical_data_feeds.data_sources.utils import validate_dataframe_timestamps
 from os import getenv
+from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 from backtesterRB30.libs.utils.singleton import singleton
 from enum import Enum
 
@@ -43,7 +44,7 @@ class BinanceDataSource(DataSource):
         self.client = Client(binance_api_key, binance_api_secret)
 
     #override
-    async def _validate_instrument_data(self, data) -> bool:
+    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         #validate if instrument exists:
         exchange_info = self.client.get_exchange_info()
         if data.symbol not in [s['symbol'] for s in exchange_info['symbols']]:

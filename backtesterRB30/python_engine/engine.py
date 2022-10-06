@@ -51,7 +51,6 @@ class Engine(ZMQ):
         """
         pass
 
-    @abstractmethod
     def on_data_finish(self):
         """Function is being called in backtest mode when historical data are finished
         """

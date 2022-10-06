@@ -3,7 +3,7 @@ from backtesterRB30.historical_data_feeds.data_sources.dukascopy.dukascopy impor
 from backtesterRB30.historical_data_feeds.data_sources.rb30.rb30_disk import RB30DataSource
 from backtesterRB30.historical_data_feeds.data_sources.exante.exante import ExanteDataSource
 from backtesterRB30.historical_data_feeds.data_sources.coingecko.coingecko import CoingeckoDataSource
-from typing import Union
+from backtesterRB30.historical_data_feeds.data_sources.tradingview.tradingview import TradingView
 
 class HISTORICAL_SOURCES():
     binance=BinanceDataSource
@@ -11,5 +11,6 @@ class HISTORICAL_SOURCES():
     rb30disk=RB30DataSource
     exante=ExanteDataSource
     coingecko=CoingeckoDataSource
+    tradingview= TradingView
 
 # HISTORICAL_SOURCES_UNION = Union[BinanceDataSource, DukascopyDataSource, RB30DataSource, ExanteDataSource, CoingeckoDataSource]

@@ -4,6 +4,8 @@ from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import
 import asyncio
 import pandas as pd
 
+from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
+
 class DataSource():
 
     def __init__(self, allow_synchronous_download: bool, logger=print):
@@ -30,7 +32,7 @@ class DataSource():
         await self._download_instrument_data(downloaded_data_path, instrument_file)
         
 
-    async def validate_instrument(self, data) -> bool:
+    async def validate_instrument(self, data: DataSymbol) -> bool:
         await asyncio.sleep(0.1)
         return await self._validate_instrument_data(data)
 
@@ -39,7 +41,7 @@ class DataSource():
         pass
 
     @abstractmethod
-    async def _validate_instrument_data(self, data) -> bool:
+    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         pass
     
     @abstractmethod
