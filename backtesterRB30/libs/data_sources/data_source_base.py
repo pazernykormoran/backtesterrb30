@@ -3,9 +3,11 @@ from typing import Union
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 import asyncio
 import pandas as pd
+from enum import Enum
+from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
+from os.path import join
 
-class DataSource():
-
+class DataSource():    
     def __init__(self, allow_synchronous_download: bool, logger=print):
         self._allow_synchronous_download = allow_synchronous_download
         self._log = logger
@@ -15,23 +17,29 @@ class DataSource():
 
     def __validate_dataframe(self, 
                         df: pd.DataFrame,
-                        expected_first_data_timestamp: int,
-                        expected_last_data_timestamp: int,
-                        expected_data_length: int) -> bool:
-        if int(df.head(1)[0]) != expected_first_data_timestamp: return False
-        if int(df.tail(1)[0]) != expected_last_data_timestamp: return False
-        if len(df) != expected_data_length: return False
+                        instrument_file: InstrumentFile) -> bool:
+        # if int(df.head(1)[0]) != expected_first_data_timestamp: return False
+        # if int(df.tail(1)[0]) != expected_last_data_timestamp: return False
+        # if len(df) != expected_data_length: return False
+        if df.shape[1] != 2:
+            raise Exception('Bad shape of returned dataframe in data source '+self.NAME)
         return True
 
     async def download_instrument(self,
                         downloaded_data_path: str, 
                         instrument_file: InstrumentFile): 
         await asyncio.sleep(0.1)
-        await self._download_instrument_data(downloaded_data_path, instrument_file)
+        df: pd.DataFrame = await self._download_instrument_data(instrument_file)
+        self.__validate_dataframe(df, instrument_file)
+        df.to_csv(join(downloaded_data_path, instrument_file.to_filename()), 
+        index=False, header=False)
+
         
 
-    async def validate_instrument(self, data) -> bool:
+    async def validate_instrument(self, data: DataSymbol) -> bool:
         await asyncio.sleep(0.1)
+        if type(data.interval) != self.INTERVALS:
+            raise Exception('Bad interval type in data symbol', data.symbol, data.historical_data_source, 'check data_schema.py')
         return await self._validate_instrument_data(data)
 
     @abstractmethod
@@ -39,13 +47,12 @@ class DataSource():
         pass
 
     @abstractmethod
-    async def _validate_instrument_data(self, data) -> bool:
+    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         pass
     
     @abstractmethod
     async def _download_instrument_data(self,
-                        downloaded_data_path: str, 
-                        instrument_file: InstrumentFile):
+                        instrument_file: InstrumentFile) -> pd.DataFrame:
         """
         First downloaded timestamp should exactly exuals instrument_file.time_start (can be bigger if u are downloading ticks)
         Last downloaded timestamp should exactly exuals one interval before instrument_file.time_stop ()

@@ -32,10 +32,12 @@ class Engine(ZMQ):
         self.__reloading_modules = []
         self.__send_breakpoint_after_feed = False
         self.__code_stopped_debug = False
+        self.__breakpoint_display_charts = True
 
         super()._register("data_feed", self.__data_feed_event)
         super()._register("historical_sending_locked", self.__historical_sending_locked_event)
         super()._register("data_finish", self.__data_finish_event)
+        super()._register("engine_ready", self.__engine_ready_event)
 
     # public methods:
     # ==================================================================
@@ -51,7 +53,6 @@ class Engine(ZMQ):
         """
         pass
 
-    @abstractmethod
     def on_data_finish(self):
         """Function is being called in backtest mode when historical data are finished
         """
@@ -75,7 +76,7 @@ class Engine(ZMQ):
 
         :param custom_name: custom name defined in `data_schema.py` file.
         :type custom_name: str
-        :return: :class:`DataSymbol` object
+        :return: :class:`DataSymbol` object combined with privided custom_name
         :rtype: DataSymbol
         """
         if type(custom_name) != str:
@@ -89,7 +90,7 @@ class Engine(ZMQ):
 
 
     def get_columns(self) -> List[str]:
-        """Returns a list of instrument names based on all instruments in `DataSchema`.
+        """Returns a list of instrument names based on all instruments in :class:`DataSchema`.
         Do not use it as identifiers! Names can be the same in other data sources.
 
         :return: List of returned :class:`str` objects
@@ -99,25 +100,23 @@ class Engine(ZMQ):
 
 
     def set_buffer_length(self, length: int):
-        """Returns a list containing :class:`bluepy.btle.Characteristic`
-        objects for the peripheral. If no arguments are given, will return all
-        characteristics. If startHnd and/or endHnd are given, the list is
-        restricted to characteristics whose handles are within the given range.
+        """Sets data buffer length. Data provided to `on_feed()` function
+        is going to have this length.
 
-        :param startHnd: Start index, defaults to 1
-        :type startHnd: int, optional
-        :param endHnd: End index, defaults to 0xFFFF
-        :type endHnd: int, optional
-        :param uuids: a list of UUID strings, defaults to None
-        :type uuids: list, optional
-        :return: List of returned :class:`bluepy.btle.Characteristic` objects
-        :rtype: list
+        :param length: buffer length
+        :type length: int
         """
         self.__buffer_length = length
 
  
     def trigger_event(self, event: JSONSerializable):
+        """Calling this function, you trigger `on_event()` function in 
+        :class:`TradeExecutor`. You can provide any JSON serializable input
+        to this method. 
 
+        :param event: any JSON serializable data
+        :type event: JSONSerializable
+        """
         self.__send_last_feed(SERVICES.python_executor)
         super()._send(SERVICES.python_executor,'event', event)
     
@@ -125,10 +124,23 @@ class Engine(ZMQ):
     def add_custom_chart(self, 
                     chart: List[CustomChartElement], 
                     name: str, 
-                    display_on_price_chart: Union[bool, None] = None, 
+                    display_on_price_chart: Union[DataSymbol, None] = None, 
                     log_scale: Union[bool, None] = None, 
                     color: Union[str, None] = None):
+        """Function adds custom chart printed under main charts in summary
+        or in breakpoint debug event.
 
+        :param chart: list of :class:`CustomChartElement`
+        :type chart: list
+        :param name: name of your custom name
+        :type name: str
+        :param display_on_price_chart: determining if chart is going to be displayed on other chart (on privided :class:`DataSymbol` chart) or it is going to be displayed alone
+        :type display_on_price_chart: DataSymbol, optional
+        :param log_scale: determines if chart is going to be in log scale
+        :type log_scale: bool, optional
+        :param color: a list of UUID strings, defaults to None
+        :type color: str, optional
+        """
         chart_obj = {
             'chart': chart,
             'display_on_price_chart': display_on_price_chart,
@@ -140,8 +152,13 @@ class Engine(ZMQ):
         self.__custom_charts.append(chart_obj)
 
     
-    async def debug_breakpoint(self):
+    async def debug_breakpoint(self, display_charts = True):
+        """This function causes breakpoint triggered while you turn on debug mode.
 
+        :param display_charts: determines if breakpoint should cause displaying charts
+        :type display_charts: bool, optional
+        """   
+        self.__breakpoint_display_charts = display_charts
         if self.__debug_mode == True:
             self.__code_stopped_debug = True
             while True:
@@ -170,7 +187,13 @@ class Engine(ZMQ):
 
 
     def add_reloading_module(self, module_path: str):
+        """Adds module that is going to be reloaded 
+        every step of your debug. Module must not save any state
+        because while realoading this state is going to be refreshed.
 
+        :param module_path: path to module
+        :type module_path: str
+        """
         spec, module = import_spec_module(module_path)
         self.__reloading_modules.append((spec, module))
         reload_spec_module(spec,module)
@@ -211,6 +234,7 @@ class Engine(ZMQ):
     def __send_debug_breakpoint(self):
         breakpoint_params= {}
         breakpoint_params['custom_charts'] = self.__custom_charts
+        breakpoint_params['display_charts'] = self.__breakpoint_display_charts 
         self._log('sending debug breakpoint')
         self.__send_last_feed(SERVICES.python_executor)
         super()._send(SERVICES.python_executor,'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
@@ -271,3 +295,5 @@ class Engine(ZMQ):
         self.__send_last_feed(SERVICES.python_backtester)
         super()._send(SERVICES.python_backtester, 'data_finish', DataFinish(**finish_params))
 
+    async def __engine_ready_event(self, service_name):
+        super()._send(SERVICES[service_name], 'engine_ready_response')

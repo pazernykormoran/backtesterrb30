@@ -4,11 +4,12 @@ import pandas as pd
 from os.path import join
 from time import time, sleep
 from datetime import datetime
-from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
+from backtesterRB30.libs.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 # from backtesterRB30.libs.utils.historical_sources import EXANTE_INTERVALS
 from backtesterRB30.libs.utils.singleton import singleton
-from backtesterRB30.historical_data_feeds.data_sources.utils import validate_dataframe_timestamps
+from backtesterRB30.libs.data_sources.utils import validate_dataframe_timestamps
 from os import getenv
 import asyncio
 from enum import Enum
@@ -29,6 +30,8 @@ class ExanteDataSource(DataSource):
         super().__init__(True, logger)
         exante_app_id=getenv("exante_app_id")
         exante_access_key=getenv("exante_access_key")
+        if exante_app_id == None or exante_access_key == None:
+            raise Exception(self.NAME + ' No authorization heys provided')
         self.client = HTTPApi(AuthMethods.BASIC, appid=exante_app_id, acckey=exante_access_key)
 
     def __get_exante_interval(self, interval: str) -> CandleDurations:
@@ -42,7 +45,7 @@ class ExanteDataSource(DataSource):
         return int(self.__get_exante_interval(interval).value * 1000)
 
     #override
-    async def _validate_instrument_data(self, data) -> bool:
+    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         #TODO check if volume necessery or not.
 
         data_type = DataType.QUOTES
@@ -53,7 +56,7 @@ class ExanteDataSource(DataSource):
         candles = None
         while True:
             candles = self.client.get_ohlc(symbol=data.symbol, 
-                        duration=60, start=1, end=time()*1000, version='3.0', 
+                        duration=60, start=1, version='3.0', 
                         limit=1, agg_type=data_type)
             if candles != None or time() - start_validation_time > 61:
                 break
@@ -75,8 +78,7 @@ class ExanteDataSource(DataSource):
 
     #override
     async def _download_instrument_data(self, 
-                        downloaded_data_path: str, 
-                        instrument_file: InstrumentFile):
+                        instrument_file: InstrumentFile) -> pd.DataFrame:
         self._log('Downloading exante data', instrument_file.to_filename())
         # try:
         await self.__wait()
@@ -166,5 +168,4 @@ class ExanteDataSource(DataSource):
             # print('tail', str(df.tail(1)))
 
 
-        df.to_csv(join(downloaded_data_path, instrument_file.to_filename()), index=False, header=False)
-
+        return df   

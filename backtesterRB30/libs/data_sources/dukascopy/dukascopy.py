@@ -5,9 +5,10 @@ from os.path import join
 import shutil
 from typing import Union
 import pandas as pd
-from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
+from backtesterRB30.libs.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from os import getenv, getcwd
+from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 from backtesterRB30.libs.utils.singleton import singleton
 import importlib.resources
 import json
@@ -55,7 +56,7 @@ class DukascopyDataSource(DataSource):
         if interval == 'month': return None
 
 
-    async def _validate_instrument_data(self, data) -> bool:
+    async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         # https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/master/src/utils/instrument-meta-data/generated/raw-meta-data-2022-04-23.json
         # response = requests.get("http://api.open-notify.org/astros.json")
         from_datetime_timestamp = int(round(datetime.timestamp(data.backtest_date_start) * 1000))
@@ -79,8 +80,7 @@ class DukascopyDataSource(DataSource):
         return True
 
     async def _download_instrument_data(self, 
-                        downloaded_data_path: str, 
-                        instrument_file: InstrumentFile):
+                        instrument_file: InstrumentFile) -> pd.DataFrame:
         self._log('Downloading dukascopy data', instrument_file.to_filename())
         """
         documentation: 
@@ -119,4 +119,4 @@ class DukascopyDataSource(DataSource):
         # print('Dukascopy df shape after dl', df.shape)
         # print('head', str(df.head(1)))
         # print('tail', str(df.tail(1)))
-        df.to_csv(join(downloaded_data_path, instrument_file.to_filename()), index=False, header=False)
+        return df

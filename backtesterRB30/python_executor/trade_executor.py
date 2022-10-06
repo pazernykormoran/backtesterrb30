@@ -47,27 +47,34 @@ class Executor(ZMQ):
 
     @abstractmethod
     def on_event(self, message):
-        """Returns a list containing :class:`bluepy.btle.Characteristic`
-        objects for the peripheral. If no arguments are given, will return all
-        characteristics. If startHnd and/or endHnd are given, the list is
-        restricted to characteristics whose handles are within the given range.
+        """Function is being called when :class:`Model` class triggers 
+        `trigger_event()` function. 
 
-        :param startHnd: Start index, defaults to 1
-        :type startHnd: int, optional
-        :param endHnd: End index, defaults to 0xFFFF
-        :type endHnd: int, optional
-        :param uuids: a list of UUID strings, defaults to None
-        :type uuids: list, optional
-        :return: List of returned :class:`bluepy.btle.Characteristic` objects
-        :rtype: list
+        :param message: message defined in `model.py` in strategy files.
+        :type message: Any
         """
         self._log('method should be implemented in strategy function')
         pass
 
     def get_data_schema(self):
+        """Returns data_schema defined in your strategy files in `data_schema.py`
+        Data schema contains list of :class:`DataSymbol` objects. In every :class:`DataSymbol` object, 
+        you can use `get_buffer()` function to get current buffer connected to this symbol.
+
+        :return: :class:`DataSchema` object combined with this strategy.
+        :rtype: DataSchema
+        """
         return self.__data_schema
 
     def get_data_symbol_by_custom_name(self, custom_name: str):
+        """Returns a :class:`DataSymbol` object using `custom_name` defined
+        in `data_schema.py`, `custom_name` must be unique.
+
+        :param custom_name: custom name defined in `data_schema.py` file.
+        :type custom_name: str
+        :return: :class:`DataSymbol` object combined with privided custom_name
+        :rtype: DataSymbol
+        """
         if type(custom_name) != str:
             raise Exception('Provided name is not string')
         arr = [d for d in self.__data_schema.data if d.custom_name == custom_name]
@@ -78,7 +85,18 @@ class Executor(ZMQ):
         return arr[0]
 
 
-    def trade(self, trade_value: float, data_symbol: DataSymbol, price = None, timestamp = None) -> bool:
+    def trade(self, trade_value: float, data_symbol: DataSymbol, price: float = None, timestamp: int = None):
+        """Triggers trade.
+
+        :param trade_value: value of trade in dollars.
+        :type trade_value: float
+        :param data_symbol: :class:`DataSymbol` on which trade is going to be made.
+        :type data_symbol: DataSymbol
+        :param price: price of trade. Default is current price. Works only in backtest mode.
+        :type price: float, optional
+        :param timestamp: timestamp of trade. Default is current timestamp. Works only in backtest mode.
+        :type timestamp: int, optional
+        """
         if not price and not timestamp:
             price = 0 
             timestamp = 0
@@ -102,6 +120,8 @@ class Executor(ZMQ):
 
 
     def close_all_trades(self):
+        """Closes all opened trades.
+        """
         if self.config.backtest == True:
             super()._send(SERVICES.python_backtester, 'close_all_trades')
         else:
