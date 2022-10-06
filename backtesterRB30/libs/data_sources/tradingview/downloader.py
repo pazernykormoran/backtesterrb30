@@ -2,17 +2,12 @@ import datetime
 import enum
 import json
 import logging
-import os
-import pickle
 import random
 import re
-import shutil
 import string
-import time
 import pandas as pd
 from websocket import create_connection
 import requests
-import sys
 import asyncio
 
 logger = logging.getLogger(__name__)

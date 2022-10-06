@@ -5,11 +5,11 @@ from binance.helpers import interval_to_milliseconds
 from datetime import datetime
 import pandas as pd
 from os.path import join
-from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
+from backtesterRB30.libs.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 # from backtesterRB30.libs.utils.historical_sources import BINANCE_INTERVALS
 # from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.historical_data_feeds.data_sources.utils import validate_dataframe_timestamps
+from backtesterRB30.libs.data_sources.utils import validate_dataframe_timestamps
 from os import getenv
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 from backtesterRB30.libs.utils.singleton import singleton
@@ -41,6 +41,8 @@ class BinanceDataSource(DataSource):
         super().__init__(False, logger)
         binance_api_secret=getenv("binance_api_secret")
         binance_api_key=getenv("binance_api_key")
+        if binance_api_secret == None or binance_api_key == None:
+            raise Exception(self.NAME + ' No authorization heys provided')
         self.client = Client(binance_api_key, binance_api_secret)
 
     #override
@@ -64,8 +66,7 @@ class BinanceDataSource(DataSource):
     
     #override
     async def _download_instrument_data(self,
-                        downloaded_data_path: str, 
-                        instrument_file: InstrumentFile) -> bool:
+                        instrument_file: InstrumentFile) -> pd.DataFrame:
         self._log('Downloading binance data', instrument_file.to_filename())
         if instrument_file.interval == 'tick': 
             interval_timestamp = 1000*60*60
@@ -93,8 +94,7 @@ class BinanceDataSource(DataSource):
             # print('head', str(df.head(1)))
             # print('tail', str(df.tail(1)))
 
-        df.to_csv(join(downloaded_data_path, instrument_file.to_filename()), 
-                index=False, header=False)
+        return df
 
 
     def _get_interval_miliseconds(self, interval: str) -> Union[int,None]: 

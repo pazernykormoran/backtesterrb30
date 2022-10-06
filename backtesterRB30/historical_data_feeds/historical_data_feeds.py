@@ -1,19 +1,19 @@
 
 import asyncio
 from typing import List
-from backtesterRB30.historical_data_feeds.data_sources.coingecko.coingecko import CoingeckoDataSource
-from backtesterRB30.historical_data_feeds.data_sources.data_sources_list import HISTORICAL_SOURCES
+from backtesterRB30.libs.data_sources.coingecko.coingecko import CoingeckoDataSource
+from backtesterRB30.libs.data_sources.data_sources_list import HISTORICAL_SOURCES
 from backtesterRB30.libs.interfaces.python_backtester.data_start import DataStart
 from backtesterRB30.libs.zmq.zmq import ZMQ
 from backtesterRB30.libs.utils.list_of_services import SERVICES, SERVICES_ARRAY
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 # from backtesterRB30.libs.utils.historical_sources import HISTORICAL_SOURCES
-from backtesterRB30.historical_data_feeds.data_sources.binance.binance import BinanceDataSource
-from backtesterRB30.historical_data_feeds.data_sources.dukascopy.dukascopy import DukascopyDataSource
-from backtesterRB30.historical_data_feeds.data_sources.rb30.rb30_disk import RB30DataSource
-from backtesterRB30.historical_data_feeds.data_sources.exante.exante import ExanteDataSource
-from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
+from backtesterRB30.libs.data_sources.binance.binance import BinanceDataSource
+from backtesterRB30.libs.data_sources.dukascopy.dukascopy import DukascopyDataSource
+from backtesterRB30.libs.data_sources.rb30.rb30_disk import RB30DataSource
+from backtesterRB30.libs.data_sources.exante.exante import ExanteDataSource
+from backtesterRB30.libs.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from backtesterRB30.libs.utils.module_loaders import import_data_schema
 from datetime import datetime
@@ -149,6 +149,16 @@ class HistoricalDataFeeds(ZMQ):
 
     def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbol], loop: asyncio.AbstractEventLoop):
         self._log('Data_schema validation')
+        #check for duplicates:
+        seen = []
+        for x in data_symbol_array:
+            data = str(x.symbol)+str(x.historical_data_source)
+            if data in seen:
+                raise Exception('Duplicate data symbols')
+            else:
+                seen.append(data)
+
+        #check other
         number_of_trigger_feeders = 0
         for data in data_symbol_array:
             if data.backtest_date_start == None:

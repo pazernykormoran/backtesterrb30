@@ -216,6 +216,7 @@ class Backtester(ZMQ):
 
     async def __print_summary(self, 
                 custom_charts: List[CustomChart], 
+                display_charts = True
                 # file_names: List[str],
                 # main_instrument_price: float,
                 # last_timestamp: Union[int, None] = None
@@ -235,7 +236,8 @@ class Backtester(ZMQ):
         self._log('income:', self.cumulated_money_chart[-1][1])
         self._log('==========================')
         self._log('')
-        await self.__print_charts(custom_charts)
+        if display_charts:
+            await self.__print_charts(custom_charts)
 
     def __load_instrument_chart(instrument):
         loaded_df = None
@@ -285,11 +287,7 @@ class Backtester(ZMQ):
 
     async def __close_all_trades_event(self):
         self._log(f"Received close all trades command NOT IMPLEMENTED")
-        # msg = CloseAllTrades(**msg)
-        # msg = dict(msg)
-        # msg["quantity"] = -self.number_of_actions
-        # trade: Trade = Trade(**msg)
-        # self.__trade(trade)
+
         #TODO
 
     async def __data_start_event(self, start_params):
@@ -308,6 +306,6 @@ class Backtester(ZMQ):
 
     async def __debug_breakpoint_event(self, breakpoint_params):
         breakpoint_params = DebugBreakpoint(**breakpoint_params)
-        await self.__print_summary(breakpoint_params.custom_charts)
+        await self.__print_summary(breakpoint_params.custom_charts, breakpoint_params.display_charts)
 
 

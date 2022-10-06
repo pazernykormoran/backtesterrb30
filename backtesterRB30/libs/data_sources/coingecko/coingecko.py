@@ -2,7 +2,7 @@ from typing import Union
 from datetime import datetime
 import pandas as pd
 from os.path import join
-from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
+from backtesterRB30.libs.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 # from backtesterRB30.libs.utils.historical_sources import COINGECKO_INTERVALS
@@ -44,8 +44,7 @@ class CoingeckoDataSource(DataSource):
     
     #override
     async def _download_instrument_data(self,
-                        downloaded_data_path: str, 
-                        instrument_file: InstrumentFile) -> bool:
+                        instrument_file: InstrumentFile) -> pd.DataFrame:
         self._log('Downloading coingecko data', instrument_file.to_filename())
         if instrument_file.interval == COINGECKO_INTERVALS_2.day4.value:
             actual_time = time.time()
@@ -60,8 +59,7 @@ class CoingeckoDataSource(DataSource):
         else:
             self._raise_error('No such interval')
 
-        df.to_csv(join(downloaded_data_path, instrument_file.to_filename()), 
-                index=False, header=False)
+        return df
 
     def _get_interval_miliseconds(self, interval: str) -> Union[int,None]: 
         if interval == COINGECKO_INTERVALS_2.day4.value: return 1000*60*60*24*4

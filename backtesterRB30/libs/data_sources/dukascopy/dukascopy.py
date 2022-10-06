@@ -5,7 +5,7 @@ from os.path import join
 import shutil
 from typing import Union
 import pandas as pd
-from backtesterRB30.historical_data_feeds.data_sources.data_source_base import DataSource
+from backtesterRB30.libs.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from os import getenv, getcwd
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
@@ -80,8 +80,7 @@ class DukascopyDataSource(DataSource):
         return True
 
     async def _download_instrument_data(self, 
-                        downloaded_data_path: str, 
-                        instrument_file: InstrumentFile):
+                        instrument_file: InstrumentFile) -> pd.DataFrame:
         self._log('Downloading dukascopy data', instrument_file.to_filename())
         """
         documentation: 
@@ -120,4 +119,4 @@ class DukascopyDataSource(DataSource):
         # print('Dukascopy df shape after dl', df.shape)
         # print('head', str(df.head(1)))
         # print('tail', str(df.tail(1)))
-        df.to_csv(join(downloaded_data_path, instrument_file.to_filename()), index=False, header=False)
+        return df

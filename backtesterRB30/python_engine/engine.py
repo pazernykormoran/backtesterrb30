@@ -32,6 +32,7 @@ class Engine(ZMQ):
         self.__reloading_modules = []
         self.__send_breakpoint_after_feed = False
         self.__code_stopped_debug = False
+        self.__breakpoint_display_charts = True
 
         super()._register("data_feed", self.__data_feed_event)
         super()._register("historical_sending_locked", self.__historical_sending_locked_event)
@@ -139,8 +140,8 @@ class Engine(ZMQ):
         self.__custom_charts.append(chart_obj)
 
     
-    async def debug_breakpoint(self):
-
+    async def debug_breakpoint(self, display_charts = True):
+        self.__breakpoint_display_charts = display_charts
         if self.__debug_mode == True:
             self.__code_stopped_debug = True
             while True:
@@ -210,6 +211,7 @@ class Engine(ZMQ):
     def __send_debug_breakpoint(self):
         breakpoint_params= {}
         breakpoint_params['custom_charts'] = self.__custom_charts
+        breakpoint_params['display_charts'] = self.__breakpoint_display_charts 
         self._log('sending debug breakpoint')
         self.__send_last_feed(SERVICES.python_executor)
         super()._send(SERVICES.python_executor,'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
