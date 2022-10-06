@@ -37,9 +37,11 @@ class HistoricalDataFeeds(ZMQ):
         self.__sending_locked = False
         self.__start_time = 0
         self.__data_to_download_2 = None
+        self.__engine_ready = False
 
         # register commands
         self._register("unlock_historical_sending", self.__unlock_historical_sending_event)
+        self._register("engine_ready_response", self.__engine_ready_response_event)
 
     # override
     def _loop(self):
@@ -78,6 +80,7 @@ class HistoricalDataFeeds(ZMQ):
 
 
     def __validate_symbols_to_download(self,data_schema: DataSchema, loop: asyncio.AbstractEventLoop):
+        self._log('validating symbols before download')
         for symbol in data_schema.data:
             if symbol.additional_properties['files_to_download'] != []:
                 data_source_client: DataSource = self.__get_data_source_client(symbol.historical_data_source)
@@ -117,11 +120,13 @@ class HistoricalDataFeeds(ZMQ):
 
 
     async def __historical_data_loop_ticks(self, data_parts: dict):
+        self._log('Starting backtest')
         # waiting for zero mq ports starts up
         await asyncio.sleep(0.5)
         while True:
-            # if self.__data_downloaded(self.__data_to_download): 
-            if self.__validate_data_downloaded(self.__data_to_download_2): 
+            # if self.__data_downloaded(self.__data_to_download):
+            self._send(SERVICES.python_engine, 'engine_ready', SERVICES.historical_data_feeds.value)
+            if self.__validate_data_downloaded(self.__data_to_download_2) and self.__engine_ready: 
                 self._log('All data has been downloaded')
                 
                 sending_counter = 0
@@ -144,7 +149,7 @@ class HistoricalDataFeeds(ZMQ):
 
                 super()._send(SERVICES.python_engine, 'data_finish')
                 break
-            await asyncio.sleep(5)
+            await asyncio.sleep(1)
 
 
     def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbol], loop: asyncio.AbstractEventLoop):
@@ -366,3 +371,6 @@ class HistoricalDataFeeds(ZMQ):
     
     async def __unlock_historical_sending_event(self):
         self.__sending_locked = False
+
+    async def __engine_ready_response_event(self):
+        self.__engine_ready = True
