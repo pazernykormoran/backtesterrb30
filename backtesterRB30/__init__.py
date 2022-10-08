@@ -4,6 +4,7 @@ from backtesterRB30.python_engine.engine import Engine
 from backtesterRB30.python_executor.trade_executor import Executor
 from backtesterRB30.libs.utils.config_validator import validate_config
 from backtesterRB30.libs.data_sources.data_sources_list import HISTORICAL_SOURCES
+from backtesterRB30.libs.utils.strategy import Strategy
 # from backtesterRB30.libs.utils.historical_sources import(
 #     EXANTE_INTERVALS, 
 #     HISTORICAL_SOURCES, 

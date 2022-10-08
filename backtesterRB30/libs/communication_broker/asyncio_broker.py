@@ -10,71 +10,72 @@ from backtesterRB30.libs.interfaces.utils.config import Config
 from os import _exit
 from pydantic import BaseModel
 from json import dumps, loads
+from backtesterRB30.libs.communication_broker.broker_base import BrokerBase
 
 
-class AsyncioBroker(Service, ABC):
+class AsyncioBroker(BrokerBase):
     __is_running: bool
     __is_active: bool
 
     __commands: Dict[str, Callable]
-    __loop: AbstractEventLoop
     # override
     def __init__(self, config: Config, logger=print):
-        super().__init__(config, logger)
         self.config=config
+        self._log = logger
         self.__is_running = False
         self.__is_active = False
-        self.__services = {}
+        self.__brokers = {}
 
-        self.__commands = {'start': self._start,
-                          'pause': self._pause,
-                          'stop': self._stop}
+        self.__commands = {'start': self.start,
+                          'pause': self.pause,
+                          'stop': self.stop}
 
     # override
     def run(self):
         # self.__init_sockets(self.config)
         self.__is_running = True
         self.__is_active = True
-        super().run()
-
-    def register_event_loop(self, loop: AbstractEventLoop):
-        self.__loop = loop
 
     # override
-    def _send(self, service: SERVICES, msg: str, *args):
-        # if self.__is_active:
-        #     data = [service.value.encode('utf-8'), msg.encode('utf-8')]
-        #     for arg in args:
-        #         if isinstance(arg,BaseModel):
-        #             arg = arg.dict()
+    async def send(self, service: SERVICES, msg: str, *args):
+        if self.__is_active:
+            new_args = []
+            # data = [service.value.encode('utf-8'), msg.encode('utf-8')]
+            for arg in args:
+                if isinstance(arg,BaseModel):
+                    arg = arg.dict()
+                    new_args.append(arg)
         #         arg = dumps(arg, default=str)
         #         data.append(arg.encode('utf-8'))
         #     self.__pub.send_multipart(data)
 
         service: AsyncioBroker = self.__find_service(service)
-        service.handle(msg, *args)
+        # print('new args ', new_args)
+        if len(new_args) > 0:
+            await service.handle(msg, *new_args)
+        else:
+            await service.handle(msg, *args)
+    # @abstractmethod
+    # def _handle_zmq_message(self, msg: str):
+    #     pass
 
-    @abstractmethod
-    def _handle_zmq_message(self, msg: str):
-        pass
-
-    @abstractmethod
-    def _asyncio_loop(self, loop:asyncio.AbstractEventLoop):
-        pass
+    # @abstractmethod
+    # def _asyncio_loop(self, loop:asyncio.AbstractEventLoop):
+    #     pass
     
-    def _loop(self):
-        self._asyncio_loop(self.__loop)
+    # def _loop(self):
+    #     self._asyncio_loop(self.__loop)
 
     def __find_service(self, service: SERVICES):
-        return self.__services[service.value]
+        return self.__brokers[service.value]
 
-    def _register(self, command: str, func: Callable):
+    def register(self, command: str, func: Callable):
         self.__commands[command] = func
 
-    def register_service(self, service: SERVICES, service_object):
-        self.__services[service.value] = service_object
+    def register_broker(self, service: SERVICES, service_object):
+        self.__brokers[service.value] = service_object
 
-    def _create_listeners(self, loop:AbstractEventLoop):
+    def create_listeners(self, loop:AbstractEventLoop):
         # self._log('Start main loop')
         # for sub in self.__subs:
         #     loop.create_task(self.__listen_zmq(sub))
@@ -114,18 +115,18 @@ class AsyncioBroker(Service, ABC):
             self._log(f"Command '{cmd}' not registered")
 
 
-    def _stop(self):
+    def stop(self):
         self._log("Service stoped")
         self.__is_running = False
         _exit(1)
 
 
-    def _start(self):
+    def start(self):
         self._log("Service started")
         self.__is_active = True
 
 
-    def _pause(self):
+    def pause(self):
         self._log("Service paused")
         self.__is_active = False
 

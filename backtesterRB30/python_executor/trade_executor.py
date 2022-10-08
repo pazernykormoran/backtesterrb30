@@ -2,21 +2,32 @@
 from abc import abstractmethod
 import asyncio
 import json
+from backtesterRB30.libs.communication_broker.broker_base import BrokerBase
 from backtesterRB30.libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
 from backtesterRB30.libs.interfaces.python_backtester.last_feed import LastFeed
 from backtesterRB30.libs.interfaces.python_backtester.trade import Trade
 from backtesterRB30.libs.interfaces.python_executor.executor_position import ExecutorPosition
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.zmq_broker.zmq import ZMQ
+from backtesterRB30.libs.communication_broker.zmq_broker import ZMQ
+from backtesterRB30.libs.communication_broker.asyncio_broker import AsyncioBroker
 from typing import List
-
+from backtesterRB30.libs.utils.service import Service
 from backtesterRB30.libs.utils.list_of_services import SERVICES
+from backtesterRB30.libs.interfaces.utils.config import BROKERS, Config 
 
-class Executor(ZMQ):
+class Executor(Service):
     """Python Trade executor"""
-    def __init__(self, config: dict, data_schema: DataSchema, logger=print):
+    _broker: BrokerBase
+    
+    def __init__(self, config: Config, data_schema: DataSchema, loop = None, logger=print):
         super().__init__(config, logger)
+        self.config: Config=config
+        self.__loop =  loop
+        self.__custom_event_loop = False
+        if self.__loop == None: 
+            self.__loop = asyncio.get_event_loop()
+            self.__custom_event_loop= True
         self.__data_schema: DataSchema = data_schema
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         # self.__event_price = 0
@@ -33,19 +44,12 @@ class Executor(ZMQ):
             'current_value': 12
         }]
 
-        super()._register("event", self.__event_event)
-        # super()._register("set_number_of_actions", self.__set_number_of_actions_event)
-        super()._register("set_current_capital_event", self.__set_current_capital_event)
-        super()._register("set_current_invested_event", self.__set_current_invested_event)
-        super()._register("debug_breakpoint", self.__debug_breakpoint_event)
-        super()._register("last_feed", self.__last_feed_event)
-
 
     # public methods:
     # ==================================================================
 
     @abstractmethod
-    def on_event(self, message):
+    async def on_event(self, message):
         """Function is being called when :class:`Model` class triggers 
         `trigger_event()` function. 
 
@@ -84,7 +88,7 @@ class Executor(ZMQ):
         return arr[0]
 
 
-    def trade(self, trade_value: float, data_symbol: DataSymbol, price: float = None, timestamp: int = None):
+    async def trade(self, trade_value: float, data_symbol: DataSymbol, price: float = None, timestamp: int = None):
         """Triggers trade.
 
         :param trade_value: value of trade in dollars.
@@ -111,18 +115,18 @@ class Executor(ZMQ):
                 'symbol': data_symbol.symbol,
                 'source': data_symbol.historical_data_source
             }
-            super()._send(SERVICES.python_backtester, 'trade', Trade(**trade_params))
+            await self._broker.send(SERVICES.python_backtester, 'trade', Trade(**trade_params))
             return True
         else:
             self._log('Live trading not implemented')
             pass
 
 
-    def close_all_trades(self):
+    async def close_all_trades(self):
         """Closes all opened trades.
         """
         if self.config.backtest == True:
-            super()._send(SERVICES.python_backtester, 'close_all_trades')
+            await self._broker.send(SERVICES.python_backtester, 'close_all_trades')
         else:
             # TODO trade in real broker
             pass
@@ -137,24 +141,42 @@ class Executor(ZMQ):
 
     #private methods:
 
-    def _send(): pass
-    def _register(): pass
-    def _create_listeners(): pass
+    # def _send(): pass
+    # def _register(): pass
+    # def _create_listeners(): pass
 
+    def _loop(self):
+        self._broker.run()
+        self._broker.create_listeners(self.__loop)
+        if self.__custom_event_loop:
+            self.__loop.run_forever()
+            self.__loop.close()
 
-    # override
-    def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
-        super()._create_listeners(loop)
+    # def _send(self, service: SERVICES, msg: str, *args):
+    #     self._broker.send(service, msg, *args)
 
-    # override
-    def _handle_zmq_message(self, message):
-        pass      
+    def _configure(self):
+        super()._configure()
+        self._broker.register("event", self.__event_event)
+        # super()._register("set_number_of_actions", self.__set_number_of_actions_event)
+        self._broker.register("set_current_capital_event", self.__set_current_capital_event)
+        self._broker.register("set_current_invested_event", self.__set_current_invested_event)
+        self._broker.register("debug_breakpoint", self.__debug_breakpoint_event)
+        self._broker.register("last_feed", self.__last_feed_event)
+
+    # # override
+    # def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
+    #     self._broker.create_listeners(loop)
+
+    # # override
+    # def _handle_zmq_message(self, message):
+    #     pass      
 
 
     #COMMANDS
 
     async def __event_event(self, msg):
-        self.on_event(msg)
+        await self.on_event(msg)
 
     # async def __set_number_of_actions_event(self, number: int):
     #     self.__number_of_actions = number
@@ -166,7 +188,7 @@ class Executor(ZMQ):
         self.__current_invested = number
 
     async def __debug_breakpoint_event(self, breakpoint_params):
-        super()._send(SERVICES.python_backtester, 'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
+        await self._broker.send(SERVICES.python_backtester, 'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
 
     async def __last_feed_event(self, msg):
-        super()._send(SERVICES.python_backtester, 'last_feed',LastFeed(**msg))
+        await self._broker.send(SERVICES.python_backtester, 'last_feed',LastFeed(**msg))

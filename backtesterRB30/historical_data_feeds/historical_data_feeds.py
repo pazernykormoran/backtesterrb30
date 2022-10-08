@@ -2,9 +2,12 @@
 import asyncio
 from typing import List
 from backtesterRB30.historical_data_feeds.historical_downloader import HistoricalDownloader
+from backtesterRB30.libs.communication_broker.broker_base import BrokerBase
 from backtesterRB30.libs.data_sources.data_sources_list import HISTORICAL_SOURCES
 from backtesterRB30.libs.interfaces.python_backtester.data_start import DataStart
-from backtesterRB30.libs.zmq_broker.zmq import ZMQ
+from backtesterRB30.libs.communication_broker.zmq_broker import ZMQ
+from backtesterRB30.libs.communication_broker.asyncio_broker import AsyncioBroker
+from backtesterRB30.libs.interfaces.utils.config import Config, BROKERS
 from backtesterRB30.libs.utils.list_of_services import SERVICES, SERVICES_ARRAY
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
@@ -18,13 +21,22 @@ from os.path import isfile, join
 import pandas as pd
 from os import mkdir
 import time as tm
+from backtesterRB30.libs.utils.service import Service
 
-class HistoricalDataFeeds(ZMQ):
+
+class HistoricalDataFeeds(Service):
     
     downloaded_data_path = '/var/opt/data_historical_downloaded'
+    _broker: BrokerBase
 
-    def __init__(self, config: dict, data_schema: DataSchema, logger=print):
+    def __init__(self, config: Config, data_schema: DataSchema, loop = None, logger=print):
         super().__init__(config, logger)
+        self.config: Config=config
+        self.__loop =  loop
+        self.__custom_event_loop = False
+        if self.__loop == None: 
+            self.__loop = asyncio.get_event_loop()
+            self.__custom_event_loop= True
         self.__data_schema: DataSchema = data_schema
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__historical_sources_array = [i for i in dir(HISTORICAL_SOURCES) if not i.startswith('__')]
@@ -37,27 +49,48 @@ class HistoricalDataFeeds(ZMQ):
                 self.__historical_sources_array, self.downloaded_data_path, self._log)
         print('backtest',self.config.backtest)
 
-        # register commands
-        self._register("unlock_historical_sending", self.__unlock_historical_sending_event)
-        self._register("engine_ready_response", self.__engine_ready_response_event)
 
-    # override
-    def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
-        self._create_listeners(loop)
+
+    # # override
+    # def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
+    #     self._create_listeners(loop)
+    #     self.__validate_downloaded_data_folder()
+    #     if self.config.backtest:
+    #         self.__data_to_download_2 = self.__historical_downloader.run(loop)
+    #         data_parts = self.__prepare_loading_data_structure_2()
+    #         loop.create_task(self.__historical_data_loop_ticks(data_parts))
+    #     else:  
+    #         self._log('backtest is off')
+
+    def _loop(self):
+        self._broker.run()
+        self._broker.create_listeners(self.__loop)
         self.__validate_downloaded_data_folder()
         if self.config.backtest:
-            self.__data_to_download_2 = self.__historical_downloader.run(loop)
+            self.__data_to_download_2 = self.__historical_downloader.run(self.__loop)
             data_parts = self.__prepare_loading_data_structure_2()
-            loop.create_task(self.__historical_data_loop_ticks(data_parts))
+            self.__loop.create_task(self.__historical_data_loop_ticks(data_parts))
         else:  
             self._log('backtest is off')
+        if self.__custom_event_loop:
+            self.__loop.run_forever()
+            self.__loop.close()
 
-    # override
-    def _handle_zmq_message(self, message):
-        pass
+    # def _send(self, service: SERVICES, msg: str, *args):
+    #     self._broker.send(service, msg, *args)
+
+    def _configure(self):
+        super()._configure()
+        # register commands
+        self._broker.register("unlock_historical_sending", self.__unlock_historical_sending_event)
+        self._broker.register("engine_ready_response", self.__engine_ready_response_event)
+
+    # # override
+    # def _handle_zmq_message(self, message):
+    #     pass
 
 
-    def __send_start_params(self):
+    async def __send_start_params(self):
         self.__start_time = tm.time()
         file_names_grouped = []
         for symbol in self.__data_schema.data:
@@ -70,7 +103,7 @@ class HistoricalDataFeeds(ZMQ):
             'file_names': file_names_grouped,
             'start_time': self.__start_time
         }
-        super()._send(SERVICES.python_backtester, 'data_start', DataStart(**start_params))
+        await self._broker.send(SERVICES.python_backtester, 'data_start', DataStart(**start_params))
         return
 
 
@@ -79,13 +112,13 @@ class HistoricalDataFeeds(ZMQ):
         await asyncio.sleep(0.5)
         while True:
             # if self.__data_downloaded(self.__data_to_download):
-            self._send(SERVICES.python_engine, 'engine_ready', SERVICES.historical_data_feeds.value)
+            await self._broker.send(SERVICES.python_engine, 'engine_ready', SERVICES.historical_data_feeds.value)
             if self.__validate_data_downloaded(self.__data_to_download_2) and self.__engine_ready: 
                 self._log('All data has been downloaded')
                 
                 sending_counter = 0
                 self._log('Starting data loop')
-                self.__send_start_params()
+                await self.__send_start_params()
                 # return
                 last_row = []
                 for _, one_year_array in data_parts.items():
@@ -93,15 +126,15 @@ class HistoricalDataFeeds(ZMQ):
                     data_part = load_data_frame_ticks_2(self.__data_schema, self.__columns, self.downloaded_data_path, last_row, one_year_array)
                     for row in data_part:
                         last_row = row
-                        super()._send(SERVICES.python_engine,'data_feed',list(last_row))
+                        await self._broker.send(SERVICES.python_engine,'data_feed',list(last_row))
                         sending_counter += 1
                         if sending_counter % 1000 == 0:
                             self.__sending_locked = True
-                            super()._send(SERVICES.python_engine, 'historical_sending_locked')
+                            await self._broker.send(SERVICES.python_engine, 'historical_sending_locked')
                             while self.__sending_locked:
                                 await asyncio.sleep(0.01)
 
-                super()._send(SERVICES.python_engine, 'data_finish')
+                await self._broker.send(SERVICES.python_engine, 'data_finish')
                 break
             await asyncio.sleep(1)
 
@@ -130,11 +163,11 @@ class HistoricalDataFeeds(ZMQ):
         return files_collection
 
 
-    def __stop_all_services(self):
+    async def __stop_all_services(self):
         for service in SERVICES_ARRAY:
             if service != self.name:
-                super()._send(getattr(SERVICES, service), 'stop')
-        super()._stop()
+                await self._broker.send(getattr(SERVICES, service), 'stop')
+        self._broker.stop()
 
     # COMMANDS
     

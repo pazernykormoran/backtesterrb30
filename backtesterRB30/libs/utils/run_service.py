@@ -1,6 +1,7 @@
 import os
 from backtesterRB30.libs.utils.module_loaders import import_data_schema
 from backtesterRB30.libs.utils.service import Service
+from backtesterRB30.libs.communication_broker.zmq_broker import ZMQ
 
 def run_service(microservice_name: str, service_class: Service):
     here = os.getcwd()
@@ -27,5 +28,7 @@ def run_service(microservice_name: str, service_class: Service):
         "strategy_path": strategy_path
     }
     data_schema = import_data_schema(strategy_path)
-    service = service_class(Config(**config), data_schema)
+    config = Config(**config)
+    service: Service = service_class(config, data_schema)
+    service.register_communication_broker(ZMQ(config))
     service.run()

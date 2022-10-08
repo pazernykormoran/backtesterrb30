@@ -2,24 +2,36 @@
 from abc import abstractmethod
 import asyncio
 from typing import List, Union
+from backtesterRB30.libs.communication_broker.broker_base import BrokerBase
 from backtesterRB30.libs.interfaces.python_backtester.custom_chart import CustomChart
 from backtesterRB30.libs.interfaces.python_backtester.data_finish import DataFinish 
 from backtesterRB30.libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
 from backtesterRB30.libs.interfaces.python_backtester.last_feed import LastFeed
 from backtesterRB30.libs.interfaces.python_engine.custom_chart_element import CustomChartElement
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.zmq_broker.zmq import ZMQ
+from backtesterRB30.libs.communication_broker.zmq_broker import ZMQ
+from backtesterRB30.libs.communication_broker.asyncio_broker import AsyncioBroker
 from backtesterRB30.libs.utils.list_of_services import SERVICES
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
 from backtesterRB30.libs.utils.module_loaders import import_spec_module, reload_spec_module
 from backtesterRB30.libs.utils.json_serializable import JSONSerializable
+from backtesterRB30.libs.utils.service import Service
+from backtesterRB30.libs.interfaces.utils.config import Config, BROKERS
 import keyboard
 
 
-class Engine(ZMQ):
+class Engine(Service):
     """Python Engine"""
-    def __init__(self, config: dict, data_schema: DataSchema, logger=print):
+    _broker: BrokerBase
+    
+    def __init__(self, config: Config, data_schema: DataSchema, loop = None, logger=print):
         super().__init__(config, logger)
+        self.config: Config=config
+        self.__loop =  loop
+        self.__custom_event_loop = False
+        if self.__loop == None: 
+            self.__loop = asyncio.get_event_loop()
+            self.__custom_event_loop= True
         self.__data_schema: DataSchema = data_schema
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__data_buffer = [ [] for col in self.__columns]
@@ -33,12 +45,6 @@ class Engine(ZMQ):
         self.__send_breakpoint_after_feed = False
         self.__code_stopped_debug = False
         self.__breakpoint_display_charts = True
-
-        super()._register("data_feed", self.__data_feed_event)
-        super()._register("historical_sending_locked", self.__historical_sending_locked_event)
-        super()._register("data_finish", self.__data_finish_event)
-        super()._register("engine_ready", self.__engine_ready_event)
-        super()._register("get_buffer_length", self.__get_buffer_length_event)
 
     # public methods:
     # ==================================================================
@@ -110,7 +116,7 @@ class Engine(ZMQ):
         self.__buffer_length = length
 
  
-    def trigger_event(self, event: JSONSerializable):
+    async def trigger_event(self, event: JSONSerializable):
         """Calling this function, you trigger `on_event()` function in 
         :class:`TradeExecutor`. You can provide any JSON serializable input
         to this method. 
@@ -118,8 +124,8 @@ class Engine(ZMQ):
         :param event: any JSON serializable data
         :type event: JSONSerializable
         """
-        self.__send_last_feed(SERVICES.python_executor)
-        super()._send(SERVICES.python_executor,'event', event)
+        await self.__send_last_feed(SERVICES.python_executor)
+        await self._broker.send(SERVICES.python_executor,'event', event)
     
 
     def add_custom_chart(self, 
@@ -206,35 +212,54 @@ class Engine(ZMQ):
 
     #private methods:
 
-    def _send(): pass
-    def _register(): pass
-    def _create_listeners(): pass
+    def _loop(self):
+        self._broker.run()
+        self._broker.create_listeners(self.__loop)
+        self.__loop.create_task(self.__keyboard_listener())
+        if self.__custom_event_loop:
+            self.__loop.run_forever()
+            self.__loop.close()
+
+    # def _send(self, service: SERVICES, msg: str, *args):
+    #     self._broker.send(service, msg, *args)
+
+    def _configure(self):
+        super()._configure()
+        self._broker.register("data_feed", self.__data_feed_event)
+        self._broker.register("historical_sending_locked", self.__historical_sending_locked_event)
+        self._broker.register("data_finish", self.__data_finish_event)
+        self._broker.register("engine_ready", self.__engine_ready_event)
+        self._broker.register("get_buffer_length", self.__get_buffer_length_event)
+
+    # def _send(): pass
+    # def _register(): pass
+    # def _create_listeners(): pass
 
 
-    # override
-    def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
-        super()._create_listeners(loop)
-        loop.create_task(self.__keyboard_listener())
+    # # override
+    # def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
+    #     self._broker._create_listeners(loop)
+    #     loop.create_task(self.__keyboard_listener())
 
-    # override
-    def _handle_zmq_message(self, message):
-        pass
+    # # override
+    # def _handle_zmq_message(self, message):
+    #     pass
 
 
-    def __send_last_feed(self, service: SERVICES):
+    async def __send_last_feed(self, service: SERVICES):
         last_feed = {
             'last_feed': [v[-1] for v in self.__data_buffer]
         }
-        super()._send(service, 'last_feed', LastFeed(**last_feed))
+        await self._broker.send(service, 'last_feed', LastFeed(**last_feed))
 
 
-    def __send_debug_breakpoint(self):
+    async def __send_debug_breakpoint(self):
         breakpoint_params= {}
         breakpoint_params['custom_charts'] = self.__custom_charts
         breakpoint_params['display_charts'] = self.__breakpoint_display_charts 
         self._log('sending debug breakpoint')
-        self.__send_last_feed(SERVICES.python_executor)
-        super()._send(SERVICES.python_executor,'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
+        await self.__send_last_feed(SERVICES.python_executor)
+        await self._broker.send(SERVICES.python_executor,'debug_breakpoint', DebugBreakpoint(**breakpoint_params))
 
 
     async def __keyboard_listener(self):
@@ -275,12 +300,12 @@ class Engine(ZMQ):
             for i, v in enumerate(new_data_row):
                 self.__data_buffer[i].pop(0)
             if self.__send_breakpoint_after_feed: 
-                self.__send_debug_breakpoint()
+                await self.__send_debug_breakpoint()
                 self.__send_breakpoint_after_feed = False
         
         
     async def __historical_sending_locked_event(self):
-        super()._send(SERVICES.historical_data_feeds,'unlock_historical_sending')
+        await self._broker.send(SERVICES.historical_data_feeds,'unlock_historical_sending')
 
     
     async def __data_finish_event(self):
@@ -289,12 +314,12 @@ class Engine(ZMQ):
         finish_params = {}
         finish_params['custom_charts'] = self.__custom_charts
         # finish_params['main_instrument_price'] = self.__get_main_intrument_price()
-        self.__send_last_feed(SERVICES.python_backtester)
-        super()._send(SERVICES.python_backtester, 'data_finish', DataFinish(**finish_params))
+        await self.__send_last_feed(SERVICES.python_backtester)
+        await self._broker.send(SERVICES.python_backtester, 'data_finish', DataFinish(**finish_params))
 
     async def __engine_ready_event(self, service_name):
-        super()._send(SERVICES[service_name], 'engine_ready_response')
+        await self._broker.send(SERVICES[service_name], 'engine_ready_response')
 
         
     async def __get_buffer_length_event(self, service_name):
-        super()._send(SERVICES[service_name], 'engine_set_buffer_length', self.__buffer_length)
+        await self._broker.send(SERVICES[service_name], 'engine_set_buffer_length', self.__buffer_length)

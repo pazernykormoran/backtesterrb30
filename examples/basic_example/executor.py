@@ -7,6 +7,6 @@ class TradeExecutor(bt.Executor):
         super().__init__(*args)
 
     #override
-    def on_event(self, message):
-        self.trade(message['value'], self.get_data_schema().data[randint(0,1)])
+    async def on_event(self, message):
+        await self.trade(message['value'], self.get_data_schema().data[randint(0,1)])
 

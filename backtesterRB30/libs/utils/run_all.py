@@ -125,12 +125,14 @@ def run_all_microservices():
             
             
     def validate_strategy(strategy_path):
+        from backtesterRB30.libs.interfaces.utils.config import BROKERS
         data_schema: DataSchema = import_data_schema(strategy_path)
         model_module = import_model_module(strategy_path)
         executor_module = import_executor_module(strategy_path)
         class Asd:
             name = "test",
-            strategy_path = ''
+            strategy_path = '',
+            broker = BROKERS.zmq
         config = Asd()
         config.strategy_path = strategy_path
         model = model_module.Model(config, data_schema)

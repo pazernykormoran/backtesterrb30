@@ -1,26 +1,36 @@
 
 from abc import abstractmethod
 import asyncio
+from backtesterRB30.libs.communication_broker.broker_base import BrokerBase
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 from backtesterRB30.libs.data_sources.data_source_base import DataSource
-from backtesterRB30.libs.zmq_broker.zmq import ZMQ
+from backtesterRB30.libs.communication_broker.zmq_broker import ZMQ
 from backtesterRB30.libs.data_sources.data_sources_list import HISTORICAL_SOURCES
 from backtesterRB30.libs.utils.list_of_services import SERVICES
 from backtesterRB30.historical_data_feeds.functions import load_data_frame_ticks_2
+from backtesterRB30.libs.utils.service import Service
 from backtesterRB30.libs.utils.timestamps import timestamp_to_datetime
+from backtesterRB30.libs.interfaces.utils.config import Config, BROKERS
 from os import getenv
 from datetime import datetime
 import time
 
-class LiveDataFeeds(ZMQ):
+class LiveDataFeeds(Service):
     """Python Live data provider"""
 
     downloaded_data_path = '/var/opt/data_historical_downloaded'
-
-    def __init__(self, config: dict, data_schema: DataSchema, logger=print):
+    _broker: BrokerBase
+    
+    def __init__(self, config: dict, data_schema: DataSchema, loop = None, logger=print):
         super().__init__(config, logger)
+        self.config: Config=config
+        self.__loop =  loop
+        self.__custom_event_loop = False
+        if self.__loop == None: 
+            self.__loop = asyncio.get_event_loop()
+            self.__custom_event_loop= True
         self.__data_schema: DataSchema = data_schema
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__historical_sources_array = [i for i in dir(HISTORICAL_SOURCES) if not i.startswith('__')]
@@ -28,22 +38,30 @@ class LiveDataFeeds(ZMQ):
         self.__download_buffer = False
         self.__engine_ready = False
         self.__historical_rows = []
-        self._register("engine_set_buffer_length", self.__engine_set_buffer_length_event)
 
     # override
-    def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
-        super()._create_listeners(loop)
+    def _loop(self):
+        self._broker.create_listeners(self.__loop)
         # TODO add data downloader
         if not self.config.backtest:
             self.__create_downloading_clients(self.__historical_sources_array, self.__data_schema, self.__data_sources, self._log)
             self.__combine_clients_and_symbols(self.__data_schema)
             interval = self.__find_loop_interval(self.__data_schema)
-            loop.create_task(self.__main_loop(interval))
+            self.__loop.create_task(self.__main_loop(interval))
+        if self.__custom_event_loop:
+            self.__loop.run_forever()
+            self.__loop.close()
 
+    def _configure(self):
+        super()._configure()
+        self._broker.register("engine_set_buffer_length", self.__engine_set_buffer_length_event)
 
-    # override
-    def _handle_zmq_message(self, message):
-        pass 
+    # def _send(self, service: SERVICES, msg: str, *args):
+    #     self._broker.send(service, msg, *args)
+
+    # # override
+    # def _handle_zmq_message(self, message):
+    #     pass 
 
     async def __main_loop(self, interval):
         if self.__download_buffer == True:
@@ -56,7 +74,7 @@ class LiveDataFeeds(ZMQ):
                 timestamp = await self.__get_proper_timestamp(self.__historical_rows, self.__data_schema, interval)
                 for row in self.__historical_rows:
                     last_row = row
-                    super()._send(SERVICES.python_engine,'data_feed',list(last_row))
+                    await self._broker.send(SERVICES.python_engine,'data_feed',list(last_row))
                 while True:
                     print('starting live')
                     row = []
@@ -68,7 +86,7 @@ class LiveDataFeeds(ZMQ):
                         row.append(price)
                     if sth_updated: 
                         print('sendin')
-                        super()._send(SERVICES.python_engine,'data_feed',row)
+                        await self._broker.send(SERVICES.python_engine,'data_feed',row)
                     await asyncio.sleep(interval/1000)
                     timestamp += interval
             await asyncio.sleep(2)
