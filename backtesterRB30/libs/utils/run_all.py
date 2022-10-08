@@ -21,6 +21,8 @@ serve_file_commands_array = [
     '    from backtesterRB30.python_engine import run\n',
     'elif microservice_name == "historical_data_feeds":\n',
     '    from backtesterRB30.python_executor import run\n'
+    'elif microservice_name == "live_data_feeds":\n',
+    '    from backtesterRB30.live_data_feeds import run\n'
 ]
 
 run_file_commands_array = [
@@ -35,6 +37,7 @@ run_file_commands_array = [
     'sudo python3 serve.py python_engine &\n'
     'sudo python3 serve.py python_executor &\n'
     'sudo python3 serve.py historical_data_feeds &\n'
+    'sudo python3 serve.py live_data_feeds &\n'
     'while true\n'
     'do\n'
     '    sleep 10\n'
@@ -58,8 +61,12 @@ def run_all_microservices():
             for line in run_file_commands_array:
                 f.write(line)
 
-    #TODO hardcoded backtest mode: 
     backtest_state='true'
+    #TODO hardcoded backtest mode: 
+    backtest = getenv('backtest_state')
+    if backtest:
+        backtest_state = backtest
+  
 
     args = argv
     if len(args) > 1:
@@ -76,6 +83,7 @@ def run_all_microservices():
 
 
     load_dotenv('.env')
+    load_dotenv('.env_private')
     strategy_path = os.path.join(here, os.getenv('STRATEGY_PATH'))
     if not strategy_path or strategy_path == '':
         print('Error: provide strategy name in .env file like: \nstrategy=name_of_strategy')
@@ -125,8 +133,8 @@ def run_all_microservices():
             strategy_path = ''
         config = Asd()
         config.strategy_path = strategy_path
-        model = model_module.Model(config)
-        executor = executor_module.TradeExecutor(config)
+        model = model_module.Model(config, data_schema)
+        executor = executor_module.TradeExecutor(config, data_schema)
 
     print('validating strategy')
     validate_strategy(strategy_path)
@@ -134,7 +142,7 @@ def run_all_microservices():
     create_port_configurations()
     with open('.additional_configs', 'a') as f:
         f.write('backtest_state='+backtest_state)
-    if backtest_state:
+    if backtest_state == 'true':
         system('bash run.sh') 
     else:
         print('live strategies not implemented')

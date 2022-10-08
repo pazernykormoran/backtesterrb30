@@ -33,7 +33,6 @@ class DataSource():
         self.__validate_dataframe(df, instrument_file)
         df.to_csv(join(downloaded_data_path, instrument_file.to_filename()), 
         index=False, header=False)
-
         
 
     async def validate_instrument(self, data: DataSymbol) -> bool:
@@ -44,10 +43,21 @@ class DataSource():
 
     @abstractmethod
     def _get_interval_miliseconds(self, interval: str) -> Union[int,None]: 
+        """
+        This function should return number of miliseconds delay for provided interval
+        """
         pass
 
     @abstractmethod
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
+        """
+        Function should validate if data for shis DataSymbol is possible to download.
+        It should check if
+        - data.symbol exists
+        - data.interval fot this data.symbol exists
+        - timestamps range from 'data.backtest_date_start' to 'data.backtest_date_stop' 
+            for this data.symbol and data.interval exists
+        """
         pass
     
     @abstractmethod
@@ -58,3 +68,12 @@ class DataSource():
         Last downloaded timestamp should exactly exuals one interval before instrument_file.time_stop ()
         """
         pass
+
+
+    def get_current_price(self, data: DataSymbol):
+        """
+        Function should return current price of provided data symbol
+        """
+        pass
+
+    

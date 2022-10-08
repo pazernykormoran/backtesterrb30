@@ -3,8 +3,8 @@ from random import randint
 
 class TradeExecutor(bt.Executor):
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, *args):
+        super().__init__(*args)
 
     #override
     def on_event(self, message):

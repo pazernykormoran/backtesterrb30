@@ -44,6 +44,7 @@ class BinanceDataSource(DataSource):
         if binance_api_secret == None or binance_api_key == None:
             raise Exception(self.NAME + ' No authorization heys provided')
         self.client = Client(binance_api_key, binance_api_secret)
+        self._test_counter = 0
 
     #override
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
@@ -96,6 +97,11 @@ class BinanceDataSource(DataSource):
 
         return df
 
+    def get_current_price(self, symbol: DataSymbol):
+        # self._test_counter += 1
+        # print('binance get curren price', self._test_counter)
+        price = self.client.get_symbol_ticker(symbol = symbol.symbol)
+        return price['price']
 
     def _get_interval_miliseconds(self, interval: str) -> Union[int,None]: 
         return interval_to_milliseconds(self.__get_binance_interval(interval))

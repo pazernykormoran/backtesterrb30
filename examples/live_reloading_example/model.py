@@ -3,8 +3,8 @@ from os.path import join
 
 class Model(bt.Engine):
     
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, *args):
+        super().__init__(*args)
         self.state = {
             'counter': 0
         }

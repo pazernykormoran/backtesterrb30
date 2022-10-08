@@ -1,4 +1,5 @@
 import os
+from backtesterRB30.libs.utils.module_loaders import import_data_schema
 from backtesterRB30.libs.utils.service import Service
 
 def run_service(microservice_name: str, service_class: Service):
@@ -25,6 +26,6 @@ def run_service(microservice_name: str, service_class: Service):
         "backtest": True if backtest_state == 'true' else False,
         "strategy_path": strategy_path
     }
-
-    service = service_class(Config(**config))
+    data_schema = import_data_schema(strategy_path)
+    service = service_class(Config(**config), data_schema)
     service.run()

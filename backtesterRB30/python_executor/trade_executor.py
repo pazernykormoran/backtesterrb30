@@ -8,17 +8,16 @@ from backtesterRB30.libs.interfaces.python_backtester.trade import Trade
 from backtesterRB30.libs.interfaces.python_executor.executor_position import ExecutorPosition
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.utils.module_loaders import import_data_schema
-from backtesterRB30.libs.zmq.zmq import ZMQ
+from backtesterRB30.libs.zmq_broker.zmq import ZMQ
 from typing import List
 
 from backtesterRB30.libs.utils.list_of_services import SERVICES
 
 class Executor(ZMQ):
     """Python Trade executor"""
-    def __init__(self, config: dict, logger=print):
+    def __init__(self, config: dict, data_schema: DataSchema, logger=print):
         super().__init__(config, logger)
-        self.__data_schema: DataSchema = import_data_schema(self.config.strategy_path)
+        self.__data_schema: DataSchema = data_schema
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         # self.__event_price = 0
         # self.__event_timestamp = 0
@@ -104,7 +103,7 @@ class Executor(ZMQ):
             raise Exception('Provide both price and timestamp or none of them.')
         if trade_value > self.__start_amout_of_usd + self.__current_capital - self.__current_invested:
             raise Exception('To big amout of trade')
-        if self.config.backtest == True:
+        if self.config.backtest:
             trade_params = {
                 'value': trade_value,
                 'price': price,
@@ -115,7 +114,7 @@ class Executor(ZMQ):
             super()._send(SERVICES.python_backtester, 'trade', Trade(**trade_params))
             return True
         else:
-            # TODO trade in real broker
+            self._log('Live trading not implemented')
             pass
 
 
@@ -144,12 +143,8 @@ class Executor(ZMQ):
 
 
     # override
-    def _loop(self):
-        loop = asyncio.get_event_loop()
+    def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
         super()._create_listeners(loop)
-        loop.run_forever()
-        loop.close()
-
 
     # override
     def _handle_zmq_message(self, message):

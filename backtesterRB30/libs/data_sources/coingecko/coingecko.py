@@ -24,6 +24,7 @@ class CoingeckoDataSource(DataSource):
         super().__init__(False, logger)
         self.client = CoinGeckoAPI()
         self.__last_request_time = 0
+        self._test_counter = 0
 
     #override
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
@@ -60,6 +61,13 @@ class CoingeckoDataSource(DataSource):
             self._raise_error('No such interval')
 
         return df
+
+    def get_current_price(self, data_symbol: DataSymbol):
+        self._test_counter += 1
+        price =self.client.get_price(data_symbol.symbol,vs_currencies='USD')
+        return price['polkadot']['usd']
+
+        return self._test_counter
 
     def _get_interval_miliseconds(self, interval: str) -> Union[int,None]: 
         if interval == COINGECKO_INTERVALS_2.day4.value: return 1000*60*60*24*4

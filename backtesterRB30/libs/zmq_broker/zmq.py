@@ -58,6 +58,16 @@ class ZMQ(Service, ABC):
     def _handle_zmq_message(self, msg: str):
         pass
 
+    @abstractmethod
+    def _asyncio_loop(self, loop:asyncio.AbstractEventLoop):
+        pass
+    
+    def _loop(self):
+        loop = asyncio.get_event_loop()
+        self._asyncio_loop(loop)
+        loop.run_forever()
+        loop.close()
+
     def _register(self, command: str, func: Callable):
         self.__commands[command] = func
 

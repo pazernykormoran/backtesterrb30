@@ -8,19 +8,19 @@ from backtesterRB30.libs.interfaces.python_backtester.debug_breakpoint import De
 from backtesterRB30.libs.interfaces.python_backtester.last_feed import LastFeed
 from backtesterRB30.libs.interfaces.python_engine.custom_chart_element import CustomChartElement
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.zmq.zmq import ZMQ
+from backtesterRB30.libs.zmq_broker.zmq import ZMQ
 from backtesterRB30.libs.utils.list_of_services import SERVICES
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
-from backtesterRB30.libs.utils.module_loaders import import_data_schema, import_spec_module, reload_spec_module
+from backtesterRB30.libs.utils.module_loaders import import_spec_module, reload_spec_module
 from backtesterRB30.libs.utils.json_serializable import JSONSerializable
 import keyboard
 
 
 class Engine(ZMQ):
     """Python Engine"""
-    def __init__(self, config: dict, logger=print):
+    def __init__(self, config: dict, data_schema: DataSchema, logger=print):
         super().__init__(config, logger)
-        self.__data_schema: DataSchema = import_data_schema(self.config.strategy_path)
+        self.__data_schema: DataSchema = data_schema
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__data_buffer = [ [] for col in self.__columns]
         for sym, arr in zip(self.__data_schema.data, self.__data_buffer[1:]):
@@ -38,6 +38,7 @@ class Engine(ZMQ):
         super()._register("historical_sending_locked", self.__historical_sending_locked_event)
         super()._register("data_finish", self.__data_finish_event)
         super()._register("engine_ready", self.__engine_ready_event)
+        super()._register("get_buffer_length", self.__get_buffer_length_event)
 
     # public methods:
     # ==================================================================
@@ -211,13 +212,9 @@ class Engine(ZMQ):
 
 
     # override
-    def _loop(self):
-        loop = asyncio.get_event_loop()
+    def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
         super()._create_listeners(loop)
         loop.create_task(self.__keyboard_listener())
-        loop.run_forever()
-        loop.close()
-
 
     # override
     def _handle_zmq_message(self, message):
@@ -273,10 +270,10 @@ class Engine(ZMQ):
     async def __data_feed_event(self, new_data_row):
         for i, v in enumerate(new_data_row):
             self.__data_buffer[i].append(v)
-        if len(self.__data_buffer[0])>self.__buffer_length:
+        if len(self.__data_buffer[0])>=self.__buffer_length:
+            await self.on_feed(self.__data_buffer)
             for i, v in enumerate(new_data_row):
                 self.__data_buffer[i].pop(0)
-            await self.on_feed(self.__data_buffer)
             if self.__send_breakpoint_after_feed: 
                 self.__send_debug_breakpoint()
                 self.__send_breakpoint_after_feed = False
@@ -297,3 +294,7 @@ class Engine(ZMQ):
 
     async def __engine_ready_event(self, service_name):
         super()._send(SERVICES[service_name], 'engine_ready_response')
+
+        
+    async def __get_buffer_length_event(self, service_name):
+        super()._send(SERVICES[service_name], 'engine_set_buffer_length', self.__buffer_length)
