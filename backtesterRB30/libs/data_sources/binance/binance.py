@@ -67,15 +67,15 @@ class BinanceDataSource(DataSource):
     
     #override
     async def _download_instrument_data(self,
-                        instrument_file: InstrumentFile) -> pd.DataFrame:
-        self._log('Downloading binance data', instrument_file.to_filename())
-        if instrument_file.interval == 'tick': 
+                        instrument: str, interval: str, time_start: int, time_stop: Union[int, None]) -> pd.DataFrame:
+        self._log('Downloading binance data', instrument)
+        if interval == 'tick': 
             interval_timestamp = 1000*60*60
             trades_arr = []
-            start_hour = instrument_file.time_start
+            start_hour = time_start
             stop_hour = start_hour + interval_timestamp
-            while stop_hour < instrument_file.time_stop:
-                trades = self.client.get_aggregate_trades(symbol=instrument_file.instrument, 
+            while stop_hour < time_stop:
+                trades = self.client.get_aggregate_trades(symbol=instrument, 
                         startTime=start_hour, endTime=stop_hour)
                 # print('trades', trades)
                 trades_arr = trades_arr + trades
@@ -84,10 +84,21 @@ class BinanceDataSource(DataSource):
             df = pd.DataFrame(trades_arr)
             df = df[['T','p']]
         else:
-            binance_interval = self.__get_binance_interval(instrument_file.interval)
-            klines = self.client.get_historical_klines(instrument_file.instrument, 
-                    binance_interval, instrument_file.time_start, instrument_file.time_stop)
-            df = pd.DataFrame(klines).iloc[:-1, [0,1]]
+            binance_interval = self.__get_binance_interval(interval)
+            klines = self.client.get_historical_klines(instrument, 
+                    binance_interval, time_start, time_stop)
+            df_orig = pd.DataFrame(klines)
+            df = df_orig.iloc[:-1, [0,1]]
+            if time_stop == None:
+                df = df_orig.iloc[:, [0,1]]
+                milis = self._get_interval_miliseconds(interval)
+                if type(milis) != int or milis == 0:
+                    self._log('Warning, binance cannot get close price')
+                else:
+                    df_close = df_orig.iloc[-1:, [0,4]] 
+                    df_close.columns = df.columns
+                df = pd.concat([df, df_close])
+
             # if interval != STRATEGY_INTERVALS.tick.value:
             #     df = validate_dataframe_timestamps(df, interval, time_start, time_stop)
 

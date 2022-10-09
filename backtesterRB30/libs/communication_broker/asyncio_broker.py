@@ -76,7 +76,7 @@ class AsyncioBroker(BrokerBase):
         self.__brokers[service.value] = service_object
 
     def create_listeners(self, loop:AbstractEventLoop):
-        # self._log('Start main loop')
+        self._log('Start main loop')
         # for sub in self.__subs:
         #     loop.create_task(self.__listen_zmq(sub))
         pass

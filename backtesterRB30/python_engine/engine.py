@@ -37,7 +37,7 @@ class Engine(Service):
         self.__data_buffer = [ [] for col in self.__columns]
         for sym, arr in zip(self.__data_schema.data, self.__data_buffer[1:]):
             sym.additional_properties['buffer'] = arr
-        self.__buffer_length = 100
+        self.__buffer_length = 1
         self.__custom_charts: List[CustomChart] = []
         self.__debug_mode = False
         self.__debug_next_pressed = False
@@ -113,6 +113,10 @@ class Engine(Service):
         :param length: buffer length
         :type length: int
         """
+        if length < 1: 
+            raise Exception('Buffer length must be bigget than 1')
+        # if self.config.backtest == False and length > 1:
+        #     raise Exception('Buffer longer than 1 not implemended in live mode')
         self.__buffer_length = length
 
  
@@ -213,7 +217,7 @@ class Engine(Service):
     #private methods:
 
     def _loop(self):
-        self._broker.run()
+        # self._broker.run()
         self._broker.create_listeners(self.__loop)
         self.__loop.create_task(self.__keyboard_listener())
         if self.__custom_event_loop:
@@ -295,13 +299,15 @@ class Engine(Service):
     async def __data_feed_event(self, new_data_row):
         for i, v in enumerate(new_data_row):
             self.__data_buffer[i].append(v)
-        if len(self.__data_buffer[0])>=self.__buffer_length:
-            await self.on_feed(self.__data_buffer)
+        if len(self.__data_buffer[0])>self.__buffer_length:
             for i, v in enumerate(new_data_row):
                 self.__data_buffer[i].pop(0)
+        if len(self.__data_buffer[0])>=self.__buffer_length:
+            await self.on_feed(self.__data_buffer)
             if self.__send_breakpoint_after_feed: 
                 await self.__send_debug_breakpoint()
                 self.__send_breakpoint_after_feed = False
+
         
         
     async def __historical_sending_locked_event(self):

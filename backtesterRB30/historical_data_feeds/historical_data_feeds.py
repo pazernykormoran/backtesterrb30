@@ -63,7 +63,7 @@ class HistoricalDataFeeds(Service):
     #         self._log('backtest is off')
 
     def _loop(self):
-        self._broker.run()
+        # self._broker.run()
         self._broker.create_listeners(self.__loop)
         self.__validate_downloaded_data_folder()
         if self.config.backtest:

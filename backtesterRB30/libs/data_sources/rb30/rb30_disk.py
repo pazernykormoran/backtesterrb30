@@ -22,5 +22,5 @@ class RB30DataSource(DataSource):
         return True
 
     async def _download_instrument_data(self, 
-                        instrument_file: InstrumentFile) -> pd.DataFrame:
+                    instrument: str, interval: str, time_start: int, time_stop: Union[int, None]) -> pd.DataFrame:
         return True

@@ -146,7 +146,7 @@ class Executor(Service):
     # def _create_listeners(): pass
 
     def _loop(self):
-        self._broker.run()
+        # self._broker.run()
         self._broker.create_listeners(self.__loop)
         if self.__custom_event_loop:
             self.__loop.run_forever()

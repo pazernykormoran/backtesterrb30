@@ -105,30 +105,34 @@ def map_raw_to_instruments(raw: list, instruments: list):
         last_raw_obj[instrument] = value
     return last_raw_obj
 
+def load_files_array(downloaded_data_path, files_array: List[InstrumentFile]) -> List[pd.DataFrame]:
+    loaded_files = []
+    for file in files_array:
+        file_name = file.to_filename()
+        columns = ['timestamp', file.identifier]
+        df = pd.read_csv(join(downloaded_data_path, file_name), index_col=None, header=None, names=columns)
+        loaded_files.append(df)
+    return loaded_files
 
-def prepare_dataframes_to_synchronize_2(data_schema: DataSchema, all_columns: list, downloaded_data_path: str, 
-                last_row: list, files_array: List[InstrumentFile]) -> List[dict]:
+
+def prepare_dataframes_to_synchronize_2(data_schema: DataSchema, all_columns: list,
+                last_row: list, files_array_loaded: List[pd.DataFrame]) -> List[dict]:
     list_of_dfs = []
     for data_element in data_schema.data:
-        columns = ['timestamp', data_element.symbol]
-        file_name = 'none'
+        cols = ['timestamp', data_element.identifier]
         actual_raw = [0,0]
         prev_raw = [0,0]
-        for element in files_array:
-            if data_element.symbol == element.instrument:
-                file_name = element.to_filename()
-        if file_name == 'none':
-            # No file in this period for this instrument. Set empty dataframe.
-            df = pd.DataFrame([], columns=columns)
-        else:
-            # File exists. Load dataframe.
-            df = pd.read_csv(join(downloaded_data_path, file_name), index_col=None, header=None, names=columns)
-            # append last raw it if exists
-            if last_row != []:
-                # self._log('appending last row')
-                last_raw_mapped = map_raw_to_instruments(last_row, all_columns)
-                prev_raw[0] = last_raw_mapped["timestamp"]
-                prev_raw[1] = last_raw_mapped[data_element.symbol]
+        df = pd.DataFrame([], columns=cols)
+        for element in files_array_loaded:
+            element: pd.DataFrame = element
+            if len(element.columns) != 2:
+                raise Exception('Bad dataframe. Loaded dataframe should have 2 columns')
+            if data_element.identifier == element.columns[1]:
+                df = element
+        if not df.empty and last_row != []:
+            last_raw_mapped = map_raw_to_instruments(last_row, all_columns)
+            prev_raw[0] = last_raw_mapped["timestamp"]
+            prev_raw[1] = last_raw_mapped[data_element.symbol]
         obj = {
             "trigger_feed": data_element.trigger_feed,
             "rows_iterator": df.iterrows(),
@@ -153,6 +157,13 @@ def load_data_frame_ticks_2(data_schema: DataSchema, columns: list, \
     Function is geting files array from one period that are going to be loaded. 
     Function returns synchronized data in list of lists which are ready to send to engine.
     """
-    list_of_dfs = prepare_dataframes_to_synchronize_2(data_schema, columns, downloaded_data_path, last_row, files_array)
+    files_loaded = load_files_array(downloaded_data_path , files_array)
+    list_of_dfs = prepare_dataframes_to_synchronize_2(data_schema, columns, last_row, files_loaded)
+    rows = synchronize_dataframes(list_of_dfs, last_row)
+    return rows
+
+def load_data_frame_with_dfs(data_schema: DataSchema, columns: list, \
+            last_row: list, dataframes_array: List[pd.DataFrame]) -> List[list]:
+    list_of_dfs = prepare_dataframes_to_synchronize_2(data_schema, columns, last_row, dataframes_array)
     rows = synchronize_dataframes(list_of_dfs, last_row)
     return rows

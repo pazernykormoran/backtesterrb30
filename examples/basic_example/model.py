@@ -16,6 +16,7 @@ class Model(bt.Engine):
                 message = {
                     'value': quant
                 }
+                await self.debug_breakpoint()
                 await self.trigger_event(message)
         self.counter += 1
 

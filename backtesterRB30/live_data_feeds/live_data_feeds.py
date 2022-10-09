@@ -9,7 +9,7 @@ from backtesterRB30.libs.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.communication_broker.zmq_broker import ZMQ
 from backtesterRB30.libs.data_sources.data_sources_list import HISTORICAL_SOURCES
 from backtesterRB30.libs.utils.list_of_services import SERVICES
-from backtesterRB30.historical_data_feeds.functions import load_data_frame_ticks_2
+from backtesterRB30.historical_data_feeds.functions import load_data_frame_with_dfs
 from backtesterRB30.libs.utils.service import Service
 from backtesterRB30.libs.utils.timestamps import timestamp_to_datetime
 from backtesterRB30.libs.interfaces.utils.config import Config, BROKERS
@@ -35,7 +35,7 @@ class LiveDataFeeds(Service):
         self.__columns=['timestamp']+[c.symbol for c in self.__data_schema.data]
         self.__historical_sources_array = [i for i in dir(HISTORICAL_SOURCES) if not i.startswith('__')]
         self.__data_sources = {}
-        self.__download_buffer = False
+        self.__download_buffer = True
         self.__engine_ready = False
         self.__historical_rows = []
 
@@ -65,18 +65,16 @@ class LiveDataFeeds(Service):
 
     async def __main_loop(self, interval):
         if self.__download_buffer == True:
-            self._send(SERVICES.python_engine, 'get_buffer_length', SERVICES.live_data_feeds.value)
+            await self._broker.send(SERVICES.python_engine, 'get_buffer_length', SERVICES.live_data_feeds.value)
         else:
             self.__engine_ready = True
         while True:
             if self.__engine_ready:
-                print('starting sendi')
-                timestamp = await self.__get_proper_timestamp(self.__historical_rows, self.__data_schema, interval)
+                timestamp = await self.__get_proper_timestamp(self.__historical_rows, self.__data_schema)
                 for row in self.__historical_rows:
                     last_row = row
                     await self._broker.send(SERVICES.python_engine,'data_feed',list(last_row))
                 while True:
-                    print('starting live')
                     row = []
                     row.append(timestamp)
                     sth_updated = False
@@ -85,7 +83,6 @@ class LiveDataFeeds(Service):
                         if updated: sth_updated = True
                         row.append(price)
                     if sth_updated: 
-                        print('sendin')
                         await self._broker.send(SERVICES.python_engine,'data_feed',row)
                     await asyncio.sleep(interval/1000)
                     timestamp += interval
@@ -109,31 +106,25 @@ class LiveDataFeeds(Service):
         time_start = time_stop - 4 * smallest * buffer_length
         if time_stop - time_start < 1000*60*60*24: 
             time_start = time_stop - 1000*60*60*24
-        files = []
+        dfs = []
         for data_symbol in data_schema.data:
-            file = InstrumentFile.from_params(
-                data_symbol.historical_data_source, 
-                data_symbol.symbol, 
-                data_symbol.interval,
-                timestamp_to_datetime(time_start),
-                timestamp_to_datetime(time_stop)
-            )
             client: DataSource = data_symbol.additional_properties['downloading_client']
-            await client.download_instrument(self.downloaded_data_path, file)
-            files.append(file)
-        self.__historical_rows = load_data_frame_ticks_2(self.__data_schema, self.__columns, self.downloaded_data_path, [], files)
-        print('data downloaded')
+            df = await client.download_dataframe(
+                    data_symbol.symbol,
+                    data_symbol.interval.value,
+                    time_start,
+                    None)
+            df.columns = ['timestamp', data_symbol.identifier]
+            dfs.append(df)
+        self.__historical_rows = load_data_frame_with_dfs(self.__data_schema, self.__columns, [], dfs)
+        self.__historical_rows= self.__historical_rows[-buffer_length-1:]
 
-    async def __get_proper_timestamp(self, historical_rows, data_schema: DataSchema, interval: int):
+    async def __get_proper_timestamp(self, historical_rows, data_schema: DataSchema):
         if historical_rows == []:
             return time.time() * 1000
-
-        print('historical rows', historical_rows)
         smallest = self.__get_smallest_interval(data_schema)
         current_time_with_reserve = time.time()*1000 + 1000
         next_should_be_timestamp = historical_rows[-1][0] + smallest
-        print(timestamp_to_datetime(next_should_be_timestamp))
-        print('curren with reserve', timestamp_to_datetime(current_time_with_reserve))
         if next_should_be_timestamp < current_time_with_reserve: 
             raise Exception('Did not managed to download historical buffer this time. Trying again')
         await asyncio.sleep(abs(next_should_be_timestamp - time.time()* 1000)/1000)

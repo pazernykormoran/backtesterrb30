@@ -16,6 +16,7 @@ class Service(ABC):
             raise Exception('No communication broker registered')
         self._log('Running service')
         self._configure()
+        self._broker.run()
         self._loop()
 
     @abstractmethod

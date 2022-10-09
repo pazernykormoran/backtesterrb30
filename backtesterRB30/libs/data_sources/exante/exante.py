@@ -78,20 +78,20 @@ class ExanteDataSource(DataSource):
 
     #override
     async def _download_instrument_data(self, 
-                        instrument_file: InstrumentFile) -> pd.DataFrame:
-        self._log('Downloading exante data', instrument_file.to_filename())
+                    instrument: str, interval: str, time_start: int, time_stop: Union[int, None]) -> pd.DataFrame:
+        self._log('Downloading exante data', instrument)
         # try:
         await self.__wait()
-        if instrument_file.interval == 'tick': 
+        if interval == 'tick': 
             limit = 5000
-            floating_start = instrument_file.time_start
+            floating_start = time_start
             ticks_arr = []
             iteration_n = 0
             while True:
-                if floating_start >= instrument_file.time_stop: break
-                ticks = self.client.get_ticks(symbol=instrument_file.instrument, 
+                if floating_start >= time_stop: break
+                ticks = self.client.get_ticks(symbol=instrument, 
                                     start = floating_start, 
-                                    end = instrument_file.time_stop, 
+                                    end = time_stop, 
                                     limit = limit, 
                                     agg_type=DataType.QUOTES)
                 if ticks == None:
@@ -116,16 +116,16 @@ class ExanteDataSource(DataSource):
 
         else:
             limit = 5000
-            exante_interval = self.__get_exante_interval(instrument_file.interval).value
-            floating_start = instrument_file.time_start
+            exante_interval = self.__get_exante_interval(interval).value
+            floating_start = time_start
             klines_arr = []
             iteration_n = 0
             while True:
-                if floating_start >= instrument_file.time_stop: break
-                klines = self.client.get_ohlc(symbol=instrument_file.instrument, 
+                if floating_start >= time_stop: break
+                klines = self.client.get_ohlc(symbol=instrument, 
                                     duration=exante_interval, 
                                     start = floating_start, 
-                                    end = instrument_file.time_stop, 
+                                    end = time_stop, 
                                     limit = limit, 
                                     agg_type=DataType.QUOTES)
                 if klines == None:
@@ -150,7 +150,7 @@ class ExanteDataSource(DataSource):
             # df = df.iloc[::-1]
 
             klines_transformed = []
-            exante_interval = self.__get_exante_interval(instrument_file.interval).value
+            exante_interval = self.__get_exante_interval(interval).value
             prev_kl = None
             for kl in reversed(klines_arr):
                 if prev_kl and kl.timestamp.timestamp() * 1000 - prev_kl.timestamp.timestamp() * 1000 >= exante_interval * 1000*2:
@@ -161,8 +161,8 @@ class ExanteDataSource(DataSource):
                 prev_kl = kl
             df = pd.DataFrame(klines_transformed)
             # self._log('exante shape before validation', df.shape)
-            df = validate_dataframe_timestamps(df, self.__get_exante_interval(instrument_file.interval).value * 1000, 
-                    instrument_file.time_start, instrument_file.time_stop)
+            df = validate_dataframe_timestamps(df, self.__get_exante_interval(interval).value * 1000, 
+                    time_start, time_stop)
             # self._log('exante shape after validation', df.shape)
             # print('head', str(df.head(1)))
             # print('tail', str(df.tail(1)))
