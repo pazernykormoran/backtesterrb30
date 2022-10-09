@@ -248,7 +248,7 @@ class TradingviewDownloader:
             ],
         )
 
-        print(self.session)
+        # print(self.session)
 
         self.send_message(
             "quote_add_symbols", [self.session, symbol,
@@ -313,7 +313,7 @@ class TradingviewDownloader:
                     break
 
                 if "series_completed" in result:
-                    print('completed 2')
+                    # print('completed 2')
 
                     break
                 
@@ -325,7 +325,7 @@ class TradingviewDownloader:
             df = self.create_df(raw_data2, symbol)
             if len(df)> 0:
                 list_dfs.append(df)
-            print('len df', len(df))
+            # print('len df', len(df))
             if len(df) < 0 and len(df) < 1000:
                 if encountered_part_frames_number == 1:
                     print('second part freame. sleepin 20 s')
@@ -341,7 +341,7 @@ class TradingviewDownloader:
             if len(df) > 0:
                 print(df.iloc[-1,1])
                 if df.iloc[-1,1] <= from_timestamp:
-                    print('smaller')
+                    # print('smaller')
                     break
                 
         # print(list_dfs)

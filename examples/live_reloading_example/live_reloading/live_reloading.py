@@ -8,6 +8,6 @@ async def live_reloading_function(data, state, _trigger_event, debug_breakpoint)
                 'value': quant
             }
             await debug_breakpoint(False)
-            _trigger_event(message)
+            await _trigger_event(message)
     state['counter'] += 1
 
