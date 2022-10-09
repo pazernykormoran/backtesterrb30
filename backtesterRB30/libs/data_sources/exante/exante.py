@@ -1,5 +1,5 @@
 from typing import Union
-from xnt.http_api import HTTPApi, current_api, AuthMethods, CandleDurations, DataType
+from backtesterRB30.libs.xnt.http_api import HTTPApi, current_api, AuthMethods, CandleDurations, DataType
 import pandas as pd
 from os.path import join
 from time import time, sleep

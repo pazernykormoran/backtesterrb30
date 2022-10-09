@@ -12,8 +12,6 @@ with codecs.open(os.path.join(here, "requirements.txt"), encoding="utf-8") as fh
     req = fh.readline().split("==")[0]
     while req:
         if req  and req != '':
-            if req[0:4] == 'git+':
-                req = 'xnt-http-api @ ' + req
             requirements.append(req)
         req = fh.readline().split("==")[0]
 

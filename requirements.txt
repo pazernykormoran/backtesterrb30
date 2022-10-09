@@ -10,4 +10,3 @@ keyboard==0.13.5
 pycoingecko==3.0.0
 websocket-client~=0.57.0
 requests
-git+https://github.com/xntltd/python-http-api#egg=xnt-http-api

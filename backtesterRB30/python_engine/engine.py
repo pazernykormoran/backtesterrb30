@@ -8,6 +8,7 @@ from backtesterRB30.libs.interfaces.python_backtester.data_finish import DataFin
 from backtesterRB30.libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
 from backtesterRB30.libs.interfaces.python_backtester.last_feed import LastFeed
 from backtesterRB30.libs.interfaces.python_engine.custom_chart_element import CustomChartElement
+from backtesterRB30.libs.interfaces.python_engine.price_event import PriceEvent
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
 from backtesterRB30.libs.communication_broker.zmq_broker import ZMQ
 from backtesterRB30.libs.communication_broker.asyncio_broker import AsyncioBroker
@@ -37,6 +38,7 @@ class Engine(Service):
         self.__data_buffer = [ [] for col in self.__columns]
         for sym, arr in zip(self.__data_schema.data, self.__data_buffer[1:]):
             sym.additional_properties['buffer'] = arr
+            sym.additional_properties['price_events'] = []
         self.__buffer_length = 1
         self.__custom_charts: List[CustomChart] = []
         self.__debug_mode = False
@@ -234,6 +236,7 @@ class Engine(Service):
         self._broker.register("data_finish", self.__data_finish_event)
         self._broker.register("engine_ready", self.__engine_ready_event)
         self._broker.register("get_buffer_length", self.__get_buffer_length_event)
+        self._broker.register("register_price_event", self.__register_price_event)
 
     # def _send(): pass
     # def _register(): pass
@@ -329,3 +332,10 @@ class Engine(Service):
         
     async def __get_buffer_length_event(self, service_name):
         await self._broker.send(SERVICES[service_name], 'engine_set_buffer_length', self.__buffer_length)
+
+
+    async def __register_price_event(self, price_event):
+        price_event = PriceEvent(**price_event)
+        symbol: DataSymbol = [data for data in self.__data_schema.data if data.identifier == \
+                price_event.symbol_itentifier][0]
+        symbol.additional_properties['price_events'].append(price_event)
