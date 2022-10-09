@@ -18,7 +18,7 @@ from backtesterRB30.libs.utils.module_loaders import import_spec_module, reload_
 from backtesterRB30.libs.utils.json_serializable import JSONSerializable
 from backtesterRB30.libs.utils.service import Service
 from backtesterRB30.libs.interfaces.utils.config import Config, BROKERS
-import keyboard
+
 
 
 class Engine(Service):
@@ -221,7 +221,8 @@ class Engine(Service):
     def _loop(self):
         # self._broker.run()
         self._broker.create_listeners(self.__loop)
-        self.__loop.create_task(self.__keyboard_listener())
+        if self.config.debug == True:
+            self.__loop.create_task(self.__keyboard_listener())
         if self.__custom_event_loop:
             self.__loop.run_forever()
             self.__loop.close()
@@ -270,6 +271,7 @@ class Engine(Service):
 
 
     async def __keyboard_listener(self):
+        import keyboard
         self._log('To enter debug mode press "ctrl+d"')
         while True:
             if keyboard.is_pressed('ctrl+d'): 

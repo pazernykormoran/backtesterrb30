@@ -14,4 +14,5 @@ class Config(BaseModel):
     sub: Optional[List[NetInfo]]
     pub: Optional[NetInfo]
     backtest: bool
+    debug: bool = False
     strategy_path: str

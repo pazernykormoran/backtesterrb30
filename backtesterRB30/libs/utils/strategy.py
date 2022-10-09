@@ -9,16 +9,22 @@ from backtesterRB30.python_backtester.python_backtester import Backtester
 from backtesterRB30.libs.interfaces.utils.config import Config
 from backtesterRB30.libs.communication_broker.asyncio_broker import AsyncioBroker
 from backtesterRB30.libs.utils.list_of_services import SERVICES
-
+from backtesterRB30 import validate_config
+import sys
 import os
 import asyncio
-
+# print('ssssssssssssss')
+# FILE_NAME = sys.argv[0]
+# print(FILE_NAME)
 
 class Strategy():
-    def __init__(self, model: Engine, executor: Executor, data_schema: DataSchema, backtest= True):
+    def __init__(self, model: Engine, executor: Executor, data: dict, backtest= True):
+        self.__model = model
+        self.__executor = executor
+        self.__data = data
         self.__loop = asyncio.get_event_loop()
         self.__services = {}
-        self.__data_schema = data_schema
+        self.__data_schema = validate_config(data.data)
         self.__backtest_state = backtest
         static_params = self.__backtest_state, self.__loop, self.__data_schema
         self.__services['python_engine'] = self.create_service('python_engine', model, *static_params)
@@ -42,14 +48,38 @@ class Strategy():
         return service, broker
 
     def run(self):
-        for name, (service, broker) in self.__services.items():
-            service: Service = service
-            broker: AsyncioBroker = broker
-            for n, (s,b) in self.__services.items():
-                if n != name:
-                    broker.register_broker(SERVICES[n], b)
+        if sys.argv[0] != 'serve.py':
+            for name, (service, broker) in self.__services.items():
+                service: Service = service
+                broker: AsyncioBroker = broker
+                for n, (s,b) in self.__services.items():
+                    if n != name:
+                        broker.register_broker(SERVICES[n], b)
 
-        for name, (service, broker) in self.__services.items():
-            service.run()
-        self.__loop.run_forever()
-        self.__loop.close()
+            for name, (service, broker) in self.__services.items():
+                service.run()
+            self.__loop.run_forever()
+            self.__loop.close()
+
+    def run_in_microservices(self):
+        if sys.argv[0] != 'serve.py':
+            here = os.getcwd()
+            strategy_file = sys.argv[0]
+            strategy_path = str(here)
+            backtest_state = str(self.__backtest_state)
+            model_class_name = str(self.__model.__name__)
+            executor_class_name = str(self.__executor.__name__)
+            data_class_name = str(self.__data.__name__)
+
+            from backtesterRB30 import run_all_microservices
+            run_all_microservices(
+                    here, 
+                    backtest_state,
+                    strategy_file,
+                    model_class_name,
+                    executor_class_name,
+                    data_class_name)
+
+
+    def run_in_docker_microservices():
+        pass

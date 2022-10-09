@@ -47,7 +47,6 @@ class HistoricalDataFeeds(Service):
         self.__engine_ready = False
         self.__historical_downloader = HistoricalDownloader(self.__data_schema, 
                 self.__historical_sources_array, self.downloaded_data_path, self._log)
-        print('backtest',self.config.backtest)
 
 
 
