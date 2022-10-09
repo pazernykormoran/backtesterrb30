@@ -16,11 +16,12 @@ from backtesterRB30.libs.interfaces.utils.config import Config, BROKERS
 from os import getenv
 from datetime import datetime
 import time
+from appdirs import user_cache_dir
 
 class LiveDataFeeds(Service):
     """Python Live data provider"""
 
-    downloaded_data_path = '/var/opt/data_historical_downloaded'
+    downloaded_data_path = user_cache_dir('rb30_cache')
     _broker: BrokerBase
     
     def __init__(self, config: dict, data_schema: DataSchema, loop = None, logger=print):

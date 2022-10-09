@@ -63,5 +63,5 @@ class Data:
     }
 
 strategy = bt.Strategy(Model, TradeExecutor, Data)
-# strategy.run()
-strategy.run_in_microservices()
+strategy.run()
+# strategy.run_in_microservices()

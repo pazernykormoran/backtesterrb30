@@ -22,11 +22,11 @@ import pandas as pd
 from os import mkdir
 import time as tm
 from backtesterRB30.libs.utils.service import Service
-
+from appdirs import user_cache_dir
 
 class HistoricalDataFeeds(Service):
     
-    downloaded_data_path = '/var/opt/data_historical_downloaded'
+    downloaded_data_path = user_cache_dir('rb30_cache')
     _broker: BrokerBase
 
     def __init__(self, config: Config, data_schema: DataSchema, loop = None, logger=print):

@@ -147,6 +147,7 @@ npm install dukascopy-node --save
 # Debug mode
 
 ## Usage of debug mode
+Debug mode is only avaliable with root privilages because of keyboard package usage.
 Framework gives you access to debug mode that allows you printing summary charts and descriptions every step of your debug. To enable using debug mode while implementing your strategy follow below steps:
 - Use "debug_breakpoint" method somewhere in your "on_feed" method. This works as breakpoint while debugging. The code will stop in this place.
 - Press "ctrl+d" in any moment during backtest loop. This will cause entering debug mode and stopping the code in the nearest moment when your code occurs "debug_breakpoint" function.

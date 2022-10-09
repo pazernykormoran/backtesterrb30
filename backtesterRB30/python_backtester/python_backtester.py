@@ -24,11 +24,11 @@ from typing import List, Union
 from datetime import datetime
 from backtesterRB30.libs.utils.service import Service
 from backtesterRB30.libs.interfaces.utils.config import Config, BROKERS
-
+from appdirs import user_cache_dir
 
 class Backtester(Service):
     
-    downloaded_data_path = '/var/opt/data_historical_downloaded'
+    downloaded_data_path = user_cache_dir('rb30_cache')
     _broker: BrokerBase
 
     def __init__(self, config: Config, data_schema: DataSchema, loop = None, logger=print):
