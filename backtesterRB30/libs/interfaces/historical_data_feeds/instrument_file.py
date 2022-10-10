@@ -1,5 +1,5 @@
 from datetime import datetime
-from symbol import parameters
+# from symbol import parameters
 from pydantic import BaseModel
 from enum import Enum
 # from backtesterRB30.libs.utils.historical_sources import HISTORICAL_SOURCES, HISTORICAL_INTERVALS_UNION
