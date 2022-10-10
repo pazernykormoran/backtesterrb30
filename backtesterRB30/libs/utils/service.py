@@ -19,6 +19,9 @@ class Service(ABC):
         self._broker.run()
         self._loop()
 
+    def get_logger(self):
+        return self._log
+
     @abstractmethod
     def _loop(self):
         pass

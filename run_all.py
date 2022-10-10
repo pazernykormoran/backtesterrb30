@@ -1,2 +1,0 @@
-from backtesterRB30 import run_all_microservices
-run_all_microservices()

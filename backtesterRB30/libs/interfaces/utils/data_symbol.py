@@ -11,9 +11,9 @@ class DataSymbol(CustomBaseModel):
     interval: Enum
     backtest_date_start: datetime
     backtest_date_stop: datetime
-    trigger_feed: bool = False
+    trigger_feed: bool = True
     with_volume: bool = False
-    display_chart_in_summary: bool = False
+    display_chart_in_summary: bool = True
     custom_name: Optional[str]
     custom_data: Optional[Any]
 

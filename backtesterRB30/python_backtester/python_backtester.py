@@ -226,7 +226,9 @@ class Backtester(Service):
         if trade.price == 0 and trade.timestamp == 0:
             trade.price = position.last_instrument_price
             trade.timestamp = self.__last_timestamp
-        # print(position)
+        if trade.price <= 0 or trade.timestamp <= 0:
+            self._log('Cannot make trade with this price and timestamp:', trade.price,';', trade.timestamp)
+            return
         self._log(f"Trade for [{symbol.symbol}]: time={datetime.utcfromtimestamp(trade.timestamp/1000)}, | value={trade.value}, price={trade.price}")
         position.trades.append([trade.timestamp, trade.price, trade.value])
         # print('trade price', trade.price)

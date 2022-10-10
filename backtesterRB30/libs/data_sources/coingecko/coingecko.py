@@ -31,15 +31,12 @@ class CoingeckoDataSource(DataSource):
             candles = self.client.get_coin_ohlc_by_id(data.symbol, vs_currency='usd', days='max')
         except Exception as e:
             if e.args[0]['error'] == 'Could not find coin with the given id':
-                self._log('Could not find coin with the given id')
-                return False
+                raise Exception('Could not find coin with the given id', data.symbol)
         df = pd.DataFrame(candles)
         if datetime_to_timestamp(data.backtest_date_start) < df.iloc[0,0]:
-            self._log("Error. First avaliable date of " , data.symbol, "is" , timestamp_to_datetime(df.iloc[0,0]))
-            return False
+            raise(Exception("Error. First avaliable date of " , data.symbol, "is" , timestamp_to_datetime(df.iloc[0,0])))
         if datetime_to_timestamp(data.backtest_date_stop) > df.iloc[-1,0]:
-            self._log("Error. Last avaliable date of " , data.symbol, "is" , timestamp_to_datetime(df.iloc[0,0]))
-            return False
+            raise Exception("Error. Last avaliable date of " , data.symbol, "is" , timestamp_to_datetime(df.iloc[0,0]))
         return True
     
     #override
