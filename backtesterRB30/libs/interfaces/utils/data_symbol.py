@@ -17,6 +17,11 @@ class DataSymbol(CustomBaseModel):
     custom_name: Optional[str]
     custom_data: Optional[Any]
 
+    @property
+    def identifier(self):
+        return self.historical_data_source + "_" + self.symbol
+
+
     def get_buffer(self) -> list:
         if 'buffer' in self.additional_properties:
             return self.additional_properties['buffer']

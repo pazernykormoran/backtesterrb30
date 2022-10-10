@@ -13,6 +13,8 @@ from backtesterRB30.libs.utils.singleton import singleton
 import importlib.resources
 import json
 from enum import Enum
+from backtesterRB30.libs.utils.timestamps import timestamp_to_datetime
+
 
 # from backtesterRB30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
 
@@ -80,21 +82,35 @@ class DukascopyDataSource(DataSource):
         return True
 
     async def _download_instrument_data(self, 
-                        instrument_file: InstrumentFile) -> pd.DataFrame:
-        self._log('Downloading dukascopy data', instrument_file.to_filename())
+                    instrument: str, interval: str, time_start: int, time_stop: Union[int, None]) -> pd.DataFrame:
+        self._log('Downloading dukascopy data', instrument)
         """
         documentation: 
         https://github.com/Leo4815162342/dukascopy-node
         """
 
-        duca_interval = self.__get_ducascopy_interval(instrument_file.interval)
-        from_param = datetime.fromtimestamp(instrument_file.time_start//1000.0).strftime("%Y-%m-%d")
-        to_param = datetime.fromtimestamp(instrument_file.time_stop//1000.0).strftime("%Y-%m-%d")
+        duca_interval = self.__get_ducascopy_interval(interval)
+        time_start_datetime = timestamp_to_datetime(time_start)
+        if [time_start_datetime.hour,
+            time_start_datetime.minute,
+            time_start_datetime.second,
+            time_start_datetime.microsecond] != [0,0,0,0]:
+            raise Exception('Cannot dowload data with this time_start! Intervals must be in day graduality')
+        time_stop_datetime = timestamp_to_datetime(time_stop)
+        if [time_stop_datetime.hour,
+            time_stop_datetime.minute,
+            time_stop_datetime.second,
+            time_stop_datetime.microsecond] != [0,0,0,0]:
+            raise Exception('Cannot dowload data with this time_stop! Intervals must be in day graduality')
+        from_param = datetime.fromtimestamp(time_start//1000.0).strftime("%Y-%m-%d")
+        to_param = datetime.fromtimestamp(time_stop//1000.0).strftime("%Y-%m-%d")
+        if from_param == to_param: 
+            raise Exception('The same start and stop date')
         here = getcwd()
         cache_path = join(here, 'cache_dukascopy')
         system('rm -r ' + cache_path)
         string_params = [
-            ' -i '+ instrument_file.instrument,
+            ' -i '+ instrument,
             ' -from '+ from_param,
             ' -to '+ to_param,
             ' -s',
@@ -120,3 +136,4 @@ class DukascopyDataSource(DataSource):
         # print('head', str(df.head(1)))
         # print('tail', str(df.tail(1)))
         return df
+        

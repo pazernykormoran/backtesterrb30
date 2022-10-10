@@ -1,12 +1,5 @@
 import os
-here = os.getcwd()
-from os import getenv, system
-from dotenv import load_dotenv
-from backtesterRB30.libs.utils.module_loaders import import_data_schema, import_model_module, import_executor_module
-from sys import argv
 from backtesterRB30.libs.utils.list_of_services import SERVICES_ARRAY
-from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
-
 serve_file_commands_array = [
     'from sys import argv\n',
     'from dotenv import load_dotenv\n',
@@ -21,6 +14,8 @@ serve_file_commands_array = [
     '    from backtesterRB30.python_engine import run\n',
     'elif microservice_name == "historical_data_feeds":\n',
     '    from backtesterRB30.python_executor import run\n'
+    'elif microservice_name == "live_data_feeds":\n',
+    '    from backtesterRB30.live_data_feeds import run\n'
 ]
 
 run_file_commands_array = [
@@ -35,13 +30,20 @@ run_file_commands_array = [
     'sudo python3 serve.py python_engine &\n'
     'sudo python3 serve.py python_executor &\n'
     'sudo python3 serve.py historical_data_feeds &\n'
+    'sudo python3 serve.py live_data_feeds &\n'
     'while true\n'
     'do\n'
     '    sleep 10\n'
     'done\n'
 ]
 
-def run_all_microservices():
+def run_all_microservices(
+            strategy_path, 
+            backtest_state,
+            strategy_file,
+            model_class_name,
+            executor_class_name,
+            data_class_name):
     serve_prepared = False
     run_prepared = False
     for fname in os.listdir('.'):
@@ -58,31 +60,7 @@ def run_all_microservices():
             for line in run_file_commands_array:
                 f.write(line)
 
-    #TODO hardcoded backtest mode: 
-    backtest_state='true'
-
-    args = argv
-    if len(args) > 1:
-        if args[1] == '-backtest':
-            backtest_state='true'
-
-
-    print('checking env file')
-    from os.path import exists
-    file_exists = exists(".env")
-    if not file_exists:
-        print('Error: ".env" file does not exists. Create one and provide necessery information like: \nstrategy=name_of_strategy')
-        exit()
-
-
-    load_dotenv('.env')
-    strategy_path = os.path.join(here, os.getenv('STRATEGY_PATH'))
-    if not strategy_path or strategy_path == '':
-        print('Error: provide strategy name in .env file like: \nstrategy=name_of_strategy')
-        exit()
-    print('running strategy name: ', strategy_path)
-
-
+    print('strategy_file', strategy_file)
     services_array = SERVICES_ARRAY
 
     def is_port_in_use(port: int) -> bool:
@@ -115,27 +93,20 @@ def run_all_microservices():
                 subs_str += '\n'
                 f.write(subs_str)
             
-            
-    def validate_strategy(strategy_path):
-        data_schema: DataSchema = import_data_schema(strategy_path)
-        model_module = import_model_module(strategy_path)
-        executor_module = import_executor_module(strategy_path)
-        class Asd:
-            name = "test",
-            strategy_path = ''
-        config = Asd()
-        config.strategy_path = strategy_path
-        model = model_module.Model(config)
-        executor = executor_module.TradeExecutor(config)
-
-    print('validating strategy')
-    validate_strategy(strategy_path)
+    
     print('preparing microservice ports configuration')
     create_port_configurations()
+    bck_state = 'true' if backtest_state else 'false'
     with open('.additional_configs', 'a') as f:
-        f.write('backtest_state='+backtest_state)
+        f.write('backtest_state='+bck_state+'\n')
+        f.write('STRATEGY_FILE='+strategy_file+'\n')
+        f.write('STRATEGY_PATH='+strategy_path+'\n')
+        f.write('MODEL_CLASS_NAME='+model_class_name+'\n')
+        f.write('EXECUTOR_CLASS_NAME='+executor_class_name+'\n')
+        f.write('DATA_CLASS_NAME='+data_class_name+'\n')
+
     if backtest_state:
-        system('bash run.sh') 
+        os.system('bash run.sh') 
     else:
         print('live strategies not implemented')
         

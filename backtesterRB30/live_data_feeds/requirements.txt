@@ -1,0 +1,2 @@
+pyzmq==19.0.2
+pydantic==1.9.1

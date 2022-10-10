@@ -44,22 +44,28 @@ class CoingeckoDataSource(DataSource):
     
     #override
     async def _download_instrument_data(self,
-                        instrument_file: InstrumentFile) -> pd.DataFrame:
-        self._log('Downloading coingecko data', instrument_file.to_filename())
-        if instrument_file.interval == COINGECKO_INTERVALS_2.day4.value:
+                    instrument: str, interval: str, time_start: int, time_stop: Union[int, None]) -> pd.DataFrame:
+        self._log('Downloading coingecko data', instrument)
+        if interval == COINGECKO_INTERVALS_2.day4.value:
             actual_time = time.time()
             if actual_time - self.__last_request_time < 0.025:
                 self._log('waitin')
                 await asyncio.sleep(0.025 - (actual_time - self.__last_request_time))
-            candles = self.client.get_coin_ohlc_by_id(instrument_file.instrument, vs_currency='usd', days='max')
-            df = pd.DataFrame(candles)
-            df = df[df[0] >= instrument_file.time_start]
-            df = df[df[0] <= instrument_file.time_stop]
-            df = df.iloc[:-1, [0,1]]
+            candles = self.client.get_coin_ohlc_by_id(instrument, vs_currency='usd', days='max')
+            df_orig = pd.DataFrame(candles)
+            df = df_orig[df_orig[0] >= time_start]
+            if time_stop == None:
+                df = df_orig.iloc[:-1, [0,1]]
+            else:
+                df = df[df[0] <= time_stop]
+                df = df.iloc[:-1, [0,1]]
         else:
             self._raise_error('No such interval')
-
         return df
+
+    def get_current_price(self, data_symbol: DataSymbol):
+        price =self.client.get_price(data_symbol.symbol,vs_currencies='USD')
+        return price['polkadot']['usd']
 
     def _get_interval_miliseconds(self, interval: str) -> Union[int,None]: 
         if interval == COINGECKO_INTERVALS_2.day4.value: return 1000*60*60*24*4

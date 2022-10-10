@@ -3,8 +3,8 @@ from random import randint
 
 class Model(bt.Engine):
     
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, *args):
+        super().__init__(*args)
         self.counter = 0
         self.set_buffer_length(200)
 
@@ -16,6 +16,7 @@ class Model(bt.Engine):
                 message = {
                     'value': quant
                 }
-                self.trigger_event(message)
+                await self.debug_breakpoint()
+                await self.trigger_event(message)
         self.counter += 1
 

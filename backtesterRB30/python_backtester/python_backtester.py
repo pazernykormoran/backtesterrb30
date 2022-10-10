@@ -1,16 +1,18 @@
 
+from abc import abstractmethod
 import asyncio
+from backtesterRB30.libs.communication_broker.broker_base import BrokerBase
 from backtesterRB30.libs.interfaces.python_backtester.data_start import DataStart
 from backtesterRB30.libs.interfaces.python_backtester.debug_breakpoint import DebugBreakpoint
 from backtesterRB30.libs.interfaces.python_backtester.last_feed import LastFeed
 from backtesterRB30.libs.interfaces.python_backtester.positions import Position
 from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.zmq.zmq import ZMQ
+from backtesterRB30.libs.communication_broker.zmq_broker import ZMQ
+from backtesterRB30.libs.communication_broker.asyncio_broker import AsyncioBroker
 from backtesterRB30.libs.interfaces.python_backtester.trade import Trade
 from backtesterRB30.libs.interfaces.python_backtester.money_state import MoneyState
 from backtesterRB30.libs.interfaces.python_backtester.data_finish import DataFinish, CustomChart
 from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
-from backtesterRB30.libs.utils.module_loaders import import_data_schema
 from backtesterRB30.libs.utils.list_of_services import SERVICES, SERVICES_ARRAY
 import pandas as pd
 from os.path import join
@@ -20,14 +22,24 @@ import time as tm
 import numpy as np
 from typing import List, Union
 from datetime import datetime
+from backtesterRB30.libs.utils.service import Service
+from backtesterRB30.libs.interfaces.utils.config import Config, BROKERS
+from appdirs import user_cache_dir
 
-class Backtester(ZMQ):
+class Backtester(Service):
     
-    downloaded_data_path = '/var/opt/data_historical_downloaded'
+    downloaded_data_path = user_cache_dir('rb30_cache')
+    _broker: BrokerBase
 
-    def __init__(self, config: dict, logger=print):
+    def __init__(self, config: Config, data_schema: DataSchema, loop = None, logger=print):
         super().__init__(config, logger)
-        self.data_schema: DataSchema = import_data_schema(self.config.strategy_path)
+        self.config: Config=config
+        self.__loop =  loop
+        self.__custom_event_loop = False
+        if self.__loop == None: 
+            self.__loop = asyncio.get_event_loop()
+            self.__custom_event_loop= True
+        self.data_schema: DataSchema = data_schema
         for dat in self.data_schema.data:
             dat.additional_properties['position'] = None
             dat.additional_properties['chart_data_frame'] = None
@@ -42,33 +54,45 @@ class Backtester(ZMQ):
         self.__fig = None
         self.__chart_displayed = False
 
-        super()._register("trade", self.__trade_event)
-        super()._register("data_finish", self.__data_finish_event)
-        super()._register("close_all_trades", self.__close_all_trades_event)
-        super()._register("data_start", self.__data_start_event)
-        super()._register("debug_breakpoint", self.__debug_breakpoint_event)
-        super()._register("last_feed", self.__last_feed_event)
 
-    # override
+
+    # # override
+    # def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
+    #     self._create_listeners(loop)
+    #     loop.create_task(self.__update_chart())
+
+    # # override
+    # def _handle_zmq_message(self, message):
+    #     pass
+
     def _loop(self):
-        loop = asyncio.get_event_loop()
-        self._create_listeners(loop)
-        loop.create_task(self.__update_chart())
-        loop.run_forever()
-        loop.close()
+        # self._broker.run()
+        self._broker.create_listeners(self.__loop)
+        self.__loop.create_task(self.__update_chart())
+        if self.__custom_event_loop:
+            self.__loop.run_forever()
+            self.__loop.close()
 
-    # override
-    def _handle_zmq_message(self, message):
-        pass
-    
-    def _trigger_event(self, event):
-        pass
+    # def _send(self, service: SERVICES, msg: str, *args):
+    #     self._broker.send(service, msg, *args)
+
+    def _configure(self):
+        super()._configure()
+        self._broker.register("trade", self.__trade_event)
+        self._broker.register("data_finish", self.__data_finish_event)
+        self._broker.register("close_all_trades", self.__close_all_trades_event)
+        self._broker.register("data_start", self.__data_start_event)
+        self._broker.register("debug_breakpoint", self.__debug_breakpoint_event)
+        self._broker.register("last_feed", self.__last_feed_event)
+
+    # def _trigger_event(self, event):
+    #     pass
     
     async def __stop_all_services(self):
         for service in SERVICES_ARRAY:
             if service != self.name:
-                super()._send(getattr(SERVICES, service), 'stop')
-        super()._stop()
+                await self._broker.send(getattr(SERVICES, service), 'stop')
+        self._broker.stop()
 
     def __axis_format(self, ax, title):
         ax.set_title(title)
@@ -79,66 +103,66 @@ class Backtester(ZMQ):
     async def __print_charts(self,
                     custom_charts: List[CustomChart] ):
         plt.close()
+        
+        #plot trades chart
+        # position: Position = self.positions[0]
+        number_of_custom_charts = 0
+        if custom_charts != None:
+            number_of_custom_charts = len([ch for ch in custom_charts if not ch.display_on_price_chart])
+
+        chartable_symbols = [sym for sym in self.data_schema.data \
+                if sym.display_chart_in_summary == True]
+        axs_number_used = 0
+
+        #prepare axes
+        self.__fig, axs = plt.subplots(nrows=1+ len(chartable_symbols)+number_of_custom_charts, \
+                ncols=1, sharex = True, figsize=(13, 13))
+        if type(axs)!= np.ndarray:
+            # if only 1 axis its returned not in array
+            axs = [axs]
+        ax = None
+        # plot instrment charts
+        for sym in chartable_symbols:
+            position: Position = sym.additional_properties['position']
+            # if position:
+            if self.__last_timestamp != None:
+                main_chart = sym.additional_properties['chart_data_frame'].loc[sym.additional_properties['chart_data_frame']['timestamp'] <= \
+                        self.__last_timestamp]
+            ax = main_chart.plot(x ='timestamp', y='price', kind = 'line', ax=axs[axs_number_used])
+            axs_number_used += 1
+            self.__axis_format(ax, sym.symbol +" - "+sym.historical_data_source)
+            if self.data_schema.log_scale_valuation_chart:	
+                ax.yaxis.set_major_formatter(ScalarFormatter())
+            if position:
+                normalized_quants = self.__normalize([abs(trade[2]) for trade in position.trades], (5,15))   
+                for trade, quant in zip(position.trades, normalized_quants):
+                    ax.plot(trade[0], trade[1], '.g' if trade[2]>0 else '.r', ms=quant)
+
         if len(self.cumulated_money_chart) > 0:
-            #plot trades chart
-            # position: Position = self.positions[0]
-            number_of_custom_charts = 0
-            if custom_charts != None:
-                number_of_custom_charts = len([ch for ch in custom_charts if not ch.display_on_price_chart])
-
-            chartable_symbols = [sym for sym in self.data_schema.data \
-                    if sym.display_chart_in_summary == True]
-            axs_number_used = 0
-
-            #prepare axes
-            self.__fig, axs = plt.subplots(nrows=1+ len(chartable_symbols)+number_of_custom_charts, \
-                    ncols=1, sharex = True, figsize=(13, 13))
-            if type(axs)!= np.ndarray:
-                # if only 1 axis its returned not in array
-                axs = [axs]
-            ax = None
-            # plot instrment charts
-            for sym in chartable_symbols:
-                position: Position = sym.additional_properties['position']
-                # if position:
-                if self.__last_timestamp != None:
-                    main_chart = sym.additional_properties['chart_data_frame'].loc[sym.additional_properties['chart_data_frame']['timestamp'] <= \
-                            self.__last_timestamp]
-                ax = main_chart.plot(x ='timestamp', y='price', kind = 'line', ax=axs[axs_number_used])
-                axs_number_used += 1
-                self.__axis_format(ax, sym.symbol +" - "+sym.historical_data_source)
-                if self.data_schema.log_scale_valuation_chart:	
-                    ax.yaxis.set_major_formatter(ScalarFormatter())
-                if position:
-                    normalized_quants = self.__normalize([abs(trade[2]) for trade in position.trades], (5,15))   
-                    for trade, quant in zip(position.trades, normalized_quants):
-                        ax.plot(trade[0], trade[1], '.g' if trade[2]>0 else '.r', ms=quant)
-
-            
             #plot money chart
             money_df = pd.DataFrame(self.cumulated_money_chart, columns=['timestamp', 'income'])
             ax = money_df.plot(x ='timestamp', y='income', kind = 'line', ax=axs[axs_number_used], sharex = ax)
             axs_number_used += 1
             
-            #plot custom charts
-            if custom_charts != None:
-                for i, ch in enumerate(custom_charts):
-                    chart = [[c.timestamp, c.value] for c in ch.chart ]
-                    custom_df = pd.DataFrame(chart, columns=['timestamp', ch.name])
-                    if ch.display_on_price_chart:
-                        custom_df.plot(x ='timestamp', y=ch.name, kind = 'line', ax=axs[0], \
-                                sharex = ax, color = ch.color)
-                    else:
-                        ax = custom_df.plot(x ='timestamp', y=ch.name, kind = 'line', ax=axs[axs_number_used], \
-                                sharex = ax, color = ch.color)
-                        axs_number_used += 1
-                        self.__axis_format(ax, ch.name)
-                        if ch.log_scale:
-                            ax.yaxis.set_major_formatter(ScalarFormatter())
-            if self.__chart_displayed == False:
-                plt.ion()
-                plt.show(block = False)
-                self.__chart_displayed = True
+        #plot custom charts
+        if custom_charts != None:
+            for i, ch in enumerate(custom_charts):
+                chart = [[c.timestamp, c.value] for c in ch.chart ]
+                custom_df = pd.DataFrame(chart, columns=['timestamp', ch.name])
+                if ch.display_on_price_chart:
+                    custom_df.plot(x ='timestamp', y=ch.name, kind = 'line', ax=axs[0], \
+                            sharex = ax, color = ch.color)
+                else:
+                    ax = custom_df.plot(x ='timestamp', y=ch.name, kind = 'line', ax=axs[axs_number_used], \
+                            sharex = ax, color = ch.color)
+                    axs_number_used += 1
+                    self.__axis_format(ax, ch.name)
+                    if ch.log_scale:
+                        ax.yaxis.set_major_formatter(ScalarFormatter())
+        if self.__chart_displayed == False:
+            plt.ion()
+            plt.show(block = False)
+            self.__chart_displayed = True
 
 
     def __add_position(self, data_symbol: DataSymbol) -> Position:
@@ -172,7 +196,7 @@ class Backtester(ZMQ):
             #add other conditions here. For example, an error messag
         return np.ones_like(x) * 15
 
-    def __recalculate_positions(self):
+    async def __recalculate_positions(self):
         positions: List[Position] = [elem.additional_properties['position'] for elem in self.data_schema.data]
         positions = [pos for pos in positions if pos != None]
         for pos in positions:
@@ -182,8 +206,8 @@ class Backtester(ZMQ):
         current_invested = sum([abs(pos.number_of_actions) * pos.last_instrument_price\
                 for pos in positions])
         self.cumulated_money_chart.append([self.__last_timestamp, current_capital])
-        super()._send(SERVICES.python_executor, 'set_current_capital_event', current_capital)
-        super()._send(SERVICES.python_executor, 'set_current_invested_event', current_invested)
+        await self._broker.send(SERVICES.python_executor, 'set_current_capital_event', current_capital)
+        await self._broker.send(SERVICES.python_executor, 'set_current_invested_event', current_invested)
 
     def __get_data_symbol(self, symbol: str, source: str):
         arr = [sym for sym in self.data_schema.data if sym.symbol ==\
@@ -194,7 +218,7 @@ class Backtester(ZMQ):
             raise Exception('More than one symbol found')
         return arr[0]
 
-    def __trade(self, trade: Trade):
+    async def __trade(self, trade: Trade):
         symbol: DataSymbol = self.__get_data_symbol(trade.symbol, trade.source)
         position = symbol.additional_properties['position']
         if not position:
@@ -211,7 +235,7 @@ class Backtester(ZMQ):
             position.buy_summary_cost += trade.value
         else:
             position.sell_summary_cost += trade.value
-        self.__recalculate_positions()
+        await self.__recalculate_positions()
         
 
     async def __print_summary(self, 
@@ -233,7 +257,8 @@ class Backtester(ZMQ):
         # self._log('biggest investment: ', self.biggest_investment)
         # self._log('actual price:', main_instrument_price)
         # income = - self.buy_summary_cost - self.sell_summary_cost + self.number_of_actions * main_instrument_price
-        self._log('income:', self.cumulated_money_chart[-1][1])
+        if len(self.cumulated_money_chart) > 0:
+            self._log('income:', self.cumulated_money_chart[-1][1])
         self._log('==========================')
         self._log('')
         if display_charts:
@@ -258,7 +283,7 @@ class Backtester(ZMQ):
 
     async def __trade_event(self, msg):
         trade: Trade = Trade(**msg)
-        self.__trade(trade)
+        await self.__trade(trade)
 
     async def __last_feed_event(self, msg):
         # print('last feed event')

@@ -1,4 +1,5 @@
 from datetime import datetime
+from symbol import parameters
 from pydantic import BaseModel
 from enum import Enum
 # from backtesterRB30.libs.utils.historical_sources import HISTORICAL_SOURCES, HISTORICAL_INTERVALS_UNION
@@ -10,6 +11,11 @@ class InstrumentFile(BaseModel):
     interval: str
     time_start: int
     time_stop: int
+
+    @property
+    def identifier(self):
+        return self.source + "_" + self.instrument
+
 
     @classmethod
     def from_filename(cls, filename: str):
