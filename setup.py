@@ -7,13 +7,26 @@ here = os.path.abspath(os.path.dirname(__file__))
 with codecs.open(os.path.join(here, "README.md"), encoding="utf-8") as fh:
     long_description = "\n" + fh.read()
 
-requirements = []
-with codecs.open(os.path.join(here, "requirements.txt"), encoding="utf-8") as fh:
-    req = fh.readline().split("==")[0]
-    while req:
-        if req  and req != '':
-            requirements.append(req)
-        req = fh.readline().split("==")[0]
+requirements = [
+    'numpy',
+    'asyncio',
+    'pyzmq',
+    'pydantic',
+    'python-binance',
+    'pandas',
+    'matplotlib',
+    'python-dotenv',
+    'keyboard',
+    'pycoingecko',
+    'websocket-client',
+    'requests'
+]
+# with codecs.open(os.path.join(here, "requirements.txt"), encoding="utf-8") as fh:
+#     req = fh.readline().split("==")[0]
+#     while req:
+#         if req  and req != '':
+#             requirements.append(req)
+#         req = fh.readline().split("==")[0]
 
 VERSION = '0.0.1'
 DESCRIPTION = 'Stock backtest library'

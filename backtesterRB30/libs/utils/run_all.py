@@ -1,12 +1,5 @@
 import os
-here = os.getcwd()
-from os import getenv, system
-from dotenv import load_dotenv
-from backtesterRB30.libs.utils.module_loaders import import_data_schema, import_model_module, import_executor_module
-from sys import argv
 from backtesterRB30.libs.utils.list_of_services import SERVICES_ARRAY
-from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
-
 serve_file_commands_array = [
     'from sys import argv\n',
     'from dotenv import load_dotenv\n',
@@ -67,36 +60,7 @@ def run_all_microservices(
             for line in run_file_commands_array:
                 f.write(line)
 
-    # backtest_state='true'
-    # #TODO hardcoded backtest mode: 
-    # backtest = getenv('backtest_state')
-    # if backtest:
-    #     backtest_state = backtest
     print('strategy_file', strategy_file)
-
-    # args = argv
-    # if len(args) > 1:
-    #     if args[1] == '-backtest':
-    #         backtest_state='true'
-
-
-    # print('checking env file')
-    # from os.path import exists
-    # file_exists = exists(".env")
-    # if not file_exists:
-    #     print('Error: ".env" file does not exists. Create one and provide necessery information like: \nstrategy=name_of_strategy')
-    #     exit()
-
-
-    # load_dotenv('.env')
-    # load_dotenv('.env_private')
-    # strategy_path = os.path.join(here, os.getenv('STRATEGY_PATH'))
-    # if not strategy_path or strategy_path == '':
-    #     print('Error: provide strategy name in .env file like: \nstrategy=name_of_strategy')
-    #     exit()
-    # print('running strategy name: ', strategy_path)
-
-
     services_array = SERVICES_ARRAY
 
     def is_port_in_use(port: int) -> bool:
@@ -129,23 +93,7 @@ def run_all_microservices(
                 subs_str += '\n'
                 f.write(subs_str)
             
-            
-    def validate_strategy(strategy_path):
-        from backtesterRB30.libs.interfaces.utils.config import BROKERS
-        # data_schema: DataSchema = import_data_schema(strategy_path)
-        # model_module = import_model_module(strategy_path)
-        # executor_module = import_executor_module(strategy_path)
-        # class Asd:
-        #     name = "test",
-        #     strategy_path = '',
-        #     broker = BROKERS.zmq
-        # config = Asd()
-        # config.strategy_path = strategy_path
-        # model = model_module(config, data_schema)
-        # executor = executor_module(config, data_schema)
-
-    print('validating strategy')
-    validate_strategy(strategy_path)
+    
     print('preparing microservice ports configuration')
     create_port_configurations()
     bck_state = 'true' if backtest_state else 'false'
@@ -158,7 +106,7 @@ def run_all_microservices(
         f.write('DATA_CLASS_NAME='+data_class_name+'\n')
 
     if backtest_state:
-        system('bash run.sh') 
+        os.system('bash run.sh') 
     else:
         print('live strategies not implemented')
         
