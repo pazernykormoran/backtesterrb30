@@ -15,11 +15,12 @@ import os
 import asyncio
 from dotenv import load_dotenv
 load_dotenv('.env')
+import platform
 
 
 class Strategy():
     def __init__(self, model: Engine, executor: Executor, data: dict, backtest= True, debug = False):
-        if debug == True:
+        if debug == True and platform.system() != 'Windows':
             if os.geteuid() != 0:
                 print('You must be root to use debug mode because of keyboard package!')
                 os._exit(1)

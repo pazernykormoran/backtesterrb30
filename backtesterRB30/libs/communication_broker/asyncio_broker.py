@@ -55,6 +55,7 @@ class AsyncioBroker(BrokerBase):
             await service.handle(msg, *new_args)
         else:
             await service.handle(msg, *args)
+        await asyncio.sleep(0.00001)
     # @abstractmethod
     # def _handle_zmq_message(self, msg: str):
     #     pass

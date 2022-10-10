@@ -14,7 +14,7 @@ import importlib.resources
 import json
 from enum import Enum
 from backtesterRB30.libs.utils.timestamps import timestamp_to_datetime
-
+from shutil import rmtree
 
 # from backtesterRB30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
 
@@ -108,7 +108,8 @@ class DukascopyDataSource(DataSource):
             raise Exception('The same start and stop date')
         here = getcwd()
         cache_path = join(here, 'cache_dukascopy')
-        system('rm -r ' + cache_path)
+        rmtree(cache_path)
+        # system('rm -r ' + cache_path)
         string_params = [
             ' -i '+ instrument,
             ' -from '+ from_param,
