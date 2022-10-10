@@ -35,5 +35,6 @@ def run_service(microservice_name: str, service_class: Service):
     data_schema = validate_config(data_class.data)
     config = Config(**config)
     service: Service = service_class(config, data_schema)
-    service.register_communication_broker(ZMQ(config))
+    logger = service.get_logger()
+    service.register_communication_broker(ZMQ(config, logger))
     service.run()

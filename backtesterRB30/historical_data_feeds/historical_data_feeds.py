@@ -23,6 +23,7 @@ from os import mkdir
 import time as tm
 from backtesterRB30.libs.utils.service import Service
 from appdirs import user_cache_dir
+from json import dumps, loads
 
 class HistoricalDataFeeds(Service):
     
@@ -159,8 +160,7 @@ class HistoricalDataFeeds(Service):
                 if not f.time_stop in files_collection:
                     files_collection[f.time_stop]: List[InstrumentFile] = []
                 files_collection[f.time_stop].append(f)
-        return files_collection
-
+        return dict(sorted(files_collection.items()))
 
     async def __stop_all_services(self):
         for service in SERVICES_ARRAY:

@@ -18,37 +18,55 @@ import asyncio
 # print(FILE_NAME)
 
 class Strategy():
-    def __init__(self, model: Engine, executor: Executor, data: dict, backtest= True):
+    def __init__(self, model: Engine, executor: Executor, data: dict, backtest= True, debug = False):
+        if debug == True:
+            if os.geteuid() != 0:
+                print('You must be root to use debug mode because of keyboard package!')
+                os._exit(1)
+        self.__debug = debug
         self.__model = model
         self.__executor = executor
         self.__data = data
+
+        self.__backtest_state = backtest
+        self.__model_class_name = str(self.__model.__name__)
+        self.__executor_class_name = str(self.__executor.__name__)
+        self.__data_class_name = str(self.__data.__name__)
+        splitted = os.path.normpath(sys.argv[0])
+        splitted = splitted.split(os.sep)
+        self.__strategy_path = os.path.join(str(os.getcwd()), *splitted[:-1])
+        self.__strategy_file = splitted[-1]
+
         self.__loop = asyncio.get_event_loop()
         self.__services = {}
         self.__data_schema = validate_config(data.data)
-        self.__backtest_state = backtest
-        static_params = self.__backtest_state, self.__loop, self.__data_schema
-        self.__services['python_engine'] = self.create_service('python_engine', model, *static_params)
-        self.__services['python_executor'] = self.create_service('python_exacutor', executor, *static_params)
-        self.__services['historical_data_feeds'] = self.create_service('historical_data_feeds', HistoricalDataFeeds, *static_params)
-        self.__services['python_backtester'] = self.create_service('python_backtester', Backtester, *static_params)
-        self.__services['live_data_feeds'] = self.create_service('live_data_feeds', LiveDataFeeds, *static_params)
+        
 
-    @staticmethod
-    def create_service(microservice_name: str, service_class: Service, backtest_state, loop, data_schema) -> Service:
-        here = os.getcwd()
-        strategy_path = here
+
+
+    def create_service(self, microservice_name: str, service_class: Service, backtest_state, loop, data_schema) -> Service:
         config = {
             "name": microservice_name,
             "backtest": backtest_state,
-            "strategy_path": strategy_path
+            "strategy_path": self.__strategy_path,
+            "debug": self.__debug
         }
-        service = service_class(Config(**config), data_schema, loop)
-        broker: AsyncioBroker = AsyncioBroker(service.config)
+        service: Service = service_class(Config(**config), data_schema, loop)
+        logger = service.get_logger()
+        broker: AsyncioBroker = AsyncioBroker(service.config, logger)
         service.register_communication_broker(broker)
         return service, broker
 
     def run(self):
-        if sys.argv[0] != 'serve.py':
+        static_params = self.__backtest_state, self.__loop, self.__data_schema
+        self.__services['python_engine'] = self.create_service('python_engine', self.__model, *static_params)
+        self.__services['python_executor'] = self.create_service('python_exacutor', self.__executor, *static_params)
+        self.__services['historical_data_feeds'] = self.create_service('historical_data_feeds', HistoricalDataFeeds, *static_params)
+        self.__services['python_backtester'] = self.create_service('python_backtester', Backtester, *static_params)
+        self.__services['live_data_feeds'] = self.create_service('live_data_feeds', LiveDataFeeds, *static_params)
+
+
+        if self.__strategy_file != 'serve.py':
             for name, (service, broker) in self.__services.items():
                 service: Service = service
                 broker: AsyncioBroker = broker
@@ -62,23 +80,15 @@ class Strategy():
             self.__loop.close()
 
     def run_in_microservices(self):
-        if sys.argv[0] != 'serve.py':
-            here = os.getcwd()
-            strategy_file = sys.argv[0]
-            strategy_path = str(here)
-            backtest_state = str(self.__backtest_state)
-            model_class_name = str(self.__model.__name__)
-            executor_class_name = str(self.__executor.__name__)
-            data_class_name = str(self.__data.__name__)
-
+        if self.__strategy_file != 'serve.py':
             from backtesterRB30 import run_all_microservices
             run_all_microservices(
-                    here, 
-                    backtest_state,
-                    strategy_file,
-                    model_class_name,
-                    executor_class_name,
-                    data_class_name)
+                    self.__strategy_path, 
+                    self.__backtest_state,
+                    self.__strategy_file,
+                    self.__model_class_name,
+                    self.__executor_class_name,
+                    self.__data_class_name)
 
 
     def run_in_docker_microservices():

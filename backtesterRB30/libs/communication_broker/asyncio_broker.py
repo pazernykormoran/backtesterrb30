@@ -21,7 +21,7 @@ class AsyncioBroker(BrokerBase):
     # override
     def __init__(self, config: Config, logger=print):
         self.config=config
-        self._log = logger
+        self.__log = logger
         self.__is_running = False
         self.__is_active = False
         self.__brokers = {}
@@ -76,7 +76,7 @@ class AsyncioBroker(BrokerBase):
         self.__brokers[service.value] = service_object
 
     def create_listeners(self, loop:AbstractEventLoop):
-        self._log('Start main loop')
+        self.__log('Start main loop')
         # for sub in self.__subs:
         #     loop.create_task(self.__listen_zmq(sub))
         pass
@@ -106,28 +106,28 @@ class AsyncioBroker(BrokerBase):
     async def handle(self, cmd, *args):
         func = self.__commands.get(cmd)
         if func:
-            # self._log(f'Receive "{cmd}" command')
+            # self.__log(f'Receive "{cmd}" command')
             if args:
                 await func(*args)
             else:
                 await func()
         else:
-            self._log(f"Command '{cmd}' not registered")
+            self.__log(f"Command '{cmd}' not registered")
 
 
     def stop(self):
-        self._log("Service stoped")
+        self.__log("Service stoped")
         self.__is_running = False
         _exit(1)
 
 
     def start(self):
-        self._log("Service started")
+        self.__log("Service started")
         self.__is_active = True
 
 
     def pause(self):
-        self._log("Service paused")
+        self.__log("Service paused")
         self.__is_active = False
 
 
