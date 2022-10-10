@@ -26,7 +26,13 @@ requirements = [
     'keyboard',
     'pycoingecko',
     'websocket-client',
-    'requests'
+    'deepdiff>=4.0.5',
+    'inflection==0.3.1',
+    'requests>=2.22.0',
+    'backoff==1.10.0',
+    'PyJWT==1.7.1',
+    'backoff',
+    'appdirs'
 ]
 # with codecs.open(os.path.join(here, "requirements.txt"), encoding="utf-8") as fh:
 #     req = fh.readline().split("==")[0]

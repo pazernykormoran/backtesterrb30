@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import orjson as json
+import json
 from datetime import datetime, timezone
 from queue import Queue, Empty
 from threading import Thread, Event

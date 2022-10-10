@@ -19,6 +19,11 @@ More advanced example with debug mode enabled, live debug code reloads  and more
 > sudo python3 examples/live_reloading_example/live_reloading_strategy.py
 Root privilages are required.
 
+### Issues:
+If matplotlib plots doesn't works in virtual environment try:
+>sudo apt-get install python3-tk
+
+
 # Strategy implementation
 
 ## Define input data

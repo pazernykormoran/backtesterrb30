@@ -13,9 +13,9 @@ from backtesterRB30 import validate_config
 import sys
 import os
 import asyncio
-# print('ssssssssssssss')
-# FILE_NAME = sys.argv[0]
-# print(FILE_NAME)
+from dotenv import load_dotenv
+load_dotenv('.env')
+
 
 class Strategy():
     def __init__(self, model: Engine, executor: Executor, data: dict, backtest= True, debug = False):

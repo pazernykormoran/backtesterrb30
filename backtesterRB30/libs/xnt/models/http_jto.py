@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.7
 # -*- coding: utf-8 -*-
-import orjson as json
+import json
 import warnings
 from decimal import Decimal
 from deepdiff import DeepDiff
