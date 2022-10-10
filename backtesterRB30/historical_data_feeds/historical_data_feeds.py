@@ -15,11 +15,10 @@ from backtesterRB30.libs.data_sources.data_source_base import DataSource
 from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from backtesterRB30.historical_data_feeds.functions import get_instrument_files, synchronize_dataframes, load_data_frame_ticks_2
 from datetime import datetime
-from os import path, mkdir
+from os import path, makedirs
 from os import listdir
 from os.path import isfile, join
 import pandas as pd
-from os import mkdir
 import time as tm
 from backtesterRB30.libs.utils.service import Service
 from appdirs import user_cache_dir
@@ -149,7 +148,7 @@ class HistoricalDataFeeds(Service):
 
     def __validate_downloaded_data_folder(self):
         if not path.exists(self.downloaded_data_path):
-            mkdir(self.downloaded_data_path)
+            makedirs(self.downloaded_data_path)
 
 
     def __prepare_loading_data_structure_2(self) -> dict:
