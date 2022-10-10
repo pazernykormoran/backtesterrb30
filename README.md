@@ -69,12 +69,9 @@ Engine class "on_feed()" function is being called every interval of your strateg
 data = [[timestamps array with 100 elements],
         [bitcoin prices array with 100 elements],
         [ethereum prices array with 100 elements]]
-
-You can use "_trigger_event()" function to send any message to executor module.
 ~~~
-
 Number of elements in arrays (buffer length) are being defined by set_buffer_length() method.
-
+You can use "_trigger_event()" function to send any message to executor module.
 More about avaliable methods: 
 
 https://pazernykormoran.github.io/Backtester-RB30/backtesterRB30.python_engine.html
