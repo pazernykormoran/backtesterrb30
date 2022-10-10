@@ -23,6 +23,9 @@ class Strategy():
             if os.geteuid() != 0:
                 print('You must be root to use debug mode because of keyboard package!')
                 os._exit(1)
+        if backtest == False:
+            print('Live is not yet supported')
+            os._exit(1)
         self.__debug = debug
         self.__model = model
         self.__executor = executor
