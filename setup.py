@@ -18,7 +18,7 @@ requirements = [
     'numpy',
     'asyncio',
     'pyzmq',
-    'pydantic',
+    'pydantic==1.9.1',
     'python-binance',
     'pandas',
     'matplotlib',
@@ -31,15 +31,10 @@ requirements = [
     'requests>=2.22.0',
     'backoff==1.10.0',
     'PyJWT==1.7.1',
-    'backoff',
-    'appdirs'
+    'backoff==2.2.1',
+    'appdirs==1.4.4'
 ]
-# with codecs.open(os.path.join(here, "requirements.txt"), encoding="utf-8") as fh:
-#     req = fh.readline().split("==")[0]
-#     while req:
-#         if req  and req != '':
-#             requirements.append(req)
-#         req = fh.readline().split("==")[0]
+
 
 DESCRIPTION = 'Stock backtest library'
 LONG_DESCRIPTION = 'backtesterRB30 is a framework to backtest your market strategies.'
