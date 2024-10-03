@@ -17,3 +17,4 @@ env_backtester
 run.sh
 serve.py
 _build
+.venv
