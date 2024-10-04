@@ -24,7 +24,7 @@ requirements = [
     'matplotlib',
     'python-dotenv',
     'keyboard',
-    'pycoingecko',
+    'pycoingecko==3.1.0',
     'websocket-client',
     'deepdiff>=4.0.5',
     'inflection==0.3.1',
