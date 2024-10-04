@@ -28,10 +28,10 @@ class CoingeckoDataSource(DataSource):
     #override
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         try:
-            candles = self.client.get_coin_ohlc_by_id(data.symbol, vs_currency='usd', days='max')
+            candles = self.client.get_coin_ohlc_by_id(data.symbol, vs_currency='usd', days='365')
         except Exception as e:
             if e.args[0]['error'] == 'Could not find coin with the given id':
-                raise Exception('Could not find coin with the given id', data.symbol)
+                raise e
         df = pd.DataFrame(candles)
         if datetime_to_timestamp(data.backtest_date_start) < df.iloc[0,0]:
             raise(Exception("Error. First avaliable date of " , data.symbol, "is" , timestamp_to_datetime(df.iloc[0,0])))
@@ -48,7 +48,7 @@ class CoingeckoDataSource(DataSource):
             if actual_time - self.__last_request_time < 0.025:
                 self._log('waitin')
                 await asyncio.sleep(0.025 - (actual_time - self.__last_request_time))
-            candles = self.client.get_coin_ohlc_by_id(instrument, vs_currency='usd', days='max')
+            candles = self.client.get_coin_ohlc_by_id(instrument, vs_currency='usd', days='365')
             df_orig = pd.DataFrame(candles)
             df = df_orig[df_orig[0] >= time_start]
             if time_stop == None:
