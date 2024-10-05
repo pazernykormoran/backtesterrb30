@@ -1,9 +1,9 @@
-from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.data_sources.data_source_base import DataSource
-from backtesterRB30.libs.data_sources.data_sources_list import HISTORICAL_SOURCES
+from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.interfaces.utils.data_schema import DataSchema
+from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.data_sources.data_source_base import DataSource
+from backtesterrb30.libs.data_sources.data_sources_list import HISTORICAL_SOURCES
 from os import listdir
 from os.path import isfile, join
 from typing import List

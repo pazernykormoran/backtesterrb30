@@ -1,11 +1,11 @@
 from typing import Union
-from backtesterRB30.libs.data_sources.data_source_base import DataSource
+from backtesterrb30.libs.data_sources.data_source_base import DataSource
 from datetime import datetime
-from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from os import getenv
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.utils.singleton import singleton
-# from backtesterRB30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
+from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.utils.singleton import singleton
+# from backtesterrb30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
 import pandas as pd
 
 class RB30DataSource(DataSource):

@@ -2,8 +2,8 @@ from datetime import datetime
 # from symbol import parameters
 from pydantic import BaseModel
 from enum import Enum
-# from backtesterRB30.libs.utils.historical_sources import HISTORICAL_SOURCES, HISTORICAL_INTERVALS_UNION
-from backtesterRB30.libs.utils.timestamps import datetime_to_timestamp
+# from backtesterrb30.libs.utils.historical_sources import HISTORICAL_SOURCES, HISTORICAL_INTERVALS_UNION
+from backtesterrb30.libs.utils.timestamps import datetime_to_timestamp
 
 class InstrumentFile(BaseModel):
     source: str

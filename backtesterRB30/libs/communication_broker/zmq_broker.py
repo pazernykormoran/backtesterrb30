@@ -4,13 +4,13 @@ from asyncio import AbstractEventLoop
 import zmq
 import zmq.asyncio
 import asyncio
-from backtesterRB30.libs.utils.list_of_services import SERVICES
-from backtesterRB30.libs.utils.service import Service
-from backtesterRB30.libs.interfaces.utils.config import Config
+from backtesterrb30.libs.utils.list_of_services import SERVICES
+from backtesterrb30.libs.utils.service import Service
+from backtesterrb30.libs.interfaces.utils.config import Config
 from os import _exit
 from pydantic import BaseModel
 from json import dumps, loads
-from backtesterRB30.libs.communication_broker.broker_base import BrokerBase
+from backtesterrb30.libs.communication_broker.broker_base import BrokerBase
 
 
 class ZMQ(BrokerBase):

@@ -2,13 +2,13 @@ from typing import Union
 from datetime import datetime
 import pandas as pd
 from os.path import join
-from backtesterRB30.libs.data_sources.data_source_base import DataSource
-from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-# from backtesterRB30.libs.utils.historical_sources import COINGECKO_INTERVALS
-from backtesterRB30.libs.utils.timestamps import datetime_to_timestamp, timestamp_to_datetime
+from backtesterrb30.libs.data_sources.data_source_base import DataSource
+from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+# from backtesterrb30.libs.utils.historical_sources import COINGECKO_INTERVALS
+from backtesterrb30.libs.utils.timestamps import datetime_to_timestamp, timestamp_to_datetime
 from pycoingecko import CoinGeckoAPI
-from backtesterRB30.libs.utils.singleton import singleton
+from backtesterrb30.libs.utils.singleton import singleton
 import time
 import asyncio
 from enum import Enum

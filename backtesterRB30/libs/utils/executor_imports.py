@@ -1,1 +1,1 @@
-from backtesterRB30.python_executor.trade_executor import Executor
+from backtesterrb30.python_executor.trade_executor import Executor

@@ -1,14 +1,14 @@
-backtesterRB30.python\_executor package
+backtesterrb30.python\_executor package
 =======================================
 
 .. Submodules
 .. ----------
 
 
-backtesterRB30.python\_executor.trade\_executor module
+backtesterrb30.python\_executor.trade\_executor module
 ------------------------------------------------------
 
-.. automodule:: backtesterRB30.python_executor.trade_executor
+.. automodule:: backtesterrb30.python_executor.trade_executor
    :members:
    :undoc-members:
    :show-inheritance:
@@ -16,7 +16,7 @@ backtesterRB30.python\_executor.trade\_executor module
 .. Module contents
 .. ---------------
 
-.. .. automodule:: backtesterRB30.python_executor
+.. .. automodule:: backtesterrb30.python_executor
 ..    :members:
 ..    :undoc-members:
 ..    :show-inheritance:

@@ -1,4 +1,4 @@
-backtesterRB30 package
+backtesterrb30 package
 ======================
 
 Subpackages
@@ -7,13 +7,13 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   backtesterRB30.python_engine
-   backtesterRB30.python_executor
+   backtesterrb30.python_engine
+   backtesterrb30.python_executor
 
 Module contents
 ---------------
 
-.. automodule:: backtesterRB30
+.. automodule:: backtesterrb30
    :members:
    :undoc-members:
    :show-inheritance:

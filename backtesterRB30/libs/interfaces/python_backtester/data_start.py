@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 
-from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 
 class DataStartFiles(BaseModel):
     files: List[InstrumentFile]

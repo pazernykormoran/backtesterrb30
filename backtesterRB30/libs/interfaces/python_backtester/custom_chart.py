@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
-from backtesterRB30.libs.interfaces.python_engine.custom_chart_element import CustomChartElement
+from backtesterrb30.libs.interfaces.python_engine.custom_chart_element import CustomChartElement
 
 
 class CustomChart(BaseModel):

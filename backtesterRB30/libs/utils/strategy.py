@@ -1,15 +1,15 @@
 
-from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
-from backtesterRB30.libs.utils.service import Service
-from backtesterRB30.python_engine.engine import Engine
-from backtesterRB30.python_executor.trade_executor import Executor
-from backtesterRB30.historical_data_feeds.historical_data_feeds import HistoricalDataFeeds
-from backtesterRB30.live_data_feeds.live_data_feeds import LiveDataFeeds
-from backtesterRB30.python_backtester.python_backtester import Backtester
-from backtesterRB30.libs.interfaces.utils.config import Config
-from backtesterRB30.libs.communication_broker.asyncio_broker import AsyncioBroker
-from backtesterRB30.libs.utils.list_of_services import SERVICES
-from backtesterRB30 import validate_config
+from backtesterrb30.libs.interfaces.utils.data_schema import DataSchema
+from backtesterrb30.libs.utils.service import Service
+from backtesterrb30.python_engine.engine import Engine
+from backtesterrb30.python_executor.trade_executor import Executor
+from backtesterrb30.historical_data_feeds.historical_data_feeds import HistoricalDataFeeds
+from backtesterrb30.live_data_feeds.live_data_feeds import LiveDataFeeds
+from backtesterrb30.python_backtester.python_backtester import Backtester
+from backtesterrb30.libs.interfaces.utils.config import Config
+from backtesterrb30.libs.communication_broker.asyncio_broker import AsyncioBroker
+from backtesterrb30.libs.utils.list_of_services import SERVICES
+from backtesterrb30 import validate_config
 import sys
 import os
 import asyncio
@@ -85,7 +85,7 @@ class Strategy():
 
     def run_in_microservices(self):
         if self.__strategy_file != 'serve.py':
-            from backtesterRB30 import run_all_microservices
+            from backtesterrb30 import run_all_microservices
             run_all_microservices(
                     self.__strategy_path, 
                     self.__backtest_state,

@@ -1,5 +1,5 @@
 from datetime import timezone
-from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
+from backtesterrb30.libs.interfaces.utils.data_schema import DataSchema
 
 
 def validate_config(config: dict):

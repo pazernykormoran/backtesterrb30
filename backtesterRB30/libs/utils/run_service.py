@@ -1,8 +1,8 @@
 import os
-from backtesterRB30.libs.utils.config_validator import validate_config
-from backtesterRB30.libs.utils.module_loaders import import_data_schema
-from backtesterRB30.libs.utils.service import Service
-from backtesterRB30.libs.communication_broker.zmq_broker import ZMQ
+from backtesterrb30.libs.utils.config_validator import validate_config
+from backtesterrb30.libs.utils.module_loaders import import_data_schema
+from backtesterrb30.libs.utils.service import Service
+from backtesterrb30.libs.communication_broker.zmq_broker import ZMQ
 
 def run_service(microservice_name: str, service_class: Service):
     here = os.getcwd()
@@ -12,7 +12,7 @@ def run_service(microservice_name: str, service_class: Service):
     strategy_file = os.getenv('STRATEGY_FILE')
     data_class_name = os.getenv('DATA_CLASS_NAME')
     backtest_state = os.getenv('backtest_state')
-    from backtesterRB30.libs.interfaces.utils.config import Config
+    from backtesterrb30.libs.interfaces.utils.config import Config
 
     config = {
         "name": microservice_name,

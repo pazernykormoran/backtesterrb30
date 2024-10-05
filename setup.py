@@ -37,11 +37,11 @@ requirements = [
 
 
 DESCRIPTION = 'Stock backtest library'
-LONG_DESCRIPTION = 'backtesterRB30 is a framework to backtest your market strategies.'
+LONG_DESCRIPTION = 'backtesterrb30 is a framework to backtest your market strategies.'
 
 # Setting up
 setup(
-    name="backtesterRB30",
+    name="backtesterrb30",
     version=cf_remote_version,
     author="Andrzej Daniel",
     author_email="<andrzolide@gmail.com>",
@@ -50,7 +50,7 @@ setup(
     long_description=long_description,
     packages=find_packages(),
     include_package_data=True,
-    data_files=['backtesterRB30/temporary_ducascopy_list.json'],
+    data_files=['backtesterrb30/temporary_ducascopy_list.json'],
     install_requires=requirements,
     keywords=['backtest'],
     classifiers=[

@@ -16,14 +16,14 @@ import requests
 from requests import exceptions, adapters
 from requests.auth import AuthBase, HTTPBasicAuth
 
-from backtesterRB30.libs.xnt.models.http_api_models import AuthMethods, CandleDurations, ChangeType, Crossrate, DataType, Exchange
-from backtesterRB30.libs.xnt.models.http_api_models import ExOrderType, FeedLevel, Group, InstrumentType, ModifyAction, OHLCQuotes
-from backtesterRB30.libs.xnt.models.http_api_models import OHLCTrades, Ordering, OrderType, OrderV1, OrderV2, OrderV3, OrderSentType
-from backtesterRB30.libs.xnt.models.http_api_models import QuoteType, Reject, Schedule, Scopes, SummaryType, SymbolType
-from backtesterRB30.libs.xnt.models.http_api_models import SymbolSpecification, TradeType, TransactionType, UserAccount
-from backtesterRB30.libs.xnt.models.http_api_models import resolve_model, resolve_symbol
-from backtesterRB30.libs.xnt.models.http_jto import Numeric, SerializableType
-from backtesterRB30.libs.xnt.models.http_jto import attr_or, extract_to_model, opt_int, dt_to_str, dt_to_timestamp, timestamp_to_dt
+from backtesterrb30.libs.xnt.models.http_api_models import AuthMethods, CandleDurations, ChangeType, Crossrate, DataType, Exchange
+from backtesterrb30.libs.xnt.models.http_api_models import ExOrderType, FeedLevel, Group, InstrumentType, ModifyAction, OHLCQuotes
+from backtesterrb30.libs.xnt.models.http_api_models import OHLCTrades, Ordering, OrderType, OrderV1, OrderV2, OrderV3, OrderSentType
+from backtesterrb30.libs.xnt.models.http_api_models import QuoteType, Reject, Schedule, Scopes, SummaryType, SymbolType
+from backtesterrb30.libs.xnt.models.http_api_models import SymbolSpecification, TradeType, TransactionType, UserAccount
+from backtesterrb30.libs.xnt.models.http_api_models import resolve_model, resolve_symbol
+from backtesterrb30.libs.xnt.models.http_jto import Numeric, SerializableType
+from backtesterrb30.libs.xnt.models.http_jto import attr_or, extract_to_model, opt_int, dt_to_str, dt_to_timestamp, timestamp_to_dt
 
 versions = ("1.0", "2.0", "3.0")
 current_api = "2.0"

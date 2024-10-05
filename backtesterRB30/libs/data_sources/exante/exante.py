@@ -1,15 +1,15 @@
 from typing import Union
-from backtesterRB30.libs.xnt.http_api import HTTPApi, current_api, AuthMethods, CandleDurations, DataType
+from backtesterrb30.libs.xnt.http_api import HTTPApi, current_api, AuthMethods, CandleDurations, DataType
 import pandas as pd
 from os.path import join
 from time import time, sleep
 from datetime import datetime
-from backtesterRB30.libs.data_sources.data_source_base import DataSource
-from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-# from backtesterRB30.libs.utils.historical_sources import EXANTE_INTERVALS
-from backtesterRB30.libs.utils.singleton import singleton
-from backtesterRB30.libs.data_sources.utils import validate_dataframe_timestamps
+from backtesterrb30.libs.data_sources.data_source_base import DataSource
+from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+# from backtesterrb30.libs.utils.historical_sources import EXANTE_INTERVALS
+from backtesterrb30.libs.utils.singleton import singleton
+from backtesterrb30.libs.data_sources.utils import validate_dataframe_timestamps
 from os import getenv
 import asyncio
 from enum import Enum

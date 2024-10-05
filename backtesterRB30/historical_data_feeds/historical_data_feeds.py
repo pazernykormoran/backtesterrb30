@@ -1,26 +1,26 @@
 
 import asyncio
 from typing import List
-from backtesterRB30.historical_data_feeds.historical_downloader import HistoricalDownloader
-from backtesterRB30.libs.communication_broker.broker_base import BrokerBase
-from backtesterRB30.libs.data_sources.data_sources_list import HISTORICAL_SOURCES
-from backtesterRB30.libs.interfaces.python_backtester.data_start import DataStart
-from backtesterRB30.libs.communication_broker.zmq_broker import ZMQ
-from backtesterRB30.libs.communication_broker.asyncio_broker import AsyncioBroker
-from backtesterRB30.libs.interfaces.utils.config import Config, BROKERS
-from backtesterRB30.libs.utils.list_of_services import SERVICES, SERVICES_ARRAY
-from backtesterRB30.libs.interfaces.utils.data_schema import DataSchema
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.data_sources.data_source_base import DataSource
-from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-from backtesterRB30.historical_data_feeds.functions import get_instrument_files, synchronize_dataframes, load_data_frame_ticks_2
+from backtesterrb30.historical_data_feeds.historical_downloader import HistoricalDownloader
+from backtesterrb30.libs.communication_broker.broker_base import BrokerBase
+from backtesterrb30.libs.data_sources.data_sources_list import HISTORICAL_SOURCES
+from backtesterrb30.libs.interfaces.python_backtester.data_start import DataStart
+from backtesterrb30.libs.communication_broker.zmq_broker import ZMQ
+from backtesterrb30.libs.communication_broker.asyncio_broker import AsyncioBroker
+from backtesterrb30.libs.interfaces.utils.config import Config, BROKERS
+from backtesterrb30.libs.utils.list_of_services import SERVICES, SERVICES_ARRAY
+from backtesterrb30.libs.interfaces.utils.data_schema import DataSchema
+from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.data_sources.data_source_base import DataSource
+from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterrb30.historical_data_feeds.functions import get_instrument_files, synchronize_dataframes, load_data_frame_ticks_2
 from datetime import datetime
 from os import path, makedirs
 from os import listdir
 from os.path import isfile, join
 import pandas as pd
 import time as tm
-from backtesterRB30.libs.utils.service import Service
+from backtesterrb30.libs.utils.service import Service
 from appdirs import user_cache_dir
 from json import dumps, loads
 

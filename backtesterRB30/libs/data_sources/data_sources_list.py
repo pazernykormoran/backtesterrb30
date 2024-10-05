@@ -1,9 +1,9 @@
-from backtesterRB30.libs.data_sources.binance.binance import BinanceDataSource
-from backtesterRB30.libs.data_sources.dukascopy.dukascopy import DukascopyDataSource
-from backtesterRB30.libs.data_sources.rb30.rb30_disk import RB30DataSource
-from backtesterRB30.libs.data_sources.exante.exante import ExanteDataSource
-from backtesterRB30.libs.data_sources.coingecko.coingecko import CoingeckoDataSource
-from backtesterRB30.libs.data_sources.tradingview.tradingview import TradingView
+from backtesterrb30.libs.data_sources.binance.binance import BinanceDataSource
+from backtesterrb30.libs.data_sources.dukascopy.dukascopy import DukascopyDataSource
+from backtesterrb30.libs.data_sources.rb30.rb30_disk import RB30DataSource
+from backtesterrb30.libs.data_sources.exante.exante import ExanteDataSource
+from backtesterrb30.libs.data_sources.coingecko.coingecko import CoingeckoDataSource
+from backtesterrb30.libs.data_sources.tradingview.tradingview import TradingView
 
 class HISTORICAL_SOURCES():
     binance=BinanceDataSource

@@ -1,5 +1,5 @@
 import os
-from backtesterRB30.libs.utils.list_of_services import SERVICES_ARRAY
+from backtesterrb30.libs.utils.list_of_services import SERVICES_ARRAY
 serve_file_commands_array = [
     'from sys import argv\n',
     'from dotenv import load_dotenv\n',
@@ -7,15 +7,15 @@ serve_file_commands_array = [
     'load_dotenv(".additional_configs")\n',
     'microservice_name = argv[1]\n',
     'if microservice_name == "python_backtester":\n',
-    '    from backtesterRB30.historical_data_feeds import run\n',
+    '    from backtesterrb30.historical_data_feeds import run\n',
     'elif microservice_name == "python_engine":\n',
-    '    from backtesterRB30.python_backtester import run\n',
+    '    from backtesterrb30.python_backtester import run\n',
     'elif microservice_name == "python_executor":\n',
-    '    from backtesterRB30.python_engine import run\n',
+    '    from backtesterrb30.python_engine import run\n',
     'elif microservice_name == "historical_data_feeds":\n',
-    '    from backtesterRB30.python_executor import run\n'
+    '    from backtesterrb30.python_executor import run\n'
     'elif microservice_name == "live_data_feeds":\n',
-    '    from backtesterRB30.live_data_feeds import run\n'
+    '    from backtesterrb30.live_data_feeds import run\n'
 ]
 
 run_file_commands_array = [

@@ -5,14 +5,14 @@ from binance.helpers import interval_to_milliseconds
 from datetime import datetime
 import pandas as pd
 from os.path import join
-from backtesterRB30.libs.data_sources.data_source_base import DataSource
-from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
-# from backtesterRB30.libs.utils.historical_sources import BINANCE_INTERVALS
-# from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.data_sources.utils import validate_dataframe_timestamps
+from backtesterrb30.libs.data_sources.data_source_base import DataSource
+from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+# from backtesterrb30.libs.utils.historical_sources import BINANCE_INTERVALS
+# from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.data_sources.utils import validate_dataframe_timestamps
 from os import getenv
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.utils.singleton import singleton
+from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.utils.singleton import singleton
 from enum import Enum
 
 class BINANCE_INTERVALS_2(str, Enum):

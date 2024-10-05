@@ -1,10 +1,10 @@
 from abc import abstractmethod
 from typing import Union
-from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 import asyncio
 import pandas as pd
 from enum import Enum
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
 from os.path import join
 
 class DataSource():    

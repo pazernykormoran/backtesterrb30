@@ -1,6 +1,6 @@
 from datetime import datetime
 from random import randint
-import backtesterRB30 as bt
+import backtesterrb30 as bt
 from os.path import join
 
 class Model(bt.Engine):

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
-from backtesterRB30.libs.interfaces.python_backtester.custom_chart import CustomChart
+from backtesterrb30.libs.interfaces.python_backtester.custom_chart import CustomChart
 
 
 class DataFinish(BaseModel):

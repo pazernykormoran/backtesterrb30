@@ -7,8 +7,8 @@ from enum import Enum
 from typing import Dict, Iterable, List, Optional, Union, TypeVar
 from urllib.parse import quote as urlencode
 
-from backtesterRB30.libs.xnt.models.http_jto import dc, extract_to_model, timestamp_to_dt, str_to_dt
-from backtesterRB30.libs.xnt.models.http_jto import Numeric, Serializable
+from backtesterrb30.libs.xnt.models.http_jto import dc, extract_to_model, timestamp_to_dt, str_to_dt
+from backtesterrb30.libs.xnt.models.http_jto import Numeric, Serializable
 
 
 class InstrumentType(Enum):
