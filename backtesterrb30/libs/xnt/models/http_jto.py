@@ -1,31 +1,34 @@
 #!/usr/bin/env python3.7
-# -*- coding: utf-8 -*-
 import json
 import warnings
-from decimal import Decimal
-from deepdiff import DeepDiff
 from datetime import datetime, timezone
+from decimal import Decimal
 from enum import Enum, EnumMeta
-from inflection import camelize, underscore
 from inspect import signature
-from typing import Any, Callable, Dict, List, Optional, Union, Type, Set, TypeVar
+from typing import Any, Callable, Dict, List, Optional, Set, Type, TypeVar, Union
 
-reserved = ('type', 'id', 'list', 'except', 'from', 'to', 'open', 'sum', 'uuid')
-SerializableType = TypeVar('SerializableType', bound='Serializable')
+from deepdiff import DeepDiff
+from inflection import camelize, underscore
+
+reserved = ("type", "id", "list", "except", "from", "to", "open", "sum", "uuid")
+SerializableType = TypeVar("SerializableType", bound="Serializable")
 
 Numeric = Union[int, float, str, Decimal]
 
 
 def camel(s: str, uppercase_first_letter=False):
-    if s.endswith('_'):
+    if s.endswith("_"):
         return camelize(s[:-1], uppercase_first_letter)
     else:
         return camelize(s, uppercase_first_letter)
 
 
-def extract_to_model(data: Any, obj: Type[SerializableType], eraise: bool = False,
-                     backup_obj: Optional[Type[SerializableType]] = None) \
-        -> Union[None, SerializableType, List[SerializableType]]:
+def extract_to_model(
+    data: Any,
+    obj: Type[SerializableType],
+    eraise: bool = False,
+    backup_obj: Optional[Type[SerializableType]] = None,
+) -> Union[None, SerializableType, List[SerializableType]]:
     """
     Serialize JSON-like data to Serializable object, tries backup_obj if supplied
     :param data: incoming data, list or dicts
@@ -63,7 +66,7 @@ def extract_to_model(data: Any, obj: Type[SerializableType], eraise: bool = Fals
         return None
 
 
-def to_string(d: datetime, fmt: str = '%Y-%m-%dT%H:%M:%S.%fZ') -> str:
+def to_string(d: datetime, fmt: str = "%Y-%m-%dT%H:%M:%S.%fZ") -> str:
     return d.strftime(fmt)
 
 
@@ -74,7 +77,9 @@ def dt_to_timestamp(d: datetime, millis: bool = False) -> int:
         return int(d.timestamp())
 
 
-def timestamp_to_dt(ts: Optional[Numeric], tz: timezone = timezone.utc) -> Optional[datetime]:
+def timestamp_to_dt(
+    ts: Optional[Numeric], tz: timezone = timezone.utc
+) -> Optional[datetime]:
     if ts is None:
         return None
     else:
@@ -87,14 +92,18 @@ def timestamp_to_dt(ts: Optional[Numeric], tz: timezone = timezone.utc) -> Optio
             return timestamp_to_dt(float(ts) / 1000, tz)
 
 
-def str_to_dt(s: Optional[str], fmt: str = '%Y-%m-%dT%H:%M:%S.%f%z') -> Optional[datetime]:
+def str_to_dt(
+    s: Optional[str], fmt: str = "%Y-%m-%dT%H:%M:%S.%f%z"
+) -> Optional[datetime]:
     try:
         return datetime.strptime(s, fmt)
     except ValueError:
         return None
 
 
-def dt_to_str(d: Optional[datetime], fmt: str = '%Y-%m-%dT%H:%M:%S.%f%z') -> Optional[str]:
+def dt_to_str(
+    d: Optional[datetime], fmt: str = "%Y-%m-%dT%H:%M:%S.%f%z"
+) -> Optional[str]:
     if d:
         return d.strftime(fmt)
     else:
@@ -132,7 +141,9 @@ class BaseSerializable:
     def __dict(self, obj: Any, dt_parser: Callable, keep_null: bool) -> Any:
         if isinstance(obj, Dict):
             return {
-                self.__dict(key, dt_parser, keep_null): self.__dict(value, dt_parser, keep_null)
+                self.__dict(key, dt_parser, keep_null): self.__dict(
+                    value, dt_parser, keep_null
+                )
                 for key, value in obj.items()
                 if (not keep_null and value is not None) or keep_null
             }
@@ -142,21 +153,27 @@ class BaseSerializable:
             return obj.value
         elif isinstance(obj, datetime):
             return dt_parser(obj)
-        elif hasattr(obj, '__iter__') and not isinstance(obj, str):
-            return [self.__dict(value, dt_parser, keep_null)
-                    for value in obj
-                    if (not keep_null and value is not None) or keep_null]
-        elif hasattr(obj, '__dict__'):
+        elif hasattr(obj, "__iter__") and not isinstance(obj, str):
+            return [
+                self.__dict(value, dt_parser, keep_null)
+                for value in obj
+                if (not keep_null and value is not None) or keep_null
+            ]
+        elif hasattr(obj, "__dict__"):
             data = {
                 camel(key): self.__dict(value, dt_parser, keep_null)
                 for key, value in obj.__dict__.items()
-                if (not callable(value)) and ((not keep_null and value is not None) or keep_null)}
+                if (not callable(value))
+                and ((not keep_null and value is not None) or keep_null)
+            }
             return data
         else:
             return obj
 
     @staticmethod
-    def to_enum(source: Union[int, str, Enum, None], obj: EnumMeta, debug: bool = False) -> Optional[Enum]:
+    def to_enum(
+        source: Union[int, str, Enum, None], obj: EnumMeta, debug: bool = False
+    ) -> Optional[Enum]:
         if source is None:
             return None
         elif isinstance(source, Enum):
@@ -173,7 +190,9 @@ class BaseSerializable:
                     else:
                         raise ValueError(f"Unable to extract Enum from {obj}")
 
-    def to_json(self, keep_null: bool = False, dt_parser: Callable = to_string) -> Dict[str, Union[str, int, float]]:
+    def to_json(
+        self, keep_null: bool = False, dt_parser: Callable = to_string
+    ) -> Dict[str, Union[str, int, float]]:
         """
         Method to convert model to JSON
         :param keep_null: True to keep "field": null in generated JSON, default is False (no key)
@@ -186,8 +205,14 @@ class BaseSerializable:
         return json.dumps(self.to_json(False)).decode()
 
     def __eq__(self, other) -> bool:
-        if hasattr(other, '__model__'):
-            return bool(not DeepDiff(self.to_json(keep_null=True), other.to_json(keep_null=True), ignore_order=True))
+        if hasattr(other, "__model__"):
+            return bool(
+                not DeepDiff(
+                    self.to_json(keep_null=True),
+                    other.to_json(keep_null=True),
+                    ignore_order=True,
+                )
+            )
         else:
             raise ValueError("Impossible to directly compare non-models objects")
 
@@ -200,16 +225,17 @@ class Serializable(BaseSerializable):
         return {
             k: None
             for k in signature(cls.__init__).parameters.keys()
-            if k not in ('args', 'kwargs', 'self')
+            if k not in ("args", "kwargs", "self")
         }
 
     @classmethod
-    def from_json(cls: Type[SerializableType],
-                  obj: Union[Dict, SerializableType, None]) -> Union[SerializableType, Exception]:
+    def from_json(
+        cls: Type[SerializableType], obj: Union[Dict, SerializableType, None]
+    ) -> Union[SerializableType, Exception]:
         def make_key(key: str) -> str:
             key = underscore(key)
             if key in reserved:
-                return '%s_' % key
+                return "%s_" % key
             else:
                 return key
 
@@ -227,4 +253,4 @@ class Serializable(BaseSerializable):
             elif isinstance(obj, cls):
                 return obj
         except TypeError:
-            return RuntimeError("could not get {} from {} as {}".format(cls, type(obj), obj))
+            return RuntimeError(f"could not get {cls} from {type(obj)} as {obj}")

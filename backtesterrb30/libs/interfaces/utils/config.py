@@ -1,12 +1,15 @@
-from pydantic import BaseModel
-from typing import List
-from backtesterrb30.libs.interfaces.utils.net_info import NetInfo
-from typing import Optional
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel
+
+from backtesterrb30.libs.interfaces.utils.net_info import NetInfo
+
 
 class BROKERS(Enum):
-    zmq = 'zmq', 
-    asyncio = 'asyncio'
+    zmq = ("zmq",)
+    asyncio = "asyncio"
+
 
 class Config(BaseModel):
     name: str

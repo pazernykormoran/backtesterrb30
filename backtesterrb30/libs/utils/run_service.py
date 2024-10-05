@@ -1,35 +1,27 @@
 import os
+from backtesterrb30.libs.communication_broker.zmq_broker import ZMQ
 from backtesterrb30.libs.utils.config_validator import validate_config
 from backtesterrb30.libs.utils.module_loaders import import_data_schema
 from backtesterrb30.libs.utils.service import Service
-from backtesterrb30.libs.communication_broker.zmq_broker import ZMQ
+
 
 def run_service(microservice_name: str, service_class: Service):
-    here = os.getcwd()
-    strategy_path = os.getenv('STRATEGY_PATH')
-    sub_ports = [int(p) for p in os.getenv(microservice_name+'_subs').split(',')]
-    pub_port = int(os.getenv(microservice_name+'_pubs'))
-    strategy_file = os.getenv('STRATEGY_FILE')
-    data_class_name = os.getenv('DATA_CLASS_NAME')
-    backtest_state = os.getenv('backtest_state')
+    strategy_path = os.getenv("STRATEGY_PATH")
+    sub_ports = [int(p) for p in os.getenv(microservice_name + "_subs").split(",")]
+    pub_port = int(os.getenv(microservice_name + "_pubs"))
+    strategy_file = os.getenv("STRATEGY_FILE")
+    data_class_name = os.getenv("DATA_CLASS_NAME")
+    backtest_state = os.getenv("backtest_state")
     from backtesterrb30.libs.interfaces.utils.config import Config
 
     config = {
         "name": microservice_name,
         "ip": "localhost",
-        "sub": [
-            {
-            "topic": microservice_name,
-            "port": p
-            } for p in sub_ports
-        ],
-        "pub": {
-                "topic": 'pub_'+str(pub_port),
-                "port": pub_port
-            } ,
-        "backtest": True if backtest_state == 'true' else False,
+        "sub": [{"topic": microservice_name, "port": p} for p in sub_ports],
+        "pub": {"topic": "pub_" + str(pub_port), "port": pub_port},
+        "backtest": True if backtest_state == "true" else False,
         "debug": True,
-        "strategy_path": strategy_path
+        "strategy_path": strategy_path,
     }
     data_class = import_data_schema(strategy_path, strategy_file, data_class_name)
     data_schema = validate_config(data_class.data)

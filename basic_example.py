@@ -11,7 +11,7 @@ class Model(bt.Engine):
 
     #override
     async def on_feed(self, data: list):
-        print('data', data)
+        # print('data first', data[0])
         if self.counter % 5 == 0:
             quant = randint(-2,2)
             if quant != 0:

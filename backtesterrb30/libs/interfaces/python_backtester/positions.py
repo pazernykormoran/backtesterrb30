@@ -1,10 +1,7 @@
+from typing import List
 
+from pydantic import BaseModel
 
-from pydantic import BaseModel, validator
-from typing import List, Any
-from pandas import DataFrame
-from backtesterrb30.libs.interfaces.python_backtester.trade import Trade
-from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
 
 class Position(BaseModel):
     number_of_actions: float = 0
