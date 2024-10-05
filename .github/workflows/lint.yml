@@ -26,4 +26,4 @@ jobs:
           poetry install
 
       - name: Run linter
-        run: poetry poe lint
+        run: poetry run poe lint
