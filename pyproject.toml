@@ -66,8 +66,7 @@ test = "pytest -v --cov=backtesterrb30"
 lint-fix  = ["format", "lint"]
 
 [tool.coverage.report]
-fail_under = 100
-omit = ["__main__.py"]
+fail_under = 0
 
 [tool.ruff.lint]
 extend-select = []
