@@ -30,4 +30,4 @@ jobs:
       - name: Run linter
         run: |
           poetry install --with dev
-          poetry poe lint
+          poetry run poe lint
