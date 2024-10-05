@@ -25,3 +25,11 @@ jobs:
         run: |
           poetry install --with dev
           poetry run poe lint
+
+      - name: Check version in pyproject.toml
+        run: |
+          VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          if [ "$VERSION" != "0.0.0" ]; then
+            echo "Version in pyproject.toml is not 0.0.0"
+            exit 1
+          fi

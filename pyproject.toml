@@ -4,7 +4,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
 name = "backtesterrb30"
-version = "0.1.7.post23.dev0+09a24a2"
+version = "0.0.0"
 description = "Backtesting and data loading engine"
 license = "Unlicense"
 authors = [
@@ -72,6 +72,6 @@ fail_under = 0
 extend-select = []
 
 [tool.poetry-dynamic-versioning]
-enable = false
+enable = true
 vcs = "git"
 style = "pep440"
