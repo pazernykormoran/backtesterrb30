@@ -18,3 +18,12 @@ run.sh
 serve.py
 _build
 .venv
+transfer_entropy.py
+
+.*
+!.git*
+
+*.egg-info
+__pycache__
+apidocs
+dist
