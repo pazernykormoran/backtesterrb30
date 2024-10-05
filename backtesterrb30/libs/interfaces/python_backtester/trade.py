@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 
-from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
 
 class Trade(BaseModel):
     timestamp: int

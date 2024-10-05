@@ -1,6 +1,9 @@
+from typing import List, Optional
+
 from pydantic import BaseModel
-from typing import Optional, List
+
 from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+
 
 class DataSchema(BaseModel):
     log_scale_valuation_chart: Optional[bool] = True

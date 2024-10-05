@@ -1,8 +1,5 @@
-
-
 from pydantic import BaseModel
-from typing import List
-from pandas import DataFrame
+
 
 class ExecutorPosition(BaseModel):
     instrument: str

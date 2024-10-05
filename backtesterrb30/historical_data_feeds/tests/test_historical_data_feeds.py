@@ -1,25 +1,25 @@
 import unittest
-from  historical_data_feeds.historical_data_feeds import HistoricalDataFeeds
+
+from historical_data_feeds.historical_data_feeds import HistoricalDataFeeds
+
 
 class TestConfig:
-    name = "test",
-    strategy_path = 'hackaton1'
+    name = ("test",)
+    strategy_path = "hackaton1"
+
 
 class TestHistoricalDataFeeds(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
-        print('setup class')
+        print("setup class")
 
     @classmethod
     def tearDownClass(cls) -> None:
-        print('teardown class')
+        print("teardown class")
 
     def setUp(self) -> None:
-
         config = TestConfig()
         self.historical_data_feeds = HistoricalDataFeeds(config)
-        
 
     def tearDown(self) -> None:
         return super().tearDown()
@@ -29,6 +29,5 @@ class TestHistoricalDataFeeds(unittest.TestCase):
         self.assertEqual(result, False)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

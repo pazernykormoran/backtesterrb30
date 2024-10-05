@@ -43,9 +43,9 @@
 # class COINGECKO_INTERVALS(Enum):
 #     day4='day4'
 
-    # @classmethod
-    # def get_small_intervals(cls):
-    #     return []
+# @classmethod
+# def get_small_intervals(cls):
+#     return []
 
 
 # class HISTORICAL_SOURCES(str, Enum):

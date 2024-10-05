@@ -1,5 +1,7 @@
+from typing import List, Optional
+
 from pydantic import BaseModel
-from typing import Optional, List
+
 from backtesterrb30.libs.interfaces.python_backtester.custom_chart import CustomChart
 
 

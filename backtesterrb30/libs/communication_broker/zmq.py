@@ -1,19 +1,20 @@
-from abc import abstractmethod, ABC
-from typing import Callable, Dict
+import asyncio
+from abc import ABC, abstractmethod
 from asyncio import AbstractEventLoop
+from json import dumps, loads
+from os import _exit
+from typing import Callable, Dict
+
 import zmq
 import zmq.asyncio
-import asyncio
+from pydantic import BaseModel
+
+from backtesterrb30.libs.interfaces.utils.config import Config
 from backtesterrb30.libs.utils.list_of_services import SERVICES
 from backtesterrb30.libs.utils.service import Service
-from backtesterrb30.libs.interfaces.utils.config import Config
-from os import _exit
-from pydantic import BaseModel
-from json import dumps, loads
 
 
 class ZMQ(Service, ABC):
-
     __is_running: bool
     __is_active: bool
 
@@ -22,17 +23,18 @@ class ZMQ(Service, ABC):
     # override
     def __init__(self, config: Config, logger=print):
         super().__init__(config, logger)
-        self.config=config
+        self.config = config
         self.__is_running = False
         self.__is_active = False
 
         self.__pub = None
         self.__subs = []
-        
 
-        self.__commands = {'start': self._start,
-                          'pause': self._pause,
-                          'stop': self._stop}
+        self.__commands = {
+            "start": self._start,
+            "pause": self._pause,
+            "stop": self._stop,
+        }
 
     # override
     def run(self):
@@ -41,27 +43,25 @@ class ZMQ(Service, ABC):
         self.__is_active = True
         super().run()
 
-
     # override
     def _send(self, service: SERVICES, msg: str, *args):
         if self.__is_active:
-            data = [service.value.encode('utf-8'), msg.encode('utf-8')]
+            data = [service.value.encode("utf-8"), msg.encode("utf-8")]
             for arg in args:
-                if isinstance(arg,BaseModel):
+                if isinstance(arg, BaseModel):
                     arg = arg.dict()
                 arg = dumps(arg, default=str)
-                data.append(arg.encode('utf-8'))
+                data.append(arg.encode("utf-8"))
             self.__pub.send_multipart(data)
-
 
     @abstractmethod
     def _handle_zmq_message(self, msg: str):
         pass
 
     @abstractmethod
-    def _asyncio_loop(self, loop:asyncio.AbstractEventLoop):
+    def _asyncio_loop(self, loop: asyncio.AbstractEventLoop):
         pass
-    
+
     def _loop(self):
         loop = asyncio.get_event_loop()
         self._asyncio_loop(loop)
@@ -71,16 +71,13 @@ class ZMQ(Service, ABC):
     def _register(self, command: str, func: Callable):
         self.__commands[command] = func
 
-
-    def _create_listeners(self, loop:AbstractEventLoop):
-        self._log('Start main loop')
+    def _create_listeners(self, loop: AbstractEventLoop):
+        self._log("Start main loop")
         for sub in self.__subs:
             loop.create_task(self.__listen_zmq(sub))
 
-
     async def __listen_zmq(self, sub):
         while self.__is_running:
-
             if self.__is_active:
                 data = await sub.recv_multipart()
                 if data:
@@ -90,18 +87,18 @@ class ZMQ(Service, ABC):
                 await asyncio.sleep(0.01)
         self.__deinit()
 
-
     def __init_sockets(self, config: Config):
         sub_context = zmq.asyncio.Context()
         pub_context = zmq.Context()
         for sub in config.sub:
-            s = sub_socket(sub_context, 'tcp://' + config.ip + ':' + str(sub.port), sub.topic)
+            s = sub_socket(
+                sub_context, "tcp://" + config.ip + ":" + str(sub.port), sub.topic
+            )
             self.__subs.append(s)
-        self.__pub = pub_socket(pub_context, 'tcp://*:' + str(config.pub.port))
-
+        self.__pub = pub_socket(pub_context, "tcp://*:" + str(config.pub.port))
 
     async def __handle(self, data):
-        data = [x.decode('utf-8') for x in data]
+        data = [x.decode("utf-8") for x in data]
         if len(data) >= 2:
             topic, cmd, *args = data
             func = self.__commands.get(cmd)
@@ -118,21 +115,17 @@ class ZMQ(Service, ABC):
                 self._log(f"Command '{cmd}' not registered")
         self._handle_zmq_message(data)
 
-
     def __deinit(self):
         self.__pub.close()
-
 
     def _stop(self):
         self._log("Service stoped")
         self.__is_running = False
         _exit(1)
 
-
     def _start(self):
         self._log("Service started")
         self.__is_active = True
-
 
     def _pause(self):
         self._log("Service paused")
@@ -145,8 +138,8 @@ def sub_socket(context: zmq.asyncio.Context(), url: str, topic: str):
     sub.subscribe(topic)
     return sub
 
+
 def pub_socket(context: zmq.Context(), url: str):
     pub = context.socket(zmq.PUB)
-    ret = pub.bind(url)
+    pub.bind(url)
     return pub
-
