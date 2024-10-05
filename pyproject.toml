@@ -4,7 +4,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry]
 name = "backtesterrb30"
-version = "0.0.0"
+version = "0.1.7.post23.dev0+09a24a2"
 description = "Backtesting and data loading engine"
 license = "Unlicense"
 authors = [
@@ -54,13 +54,16 @@ pydoctor = "^24.3.3"
 ruff = "^0.6.8"
 
 [tool.poetry.scripts]
-strategy1 = "basic_example:main"
+strategy1 = "strategies.basic_example:main"
+basic_example = "examples.basic_example.basic_example:main"
+live_reloading_example = "examples.live_reloading_example.live_reloading_strategy:main"
 
 [tool.poe.tasks]
 docs = "pydoctor --make-html backtesterrb30"
 format = "ruff format backtesterrb30"
 lint = "ruff check backtesterrb30"
-test = "pytest -v --cov=my_fibonacci"
+test = "pytest -v --cov=backtesterrb30"
+lint-fix  = ["format", "lint"]
 
 [tool.coverage.report]
 fail_under = 100
@@ -70,6 +73,6 @@ omit = ["__main__.py"]
 extend-select = []
 
 [tool.poetry-dynamic-versioning]
-enable = true
+enable = false
 vcs = "git"
 style = "pep440"

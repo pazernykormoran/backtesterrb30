@@ -27,3 +27,4 @@ transfer_entropy.py
 __pycache__
 apidocs
 dist
+strategies

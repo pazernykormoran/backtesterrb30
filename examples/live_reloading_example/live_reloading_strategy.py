@@ -12,7 +12,7 @@ class Model(bt.Engine):
         }
         self.set_buffer_length(100)
         self.live_reloading_module = self.add_reloading_module(
-                join(self.config.strategy_path, 'live_reloading/live_reloading.py'))
+                join(self.config.strategy_path, 'examples/live_reloading_example/live_reloading_strategy.py'))
         
     #override
     async def on_feed(self, data: list):
@@ -72,4 +72,5 @@ class Data:
     }
 
 strategy = bt.Strategy(Model, TradeExecutor, Data, debug= True)
-strategy.run()
+def main():
+    strategy.run()
