@@ -13,6 +13,7 @@ Backtester-RB30 is a framework for stock market analysis.
 ### Basic example
 Basic strategy example making random trades.
 > poetry install
+
 > poetry run basic_example
 
 ### Advanced example
@@ -152,11 +153,7 @@ Coingecko is working without any keys.
 
 For dukascopy no keys are required. But for this data source working, you have to have node and npm with npx installed.
 ~~~
-sudo apt  install curl
-curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-sudo apt install -y nodejs
-sudo apt install -y npm
-npm install dukascopy-node --save
+https://nodejs.org/en/download/package-manager
 ~~~
 
 3. Binance

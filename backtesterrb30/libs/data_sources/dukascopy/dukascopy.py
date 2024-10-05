@@ -147,8 +147,10 @@ class DukascopyDataSource(DataSource):
             raise Exception("The same start and stop date")
         here = getcwd()
         cache_path = join(here, "cache_dukascopy")
-        rmtree(cache_path)
-        # system('rm -r ' + cache_path)
+        try:
+            rmtree(cache_path)
+        except Exception:
+            pass
         string_params = [
             " -i " + instrument,
             " -from " + from_param,
@@ -160,7 +162,7 @@ class DukascopyDataSource(DataSource):
             " -dir " + cache_path,
             " -p bid",
         ]
-        command = "npx dukascopy-node"
+        command = "npx --yes dukascopy-node"
         for param in string_params:
             command += param
         system(command)
