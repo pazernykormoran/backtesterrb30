@@ -82,7 +82,7 @@ class Executor(Service):
         :return: :class:`DataSymbol` object combined with privided custom_name
         :rtype: DataSymbol
         """
-        if type(custom_name) != str:
+        if not isinstance(custom_name, str):
             raise Exception("Provided name is not string")
         arr = [d for d in self.__data_schema.data if d.custom_name == custom_name]
         if len(arr) == 0:
@@ -139,7 +139,7 @@ class Executor(Service):
 
     async def close_all_trades(self):
         """Closes all opened trades."""
-        if self.config.backtest == True:
+        if self.config.backtest:
             await self._broker.send(SERVICES.python_backtester, "close_all_trades")
         else:
             # TODO trade in real broker

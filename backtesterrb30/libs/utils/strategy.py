@@ -16,20 +16,20 @@ from backtesterrb30.live_data_feeds.live_data_feeds import LiveDataFeeds
 from backtesterrb30.python_backtester.python_backtester import Backtester
 from backtesterrb30.python_engine.engine import Engine
 from backtesterrb30.python_executor.trade_executor import Executor
+import platform
 
 load_dotenv(".env")
-import platform
 
 
 class Strategy:
     def __init__(
         self, model: Engine, executor: Executor, data: dict, backtest=True, debug=False
     ):
-        if debug == True and platform.system() != "Windows":
+        if debug and platform.system() != "Windows":
             if os.geteuid() != 0:
                 print("You must be root to use debug mode because of keyboard package!")
                 os._exit(1)
-        if backtest == False:
+        if not backtest:
             print("Live is not yet supported")
             os._exit(1)
         self.__debug = debug

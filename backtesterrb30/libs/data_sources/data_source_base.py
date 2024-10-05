@@ -62,7 +62,7 @@ class DataSource:
 
     async def validate_instrument(self, data: DataSymbol) -> bool:
         await asyncio.sleep(0.1)
-        if type(data.interval) != self.INTERVALS:
+        if not isinstance(data.interval, self.INTERVALS):
             raise Exception(
                 "Bad interval type in data symbol",
                 data.symbol,

@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime
 from enum import Enum
 from os import getenv
 from time import time
@@ -63,7 +62,7 @@ class ExanteDataSource(DataSource):
         # TODO check if volume necessery or not.
 
         data_type = DataType.QUOTES
-        if data.with_volume == True:
+        if data.with_volume:
             data_type = DataType.TRADES
 
         start_validation_time = time()
@@ -77,7 +76,7 @@ class ExanteDataSource(DataSource):
                 limit=1,
                 agg_type=data_type,
             )
-            if candles != None or time() - start_validation_time > 61:
+            if candles is not None or time() - start_validation_time > 61:
                 break
             self._log(
                 "Performing Exante validation for this instrument going to take up to 1 minute"
@@ -204,7 +203,6 @@ class ExanteDataSource(DataSource):
                     new_timestamp = int(prev_kl.timestamp.timestamp() * 1000) + (
                         exante_interval * 1000
                     )
-                    new_datetime = datetime.utcfromtimestamp(new_timestamp / 1000)
                     klines_transformed.append([new_timestamp, prev_kl.close])
                 klines_transformed.append(
                     [int(kl.timestamp.timestamp() * 1000), kl.open_]

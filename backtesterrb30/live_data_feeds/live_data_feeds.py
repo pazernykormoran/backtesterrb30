@@ -70,7 +70,7 @@ class LiveDataFeeds(Service):
     #     pass
 
     async def __main_loop(self, interval):
-        if self.__download_buffer == True:
+        if self.__download_buffer:
             await self._broker.send(
                 SERVICES.python_engine,
                 "get_buffer_length",

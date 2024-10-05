@@ -55,11 +55,11 @@ def run_all_microservices(
             serve_prepared = True
         if fname == "run.sh":
             run_prepared = True
-    if serve_prepared == False:
+    if not serve_prepared:
         with open("serve.py", "w") as f:
             for line in serve_file_commands_array:
                 f.write(line)
-    if run_prepared == False:
+    if not run_prepared:
         with open("run.sh", "w") as f:
             for line in run_file_commands_array:
                 f.write(line)
@@ -86,7 +86,7 @@ def run_all_microservices(
                     start_port += 50
                     port_in_use = True
                     break
-            if port_in_use == False:
+            if not port_in_use:
                 assigned = True
 
         with open(".additional_configs", "w") as f:

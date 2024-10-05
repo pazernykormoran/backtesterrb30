@@ -93,7 +93,7 @@ class Engine(Service):
         :return: :class:`DataSymbol` object combined with privided custom_name
         :rtype: DataSymbol
         """
-        if type(custom_name) != str:
+        if not isinstance(custom_name, str):
             raise Exception("Provided name is not string")
         arr = [d for d in self.__data_schema.data if d.custom_name == custom_name]
         if len(arr) == 0:
@@ -182,10 +182,10 @@ class Engine(Service):
         :type display_charts: bool, optional
         """
         self.__breakpoint_display_charts = display_charts
-        if self.__debug_mode == True:
+        if self.__debug_mode:
             self.__code_stopped_debug = True
             while True:
-                if self.__debug_mode == False:
+                if not self.__debug_mode:
                     for spec, module in self.__reloading_modules:
                         # reload(module)
                         reload_spec_module(spec, module)
@@ -195,7 +195,7 @@ class Engine(Service):
 
                     self.__code_stopped_debug = False
                     return
-                if self.__debug_next_pressed == True:
+                if self.__debug_next_pressed:
                     for spec, module in self.__reloading_modules:
                         # reload(module)
                         reload_spec_module(spec, module)
@@ -230,7 +230,7 @@ class Engine(Service):
     def _loop(self):
         # self._broker.run()
         self._broker.create_listeners(self.__loop)
-        if self.config.debug == True:
+        if self.config.debug:
             self.__loop.create_task(self.__keyboard_listener())
         if self.__custom_event_loop:
             self.__loop.run_forever()
@@ -285,7 +285,7 @@ class Engine(Service):
         self._log('To enter debug mode press "ctrl+d"')
         while True:
             if keyboard.is_pressed("ctrl+d"):
-                if self.__debug_mode == False:
+                if not self.__debug_mode:
                     self._log(
                         'You have entered Debug mode \n\
                                  -> press "ctrl+n" to next step\n\
@@ -296,8 +296,8 @@ class Engine(Service):
                     await asyncio.sleep(0.1)
             if keyboard.is_pressed("ctrl+n"):
                 if (
-                    self.__debug_mode == True
-                    and self.__debug_next_pressed == False
+                    self.__debug_mode
+                    and not self.__debug_next_pressed
                     and self.__code_stopped_debug
                 ):
                     self._log(
@@ -308,7 +308,7 @@ class Engine(Service):
                 while keyboard.is_pressed("n"):
                     await asyncio.sleep(0.1)
             if keyboard.is_pressed("ctrl+q"):
-                if self.__debug_mode == True:
+                if self.__debug_mode:
                     self._log(
                         'You have leaved Debug mode \n\
                                 -> press "ctrl+d" to enter debug mode again'

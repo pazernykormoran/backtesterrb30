@@ -110,7 +110,7 @@ class BinanceDataSource(DataSource):
             if time_stop is None:
                 df = df_orig.iloc[:, [0, 1]]
                 milis = self._get_interval_miliseconds(interval)
-                if type(milis) != int or milis == 0:
+                if not isinstance(milis, int) or milis == 0:
                     self._log("Warning, binance cannot get close price")
                 else:
                     df_close = df_orig.iloc[-1:, [0, 4]]

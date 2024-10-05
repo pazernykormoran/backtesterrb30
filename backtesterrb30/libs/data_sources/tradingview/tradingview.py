@@ -49,15 +49,17 @@ class TradingView(DataSource):
     ) -> pd.DataFrame:
         self._log("Downloading tradingview data", instrument, interval)
         if time_stop is None:
-            df_orig = df[df["timestamp"] >= time_start]
-            df = df_orig.iloc[:, [0, 1]]
-            milis = self._get_interval_miliseconds(interval)
-            if type(milis) != int or milis == 0:
-                self._log("Warning, binance cannot get close price")
-            else:
-                df_close = df_orig.iloc[-1:, [0, 4]]
-                df_close.columns = df.columns
-            df = pd.concat([df, df_close])
+            pass
+            # TODO sprawdzic do czego byl ten kod
+            # df_orig = df[df["timestamp"] >= time_start]
+            # df = df_orig.iloc[:, [0, 1]]
+            # milis = self._get_interval_miliseconds(interval)
+            # if not isinstance(milis, int) or milis == 0:
+            #     self._log("Warning, binance cannot get close price")
+            # else:
+            #     df_close = df_orig.iloc[-1:, [0, 4]]
+            #     df_close.columns = df.columns
+            # df = pd.concat([df, df_close])
         else:
             df = self.__clip_df(time_start, time_stop, self.df_to_clip)
         return df

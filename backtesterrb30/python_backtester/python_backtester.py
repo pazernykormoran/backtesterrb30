@@ -107,13 +107,13 @@ class Backtester(Service):
         # plot trades chart
         # position: Position = self.positions[0]
         number_of_custom_charts = 0
-        if custom_charts != None:
+        if custom_charts is not None:
             number_of_custom_charts = len(
                 [ch for ch in custom_charts if not ch.display_on_price_chart]
             )
 
         chartable_symbols = [
-            sym for sym in self.data_schema.data if sym.display_chart_in_summary == True
+            sym for sym in self.data_schema.data if sym.display_chart_in_summary
         ]
         axs_number_used = 0
 
@@ -124,7 +124,7 @@ class Backtester(Service):
             sharex=True,
             figsize=(13, 13),
         )
-        if type(axs) != np.ndarray:
+        if not isinstance(axs, np.ndarray):
             # if only 1 axis its returned not in array
             axs = [axs]
         ax = None
@@ -132,7 +132,7 @@ class Backtester(Service):
         for sym in chartable_symbols:
             position: Position = sym.additional_properties["position"]
             # if position:
-            if self.__last_timestamp != None:
+            if self.__last_timestamp is not None:
                 main_chart = sym.additional_properties["chart_data_frame"].loc[
                     sym.additional_properties["chart_data_frame"]["timestamp"]
                     <= self.__last_timestamp
@@ -168,7 +168,7 @@ class Backtester(Service):
             axs_number_used += 1
 
         # plot custom charts
-        if custom_charts != None:
+        if custom_charts is not None:
             for i, ch in enumerate(custom_charts):
                 chart = [[c.timestamp, c.value] for c in ch.chart]
                 custom_df = pd.DataFrame(chart, columns=["timestamp", ch.name])
@@ -194,7 +194,7 @@ class Backtester(Service):
                     self.__axis_format(ax, ch.name)
                     if ch.log_scale:
                         ax.yaxis.set_major_formatter(ScalarFormatter())
-        if self.__chart_displayed == False:
+        if not self.__chart_displayed:
             plt.ion()
             plt.show(block=False)
             self.__chart_displayed = True
@@ -207,7 +207,7 @@ class Backtester(Service):
 
     async def __update_chart(self):
         while True:
-            if self.__fig != None:
+            if self.__fig is not None:
                 try:
                     self.__fig.canvas.draw()
                     self.__fig.canvas.flush_events()
@@ -237,7 +237,7 @@ class Backtester(Service):
         positions: List[Position] = [
             elem.additional_properties["position"] for elem in self.data_schema.data
         ]
-        positions = [pos for pos in positions if pos != None]
+        positions = [pos for pos in positions if pos is not None]
         for pos in positions:
             pos.position_outcome = (
                 -pos.buy_summary_cost
@@ -308,7 +308,9 @@ class Backtester(Service):
         # last_timestamp: Union[int, None] = None
     ):
         self._log("==========================")
-        self._log(("BREAKPOINT " if self.__last_timestamp != None else "") + "SUMMARY")
+        self._log(
+            ("BREAKPOINT " if self.__last_timestamp is not None else "") + "SUMMARY"
+        )
         finish_time = tm.time()
         time_of_backtest = finish_time - self.__backtest_start_time
         self._log("time of backtest:", round(time_of_backtest, 2), "[s]")
@@ -357,18 +359,14 @@ class Backtester(Service):
         for data_symbol, last_feed in zip(
             self.data_schema.data, self.__last_feed.last_feed[1:]
         ):
-            # print('updating pos')
-
             position: Position = data_symbol.additional_properties["position"]
             if position:
-                # print('upda')
-                # print(type(last_feed))
-                if type(last_feed) == float or type(last_feed) == int:
+                if isinstance(last_feed, (float, int)):
                     position.last_instrument_price = last_feed
                     continue
-                if type(last_feed) == list:
+                if isinstance(last_feed, list):
                     print("feed is 3d")
-                    if type(last_feed[0]) == float or type(last_feed[0]) == int:
+                    if isinstance(last_feed[0], (float, int)):
                         position.last_instrument_price = last_feed[0]
                     continue
 
