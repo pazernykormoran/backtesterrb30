@@ -1,14 +1,13 @@
 from datetime import datetime
 from random import randint
 import backtesterrb30 as bt
-import asyncio
 
 class Model(bt.Engine):
     
     def __init__(self, *args):
         super().__init__(*args)
         self.counter = 0
-        self.set_buffer_length(100)
+        self.set_buffer_length(10)
 
     #override
     async def on_feed(self, data: list):
@@ -39,19 +38,20 @@ class Data:
             {
                 'symbol': 'bitcoin',
                 'historical_data_source': bt.HISTORICAL_SOURCES.coingecko,
-                'backtest_date_start': datetime(2019,5,1),
-                'backtest_date_stop': datetime(2022,8,1),
+                'backtest_date_start': datetime(2024,1,1),
+                'backtest_date_stop': datetime(2024,8,1),
                 'interval': bt.HISTORICAL_SOURCES.coingecko.INTERVALS.day4,
             },
             {
                 'symbol': 'ethereum',
                 'historical_data_source': bt.HISTORICAL_SOURCES.coingecko,
-                'backtest_date_start': datetime(2019,5,1),
-                'backtest_date_stop': datetime(2022,8,1),
+                'backtest_date_start': datetime(2024,1,1),
+                'backtest_date_stop': datetime(2024,8,1),
                 'interval': bt.HISTORICAL_SOURCES.coingecko.INTERVALS.day4,
             }
         ]
     }
 
 strategy = bt.Strategy(Model, TradeExecutor, Data)
-strategy.run()
+def main():
+    strategy.run()

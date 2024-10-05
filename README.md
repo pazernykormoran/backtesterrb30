@@ -6,13 +6,14 @@ Backtester-RB30 is a framework for stock market analysis.
 
 ## Installation
 
-> pip3 install backtesterrb30
+> pip install backtesterrb30
 
 ## Quick start
 
 ### Basic example
 Basic strategy example making random trades.
-> python3 examples/basic_example/basic_example.py
+> poetry install
+> poetry run basic_example
 
 ### Advanced example
 More advanced example with debug mode enabled, live debug code reloads  and more data sources with not equal intervals. 
