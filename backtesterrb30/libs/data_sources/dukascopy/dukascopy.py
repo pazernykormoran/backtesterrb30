@@ -149,7 +149,7 @@ class DukascopyDataSource(DataSource):
         cache_path = join(here, "cache_dukascopy")
         try:
             rmtree(cache_path)
-        except:
+        except Exception:
             pass
         string_params = [
             " -i " + instrument,
