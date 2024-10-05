@@ -23,7 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
           poetry self add poetry-dynamic-versioning
-          poetry install
+          poetry install --with dev
 
       - name: Run linter
-        run: poetry run poe lint
+        run: poetry poe lint
