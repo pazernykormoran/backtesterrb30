@@ -165,7 +165,10 @@ class DukascopyDataSource(DataSource):
         command = "npx --yes dukascopy-node"
         for param in string_params:
             command += param
-        system(command)
+        result = system(command)
+        if result != 0:
+            self._log("Node is not installed?")
+            raise Exception("Command not found or failed to execute: " + command)
         name_of_created_file = next(walk(cache_path), (None, None, []))[2][0]
         df = pd.read_csv(
             join(cache_path, name_of_created_file), index_col=None, header=None
