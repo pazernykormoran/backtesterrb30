@@ -1,6 +1,6 @@
 from datetime import datetime
 from random import randint
-import backtesterRB30 as bt
+import backtesterrb30 as bt
 import asyncio
 
 class Model(bt.Engine):

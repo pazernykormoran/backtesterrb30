@@ -5,18 +5,18 @@ from os.path import join
 import shutil
 from typing import Union
 import pandas as pd
-from backtesterRB30.libs.data_sources.data_source_base import DataSource
-from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterrb30.libs.data_sources.data_source_base import DataSource
+from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from os import getenv, getcwd
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.utils.singleton import singleton
+from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.utils.singleton import singleton
 import importlib.resources
 import json
 from enum import Enum
-from backtesterRB30.libs.utils.timestamps import timestamp_to_datetime
+from backtesterrb30.libs.utils.timestamps import timestamp_to_datetime
 from shutil import rmtree
 
-# from backtesterRB30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
+# from backtesterrb30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
 
 class DUKASCOPY_INTERVALS_2(str, Enum):
     tick: str='tick'
@@ -64,7 +64,7 @@ class DukascopyDataSource(DataSource):
         from_datetime_timestamp = int(round(datetime.timestamp(data.backtest_date_start) * 1000))
         # f = open('temporary_ducascopy_list.json')
         # instrument_list = load(f)['instruments']
-        with importlib.resources.open_text("backtesterRB30", "temporary_ducascopy_list.json") as file:
+        with importlib.resources.open_text("backtesterrb30", "temporary_ducascopy_list.json") as file:
             instrument_list = json.load(file)['instruments']
         #validate if instrument exists:
         if data.symbol.upper() not in [v['historical_filename'] for k, v in instrument_list.items()]:

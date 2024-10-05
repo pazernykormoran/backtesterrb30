@@ -1,6 +1,6 @@
 from typing import Optional, Any
 from datetime import datetime
-from backtesterRB30.libs.interfaces.utils.custom_base_model import CustomBaseModel
+from backtesterrb30.libs.interfaces.utils.custom_base_model import CustomBaseModel
 from enum import Enum
 
 class DataSymbol(CustomBaseModel):

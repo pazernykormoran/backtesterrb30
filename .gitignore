@@ -12,7 +12,7 @@ package.json
 Strategies-RB30
 build
 dist
-backtesterRB30.egg-info
+backtesterrb30.egg-info
 env_backtester
 run.sh
 serve.py

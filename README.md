@@ -6,7 +6,7 @@ Backtester-RB30 is a framework for stock market analysis.
 
 ## Installation
 
-> pip3 install backtesterRB30
+> pip3 install backtesterrb30
 
 ## Quick start
 
@@ -37,7 +37,7 @@ Avaliable data sources:
 
 Dictionary must fit to bt.DataSchema interface
 ~~~
-import backtesterRB30 as bt
+import backtesterrb30 as bt
 from datetime import datetime
 
 class Data:
@@ -74,12 +74,12 @@ Number of elements in arrays (buffer length) are being defined by set_buffer_len
 You can use "_trigger_event()" function to send any message to executor module.
 More about avaliable methods: 
 
-https://pazernykormoran.github.io/Backtester-RB30/backtesterRB30.python_engine.html
+https://pazernykormoran.github.io/Backtester-RB30/backtesterrb30.python_engine.html
 
 Below example sending messages with random values:
 
 ~~~
-import backtesterRB30 as bt
+import backtesterrb30 as bt
 from random import randint
 
 class Engine(bt.Engine):
@@ -106,9 +106,9 @@ Executor class manages transactions and current money level. You can use "trade(
 
 More about avaliable methods:
 
-https://pazernykormoran.github.io/Backtester-RB30/backtesterRB30.python_executor.html
+https://pazernykormoran.github.io/Backtester-RB30/backtesterrb30.python_executor.html
 ~~~
-import backtesterRB30 as bt
+import backtesterrb30 as bt
 from random import randint
 
 class TradeExecutor(bt.Executor):
@@ -186,7 +186,7 @@ trading_view_password='value'
 ## Usage of debug mode
 Debug mode is only avaliable with root privilages because of keyboard package usage. To run your strategy with allowed debugging , provide debug parameter to Strategy class constructor.
 ~~~
-import backtesterRB30 as bt
+import backtesterrb30 as bt
 strategy = bt.Strategy(Engine, TradeExecutor, Data, debug=True)
 strategy.run()
 ~~~

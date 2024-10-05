@@ -3,8 +3,8 @@ requires = ["poetry-core >= 1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "backtesterRB30"
-version = "0.1.4"
+name = "backtester-rb30"
+version = "0.1.5"
 description = "Backtesting and data loading engine"
 license = "Unlicense"
 authors = [
@@ -57,9 +57,9 @@ ruff = "^0.6.8"
 strategy1 = "basic_example:main"
 
 [tool.poe.tasks]
-docs = "pydoctor --make-html backtesterRB30"
-format = "ruff format backtesterRB30 tests"
-lint = "ruff check backtesterRB30 tests"
+docs = "pydoctor --make-html backtesterrb30"
+format = "ruff format backtesterrb30 tests"
+lint = "ruff check backtesterrb30 tests"
 test = "pytest -v --cov=my_fibonacci"
 
 [tool.coverage.report]

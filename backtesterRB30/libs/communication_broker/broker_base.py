@@ -3,7 +3,7 @@ from asyncio import AbstractEventLoop
 from typing import Callable
 from datetime import datetime
 
-from backtesterRB30.libs.utils.list_of_services import SERVICES
+from backtesterrb30.libs.utils.list_of_services import SERVICES
 
 class BrokerBase(ABC):
 

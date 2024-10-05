@@ -1,13 +1,13 @@
-backtesterRB30.python\_engine package
+backtesterrb30.python\_engine package
 =====================================
 
 .. Submodules
 .. ----------
 
-backtesterRB30.python\_engine.engine module
+backtesterrb30.python\_engine.engine module
 -------------------------------------------
 
-.. automodule:: backtesterRB30.python_engine.engine
+.. automodule:: backtesterrb30.python_engine.engine
    :members:
    :undoc-members:
    :show-inheritance:
@@ -16,7 +16,7 @@ backtesterRB30.python\_engine.engine module
 .. Module contents
 .. ---------------
 
-.. .. automodule:: backtesterRB30.python_engine
+.. .. automodule:: backtesterrb30.python_engine
 ..    :members:
 ..    :undoc-members:
 ..    :show-inheritance:

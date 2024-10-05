@@ -1,13 +1,13 @@
 from typing import Union
 import pandas as pd
 from os.path import join
-from backtesterRB30.libs.data_sources.data_source_base import DataSource
-from backtesterRB30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
+from backtesterrb30.libs.data_sources.data_source_base import DataSource
+from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import InstrumentFile
 from os import getenv
-from backtesterRB30.libs.interfaces.utils.data_symbol import DataSymbol
-from backtesterRB30.libs.data_sources.tradingview.downloader import Interval as TRADINGVIEW_INTERVALS
-from backtesterRB30.libs.data_sources.tradingview.downloader import TradingviewDownloader
-from backtesterRB30.libs.utils.timestamps import datetime_to_timestamp
+from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.data_sources.tradingview.downloader import Interval as TRADINGVIEW_INTERVALS
+from backtesterrb30.libs.data_sources.tradingview.downloader import TradingviewDownloader
+from backtesterrb30.libs.utils.timestamps import datetime_to_timestamp
 
 
 class TradingView(DataSource):
