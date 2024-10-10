@@ -52,6 +52,7 @@ poethepoet = "^0.29.0"
 pytest-cov = "^5.0.0"
 pydoctor = "^24.3.3"
 ruff = "^0.6.8"
+ipykernel = "^6.29.5"
 
 [tool.poetry.scripts]
 strategy1 = "strategies.basic_example:main"

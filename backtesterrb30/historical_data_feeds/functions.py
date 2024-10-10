@@ -12,6 +12,7 @@ from backtesterrb30.libs.interfaces.historical_data_feeds.instrument_file import
 )
 from backtesterrb30.libs.interfaces.utils.data_schema import DataSchema
 from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.utils.timestamps import datetime_to_timestamp
 
 
 def synchronize_dataframes(list_of_dfs: List[dict], last_row: list) -> List[list]:
@@ -82,13 +83,14 @@ def get_instrument_files(symbol: DataSymbol) -> List[str]:
                 )
             )
 
-        instrument_files.append(
-            InstrumentFile.from_params(
-                *params_touple,
-                datetime(symbol.backtest_date_stop.year, 1, 1),
-                symbol.backtest_date_stop,
+        if datetime_to_timestamp(symbol.backtest_date_stop) != datetime_to_timestamp(datetime(symbol.backtest_date_stop.year, 1, 1)):
+            instrument_files.append(
+                InstrumentFile.from_params(
+                    *params_touple,
+                    datetime(symbol.backtest_date_stop.year, 1, 1),
+                    symbol.backtest_date_stop,
+                )
             )
-        )
     else:
         instrument_files.append(
             InstrumentFile.from_params(
