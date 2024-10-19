@@ -1,8 +1,5 @@
 import asyncio
 import time
-
-from appdirs import user_cache_dir
-
 from backtesterrb30.historical_data_feeds.functions import load_data_frame_with_dfs
 from backtesterrb30.libs.communication_broker.broker_base import BrokerBase
 from backtesterrb30.libs.data_sources.data_source_base import DataSource
@@ -17,7 +14,6 @@ from backtesterrb30.libs.utils.service import Service
 class LiveDataFeeds(Service):
     """Python Live data provider"""
 
-    downloaded_data_path = user_cache_dir("rb30_cache")
     _broker: BrokerBase
 
     def __init__(self, config: dict, data_schema: DataSchema, loop=None, logger=print):

@@ -4,8 +4,6 @@ from os import listdir, makedirs, path
 from os.path import isfile, join
 from typing import List
 
-from appdirs import user_cache_dir
-
 from backtesterrb30.historical_data_feeds.functions import (
     get_instrument_files,
     load_data_frame_ticks_2,
@@ -26,7 +24,6 @@ from backtesterrb30.libs.utils.service import Service
 
 
 class HistoricalDataFeeds(Service):
-    downloaded_data_path = user_cache_dir("rb30_cache")
     _broker: BrokerBase
 
     def __init__(
@@ -52,7 +49,7 @@ class HistoricalDataFeeds(Service):
         self.__historical_downloader = HistoricalDownloader(
             self.__data_schema,
             self.__historical_sources_array,
-            self.downloaded_data_path,
+            self.config.cache_dir,
             self._log,
         )
 
@@ -143,7 +140,7 @@ class HistoricalDataFeeds(Service):
                     data_part = load_data_frame_ticks_2(
                         self.__data_schema,
                         self.__columns,
-                        self.downloaded_data_path,
+                        self.config.cache_dir,
                         last_row,
                         one_year_array,
                     )
@@ -170,8 +167,8 @@ class HistoricalDataFeeds(Service):
             return False
         files_in_directory = [
             f
-            for f in listdir(self.downloaded_data_path)
-            if isfile(join(self.downloaded_data_path, f))
+            for f in listdir(self.config.cache_dir)
+            if isfile(join(self.config.cache_dir, f))
         ]
         data_to_download = list(
             set([f.to_filename() for f in files_to_download]) - set(files_in_directory)
@@ -179,8 +176,8 @@ class HistoricalDataFeeds(Service):
         return data_to_download == []
 
     def __validate_downloaded_data_folder(self):
-        if not path.exists(self.downloaded_data_path):
-            makedirs(self.downloaded_data_path)
+        if not path.exists(self.config.cache_dir):
+            makedirs(self.config.cache_dir)
 
     def __prepare_loading_data_structure_2(self) -> dict:
         files_collection = {}
@@ -205,165 +202,3 @@ class HistoricalDataFeeds(Service):
 
     async def __engine_ready_response_event(self):
         self.__engine_ready = True
-
-    # def __map_raw_to_instruments(self, raw: list, instruments: list):
-    #     last_raw_obj = {}
-    #     if len(raw) != len(instruments):
-    #         raise Exception('Error in map_raw_to_instruments. Lengths of raw and list of instruments are not equal')
-    #     for value, instrument in zip(raw, instruments):
-    #         last_raw_obj[instrument] = value
-    #     return last_raw_obj
-
-    # def __prepare_dataframes_to_synchronize_2(self, downloaded_data_path: str,
-    #                 last_row: list, files_array: List[InstrumentFile]) -> List[dict]:
-    #     list_of_dfs = []
-    #     for data_element in self.__data_schema.data:
-    #         columns = ['timestamp', data_element.symbol]
-    #         file_name = 'none'
-    #         actual_raw = [0,0]
-    #         prev_raw = [0,0]
-    #         for element in files_array:
-    #             if data_element.symbol == element.instrument:
-    #                 file_name = element.to_filename()
-    #         if file_name == 'none':
-    #             # No file in this period for this instrument. Set empty dataframe.
-    #             df = pd.DataFrame([], columns=columns)
-    #         else:
-    #             # File exists. Load dataframe.
-    #             df = pd.read_csv(join(downloaded_data_path, file_name), index_col=None, header=None, names=columns)
-    #             # append last raw it if exists
-    #             if last_row != []:
-    #                 # self._log('appending last row')
-    #                 last_raw_mapped = self.__map_raw_to_instruments(last_row, self.__columns)
-    #                 prev_raw[0] = last_raw_mapped["timestamp"]
-    #                 prev_raw[1] = last_raw_mapped[data_element.symbol]
-    #         obj = {
-    #             "trigger_feed": data_element.trigger_feed,
-    #             "rows_iterator": df.iterrows(),
-    #             "actual_raw": actual_raw,
-    #             "prev_raw": prev_raw,
-    #             "consumed": False
-    #         }
-    #         #prepare to load:
-    #         if obj['actual_raw'][0] == 0:
-    #             try:
-    #                 i, v = next(obj['rows_iterator'])
-    #                 obj['actual_raw'] = list(v)
-    #             except StopIteration:
-    #                 obj['consumed'] = True
-    #         list_of_dfs.append(obj)
-    #     return list_of_dfs
-
-    # def __load_data_frame_ticks_2(self, downloaded_data_path: str, last_row: list, files_array: List[InstrumentFile]) -> List[list]:
-    #     """
-    #     Function is geting files array from one period that are going to be loaded.
-    #     Function returns synchronized data in list of lists which are ready to send to engine.
-    #     """
-    #     list_of_dfs = self.__prepare_dataframes_to_synchronize_2(downloaded_data_path, last_row, files_array)
-    #     rows = synchronize_dataframes(list_of_dfs, last_row)
-    #     return rows
-
-    # def __get_data_to_download(self, data_schema: DataSchema):
-    #     for data_symbol in data_schema.data:
-    #         data_symbol.additional_properties['files_to_download']: List[InstrumentFile] = []
-    #         data_symbol.additional_properties['files_to_download'] = self.__check_symbol_data_exists(data_symbol)
-    #         if self.__data_to_download_2 is None:
-    #             self.__data_to_download_2 = []
-    #         self.__data_to_download_2 = self.__data_to_download_2 + data_symbol.additional_properties['files_to_download']
-
-    # def __create_downloading_clients(self, historical_sources_array: list, data_schema: DataSchema, data_sources: dict):
-    #     for source in historical_sources_array:
-    #         if source in [data.historical_data_source for data in data_schema.data if \
-    #                 data.additional_properties['files_to_download'] != []]:
-    #             data_sources[source]: DataSource = getattr(HISTORICAL_SOURCES, source)(self._log)
-
-    # def __validate_symbols_to_download(self,data_schema: DataSchema, loop: asyncio.AbstractEventLoop):
-    #     self._log('validating symbols before download')
-    #     for symbol in data_schema.data:
-    #         if symbol.additional_properties['files_to_download'] != []:
-    #             data_source_client: DataSource = self.__get_data_source_client(symbol.historical_data_source)
-    #             res = loop.run_until_complete(data_source_client.validate_instrument(symbol))
-    #             if not res:
-    #                 raise Exception('Error while validation symbol.')
-
-    # def __download_prepared_data(self, data_schema: DataSchema, loop: asyncio.AbstractEventLoop):
-    #     for symbol in data_schema.data:
-    #         if symbol.additional_properties['files_to_download'] != []:
-    #             loop.create_task(self.__download_symbol_data(symbol))
-
-    # def __get_data_source_client(self, historical_source: str) -> DataSource:
-    #     client = self.__data_sources[historical_source]
-    #     if not client:
-    #             self._log('Error, no registered source client')
-    #             self.__stop_all_services()
-    #     return client
-
-    # def __check_symbol_data_exists(self, data_symbol: DataSymbol) -> List[InstrumentFile]:
-    #     """
-    #     data scheme
-    #     <symbol>__<source>__<interval>__<date-from>__<date-to>
-    #     all instruments are downloaded in year files.
-    #     """
-    #     files: List[InstrumentFile] = get_instrument_files(data_symbol)
-    #     # self._log('files to download "'+str(data_symbol.symbol)+'" :', files)
-    #     files_in_directory = [f for f in listdir(self.downloaded_data_path) if isfile(join(self.downloaded_data_path, f))]
-    #     files_to_download = list(set([f.to_filename() for f in files]) - set(files_in_directory))
-    #     files_to_download = [InstrumentFile.from_filename(file) for file in files_to_download]
-    #     return files_to_download
-
-    # async def __download_symbol_data(self, symbol: DataSymbol):
-    #     files_to_download: List[InstrumentFile] = symbol.additional_properties['files_to_download']
-    #     await self.__download_symbol_files(files_to_download, symbol.historical_data_source)
-
-    # async def __download_symbol_files(self, files: List[InstrumentFile], source: str):
-    #     data_source_client: DataSource = self.__get_data_source_client(source)
-    #     for file in files:
-    #         await data_source_client.download_instrument(self.downloaded_data_path, file)
-
-    # def __validate_data_schema_instruments(self, data_symbol_array: List[DataSymbol], loop: asyncio.AbstractEventLoop):
-    #     self._log('Data_schema validation')
-    #     #check for duplicates:
-    #     seen = []
-    #     for x in data_symbol_array:
-    #         data = str(x.symbol)+str(x.historical_data_source)
-    #         if data in seen:
-    #             raise Exception('Duplicate data symbols')
-    #         else:
-    #             seen.append(data)
-    #     #check other
-    #     number_of_trigger_feeders = 0
-    #     for data in data_symbol_array:
-    #         if data.backtest_date_start is None:
-    #             raise Exception('Error. You must provide "backtest_date_start" field in data_schema file while you are backtesting your strategy')
-    #         if data.backtest_date_start >= data.backtest_date_stop:
-    #             raise Exception('Error. You have provided "backtest_date_start" is equal or bigger than "backtest_date_start" ')
-    #         if [data.backtest_date_start.hour,
-    #             data.backtest_date_start.minute,
-    #             data.backtest_date_start.second,
-    #             data.backtest_date_start.microsecond] != [0,0,0,0]:
-    #             raise Exception('Error. Provide your "backtest_date_start" and "backtest_date_stop" in a day accuracy like: "backtest_date_start": datetime(2020,6,1)')
-    #         if data.historical_data_source not in self.__historical_sources_array:
-    #             raise Exception('Error. This historical_data_source not implemented yet')
-    #         if data.trigger_feed == True:
-    #             number_of_trigger_feeders += 1
-    #     if number_of_trigger_feeders < 1:
-    #         raise Exception('Error. Your "data_schema.py" must have at least one instrument that triggers feeds')
-
-    # # override
-    # def _loop(self):
-    #     loop = asyncio.get_event_loop()
-    #     self._create_listeners(loop)
-    #     self.__validate_downloaded_data_folder()
-    #     if self.config.backtest:
-    #         self.__get_data_to_download(self.__data_schema)
-    #         self.__create_downloading_clients(self.__historical_sources_array, self.__data_schema, self.__data_sources)
-    #         self.__validate_data_schema_instruments(self.__data_schema.data, loop)
-    #         self.__validate_symbols_to_download(self.__data_schema, loop)
-    #         self.__download_prepared_data(self.__data_schema, loop)
-
-    #         data_parts = self.__prepare_loading_data_structure_2()
-    #         loop.create_task(self.__historical_data_loop_ticks(data_parts))
-    #     else:
-    #         self._log('backtest is off')
-    #     loop.run_forever()
-    #     loop.close()

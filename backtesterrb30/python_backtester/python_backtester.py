@@ -7,7 +7,6 @@ from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from appdirs import user_cache_dir
 from matplotlib.ticker import ScalarFormatter
 
 from backtesterrb30.libs.communication_broker.broker_base import BrokerBase
@@ -30,7 +29,6 @@ from backtesterrb30.libs.utils.service import Service
 
 
 class Backtester(Service):
-    downloaded_data_path = user_cache_dir("rb30_cache")
     _broker: BrokerBase
 
     def __init__(
@@ -385,7 +383,7 @@ class Backtester(Service):
             dfs = []
             for file in element.files:
                 df = pd.read_csv(
-                    join(self.downloaded_data_path, file.to_filename()),
+                    join(self.config.cache_dir, file.to_filename()),
                     index_col=None,
                     header=None,
                     names=["timestamp", "price"],
