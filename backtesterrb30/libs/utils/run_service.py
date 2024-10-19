@@ -3,6 +3,7 @@ from backtesterrb30.libs.communication_broker.zmq_broker import ZMQ
 from backtesterrb30.libs.utils.config_validator import validate_config
 from backtesterrb30.libs.utils.module_loaders import import_data_schema
 from backtesterrb30.libs.utils.service import Service
+from backtesterrb30.libs.utils.user_cache import configure_cache_dir
 
 
 def run_service(microservice_name: str, service_class: Service):
@@ -12,6 +13,7 @@ def run_service(microservice_name: str, service_class: Service):
     strategy_file = os.getenv("STRATEGY_FILE")
     data_class_name = os.getenv("DATA_CLASS_NAME")
     backtest_state = os.getenv("backtest_state")
+    skip_cache = os.getenv("skip_cache")
     from backtesterrb30.libs.interfaces.utils.config import Config
 
     config = {
@@ -22,6 +24,7 @@ def run_service(microservice_name: str, service_class: Service):
         "backtest": True if backtest_state == "true" else False,
         "debug": True,
         "strategy_path": strategy_path,
+        "cache_dir": configure_cache_dir(skip_cache),
     }
     data_class = import_data_schema(strategy_path, strategy_file, data_class_name)
     data_schema = validate_config(data_class.data)

@@ -83,7 +83,9 @@ def get_instrument_files(symbol: DataSymbol) -> List[str]:
                 )
             )
 
-        if datetime_to_timestamp(symbol.backtest_date_stop) != datetime_to_timestamp(datetime(symbol.backtest_date_stop.year, 1, 1)):
+        if datetime_to_timestamp(symbol.backtest_date_stop) != datetime_to_timestamp(
+            datetime(symbol.backtest_date_stop.year, 1, 1)
+        ):
             instrument_files.append(
                 InstrumentFile.from_params(
                     *params_touple,

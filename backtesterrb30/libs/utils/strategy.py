@@ -12,6 +12,7 @@ from backtesterrb30.libs.communication_broker.asyncio_broker import AsyncioBroke
 from backtesterrb30.libs.interfaces.utils.config import Config
 from backtesterrb30.libs.utils.list_of_services import SERVICES
 from backtesterrb30.libs.utils.service import Service
+from backtesterrb30.libs.utils.user_cache import configure_cache_dir
 from backtesterrb30.live_data_feeds.live_data_feeds import LiveDataFeeds
 from backtesterrb30.python_backtester.python_backtester import Backtester
 from backtesterrb30.python_engine.engine import Engine
@@ -23,7 +24,13 @@ load_dotenv(".env")
 
 class Strategy:
     def __init__(
-        self, model: Engine, executor: Executor, data: dict, backtest=True, debug=False
+        self,
+        model: Engine,
+        executor: Executor,
+        data: dict,
+        backtest=True,
+        debug=False,
+        skip_cache=False,
     ):
         if debug and platform.system() != "Windows":
             if os.geteuid() != 0:
@@ -36,7 +43,7 @@ class Strategy:
         self.__model = model
         self.__executor = executor
         self.__data = data
-
+        self.__skip_cache = skip_cache
         self.__backtest_state = backtest
         self.__model_class_name = str(self.__model.__name__)
         self.__executor_class_name = str(self.__executor.__name__)
@@ -63,6 +70,7 @@ class Strategy:
             "backtest": backtest_state,
             "strategy_path": self.__strategy_path,
             "debug": self.__debug,
+            "cache_dir": configure_cache_dir(self.__skip_cache),
         }
         service: Service = service_class(Config(**config), data_schema, loop)
         logger = service.get_logger()
