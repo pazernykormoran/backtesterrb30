@@ -30,16 +30,17 @@ class TradingView(DataSource):
     # override
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         symbol, exchange, fut_contract = self.get_symbol_params(data.symbol)
-        self.df_to_clip[data.symbol] = await self.client.get_hist(
+        downloaded_data = await self.client.get_hist(
             symbol,
             datetime_to_timestamp(data.backtest_date_start),
             exchange,
             data.interval,
             fut_contract,
         )
+        self.df_to_clip[data.symbol] = downloaded_data.iloc[:, [1, 2]]
         if data.symbol not in self.df_to_clip or self.df_to_clip[data.symbol].empty:
             return False
-        clipped_open = self.df_to_clip[data.symbol].iloc[:-1, 2]
+        clipped_open = self.df_to_clip[data.symbol].iloc[:, 1]
         if clipped_open.nunique() == 1:
             return False
         return True
@@ -76,7 +77,7 @@ class TradingView(DataSource):
     def __clip_df(self, time_start: int, time_stop: int, df: pd.DataFrame):
         df = df[df["timestamp"] >= time_start]
         df = df[df["timestamp"] <= time_stop]
-        df = df.iloc[:-1, [1, 2]]
+        df = df.iloc[:-1]
         return df
 
     @staticmethod
