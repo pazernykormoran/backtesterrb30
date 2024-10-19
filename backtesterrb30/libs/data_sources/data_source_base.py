@@ -27,6 +27,10 @@ class DataSource:
             raise Exception(
                 "Bad shape of returned dataframe in data source " + self.NAME
             )
+        if df.iloc[:, 1].nunique() == 1:
+            raise Exception(
+                "All values in dataframe are the same in data source " + self.NAME
+            )
         return True
 
     async def download_instrument(

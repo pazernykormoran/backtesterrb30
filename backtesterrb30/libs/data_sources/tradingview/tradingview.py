@@ -25,18 +25,24 @@ class TradingView(DataSource):
         if trading_view_user is None or trading_view_password is None:
             raise Exception(self.NAME + " No authorization heys provided")
         self.client = TradingviewDownloader(trading_view_user, trading_view_password)
-        self.df_to_clip = None
+        self.df_to_clip: dict[str, pd.DataFrame] = {}
 
     # override
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         symbol, exchange, fut_contract = self.get_symbol_params(data.symbol)
-        self.df_to_clip: pd.DataFrame = await self.client.get_hist(
+        downloaded_data = await self.client.get_hist(
             symbol,
             datetime_to_timestamp(data.backtest_date_start),
             exchange,
             data.interval,
             fut_contract,
         )
+        self.df_to_clip[data.symbol] = downloaded_data.iloc[:, [1, 2]]
+        if data.symbol not in self.df_to_clip or self.df_to_clip[data.symbol].empty:
+            return False
+        clipped_open = self.df_to_clip[data.symbol].iloc[:, 1]
+        if clipped_open.nunique() == 1:
+            return False
         return True
 
     # override
@@ -48,21 +54,7 @@ class TradingView(DataSource):
         time_stop: Union[int, None],
     ) -> pd.DataFrame:
         self._log("Downloading tradingview data", instrument, interval)
-        if time_stop is None:
-            pass
-            # TODO sprawdzic do czego byl ten kod
-            # df_orig = df[df["timestamp"] >= time_start]
-            # df = df_orig.iloc[:, [0, 1]]
-            # milis = self._get_interval_miliseconds(interval)
-            # if not isinstance(milis, int) or milis == 0:
-            #     self._log("Warning, binance cannot get close price")
-            # else:
-            #     df_close = df_orig.iloc[-1:, [0, 4]]
-            #     df_close.columns = df.columns
-            # df = pd.concat([df, df_close])
-        else:
-            df = self.__clip_df(time_start, time_stop, self.df_to_clip)
-        return df
+        return self.__clip_df(time_start, time_stop, self.df_to_clip[instrument])
 
     def _get_interval_miliseconds(self, interval: str) -> Union[int, None]:
         interval_map = {
@@ -85,7 +77,7 @@ class TradingView(DataSource):
     def __clip_df(self, time_start: int, time_stop: int, df: pd.DataFrame):
         df = df[df["timestamp"] >= time_start]
         df = df[df["timestamp"] <= time_stop]
-        df = df.iloc[:-1, [1, 2]]
+        df = df.iloc[:-1]
         return df
 
     @staticmethod

@@ -76,7 +76,7 @@ class HistoricalDownloader:
     ):
         for symbol in data_schema.data:
             if symbol.additional_properties["files_to_download"] != []:
-                loop.create_task(self.__download_symbol_data(symbol))
+                loop.run_until_complete(self.__download_symbol_data(symbol))
 
     def __validate_data_schema_instruments(
         self, data_symbol_array: List[DataSymbol], loop: asyncio.AbstractEventLoop
