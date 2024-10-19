@@ -12,6 +12,7 @@ from backtesterrb30.libs.data_sources.tradingview.downloader import (
 )
 from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
 from backtesterrb30.libs.utils.timestamps import datetime_to_timestamp
+import time
 
 
 class TradingView(DataSource):
@@ -30,6 +31,13 @@ class TradingView(DataSource):
     # override
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
         symbol, exchange, fut_contract = self.get_symbol_params(data.symbol)
+        self._log(
+            "Downloading tradingview data",
+            symbol,
+            exchange,
+            fut_contract,
+            data.interval,
+        )
         downloaded_data = await self.client.get_hist(
             symbol,
             datetime_to_timestamp(data.backtest_date_start),
@@ -43,6 +51,7 @@ class TradingView(DataSource):
         clipped_open = self.df_to_clip[data.symbol].iloc[:, 1]
         if clipped_open.nunique() == 1:
             return False
+        time.sleep(1)
         return True
 
     # override
@@ -53,7 +62,7 @@ class TradingView(DataSource):
         time_start: int,
         time_stop: Union[int, None],
     ) -> pd.DataFrame:
-        self._log("Downloading tradingview data", instrument, interval)
+        self._log("Clip tradingview data", instrument, interval)
         return self.__clip_df(time_start, time_stop, self.df_to_clip[instrument])
 
     def _get_interval_miliseconds(self, interval: str) -> Union[int, None]:
