@@ -30,7 +30,7 @@ class HistoricalDataFeeds(Service):
         self, config: Config, data_schema: DataSchema, loop=None, logger=print
     ):
         super().__init__(config, logger)
-        self._log("Cache directory", self.config.cache_dir)
+        self._log("Cache directory", config.cache_dir)
         self.config: Config = config
         self.__loop = loop
         self.__custom_event_loop = False
