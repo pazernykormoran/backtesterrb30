@@ -1,17 +1,18 @@
-import importlib.resources
-import json
 from datetime import datetime
 from enum import Enum
 from os import getcwd, remove, system, walk
 from os.path import join
 from shutil import rmtree
 from typing import Union
+from dateutil import parser
+
 
 import pandas as pd
 
 from backtesterrb30.libs.data_sources.data_source_base import DataSource
 from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
 from backtesterrb30.libs.utils.timestamps import timestamp_to_datetime
+import requests
 
 # from backtesterrb30.historical_data_feeds.modules.utils import validate_dataframe_timestamps
 
@@ -28,12 +29,39 @@ class DUKASCOPY_INTERVALS_2(str, Enum):
     month: str = "month"
 
 
+def get_data_start_for_interval(
+    interval: DUKASCOPY_INTERVALS_2, metadata: dict
+) -> datetime:
+    if interval == DUKASCOPY_INTERVALS_2.tick:
+        return parser.isoparse(metadata["startHourForTicks"])
+    elif interval in {
+        DUKASCOPY_INTERVALS_2.minute,
+        DUKASCOPY_INTERVALS_2.minute5,
+        DUKASCOPY_INTERVALS_2.minute15,
+        DUKASCOPY_INTERVALS_2.minute30,
+    }:
+        return parser.isoparse(metadata["startDayForMinuteCandles"])
+    elif interval in {DUKASCOPY_INTERVALS_2.hour, DUKASCOPY_INTERVALS_2.hour4}:
+        return parser.isoparse(metadata["startMonthForHourlyCandles"])
+    elif interval in {DUKASCOPY_INTERVALS_2.day, DUKASCOPY_INTERVALS_2.month}:
+        return parser.isoparse(metadata["startYearForDailyCandles"])
+    else:
+        raise ValueError(f"Unsupported interval: {interval}")
+
+
+def load_metadata():
+    url = "https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/master/src/utils/instrument-meta-data/generated/instrument-meta-data.json"
+    response = requests.get(url)
+    return response.json()
+
+
 class DukascopyDataSource(DataSource):
     INTERVALS = DUKASCOPY_INTERVALS_2
     NAME = "dukascopy"
 
     def __init__(self, logger=print):
         super().__init__(False, logger)
+        self.instruments_metadata = load_metadata()
 
     def __get_ducascopy_interval(self, interval: str) -> str:
         if interval == "tick":
@@ -72,39 +100,16 @@ class DukascopyDataSource(DataSource):
             return None
 
     async def _validate_instrument_data(self, data: DataSymbol) -> bool:
-        # https://raw.githubusercontent.com/Leo4815162342/dukascopy-node/master/src/utils/instrument-meta-data/generated/raw-meta-data-2022-04-23.json
-        # response = requests.get("http://api.open-notify.org/astros.json")
-        from_datetime_timestamp = int(
-            round(datetime.timestamp(data.backtest_date_start) * 1000)
-        )
-        # f = open('temporary_ducascopy_list.json')
-        # instrument_list = load(f)['instruments']
-        with importlib.resources.open_text(
-            "backtesterrb30", "temporary_ducascopy_list.json"
-        ) as file:
-            instrument_list = json.load(file)["instruments"]
-        # validate if instrument exists:
-        if data.symbol.upper() not in [
-            v["historical_filename"] for k, v in instrument_list.items()
-        ]:
+        metadata = self.instruments_metadata[data.symbol]
+        if metadata is None:
             self._log(
                 'Error. Instrument "' + data.symbol + '" does not exists on dukascopy.'
             )
             return False
-
-        # validate it timestamps perios is right:
-        for k, v in instrument_list.items():
-            if v["historical_filename"] == data.symbol.upper():
-                first_timestamp = int(v["history_start_day"])
-                if first_timestamp > from_datetime_timestamp:
-                    print(
-                        "Error. First avaliable date of ",
-                        data.symbol,
-                        "is",
-                        datetime.fromtimestamp(first_timestamp / 1000.0),
-                    )
-                    return False
-
+        start_date = get_data_start_for_interval(data.interval, metadata)
+        if start_date > data.backtest_date_start:
+            self._log("Error. First avaliable date of ", data.symbol, "is", start_date)
+            return False
         return True
 
     async def _download_instrument_data(
