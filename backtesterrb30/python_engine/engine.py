@@ -16,6 +16,7 @@ from backtesterrb30.libs.interfaces.python_engine.price_event import PriceEvent
 from backtesterrb30.libs.interfaces.utils.config import Config
 from backtesterrb30.libs.interfaces.utils.data_schema import DataSchema
 from backtesterrb30.libs.interfaces.utils.data_symbol import DataSymbol
+from backtesterrb30.libs.utils.hash import hash_value
 from backtesterrb30.libs.utils.json_serializable import JSONSerializable
 from backtesterrb30.libs.utils.list_of_services import SERVICES
 from backtesterrb30.libs.utils.module_loaders import (
@@ -41,6 +42,7 @@ class Engine(Service):
             self.__loop = asyncio.get_event_loop()
             self.__custom_event_loop = True
         self.__data_schema: DataSchema = data_schema
+        self.__original_data_schema = data_schema.copy(deep=True)
         self.__columns = ["timestamp"] + [c.symbol for c in self.__data_schema.data]
         self.__data_buffer = [[] for col in self.__columns]
         for sym, arr in zip(self.__data_schema.data, self.__data_buffer[1:]):
@@ -82,6 +84,16 @@ class Engine(Service):
         :rtype: DataSchema
         """
         return self.__data_schema
+
+    def get_configuration_hash(self) -> str:
+        """
+        Returns hash of configuration. Hash is generated based on data schema
+        provided in `Data` class
+
+        :return: hash of configuration
+        :rtype: str
+        """
+        return hash_value(str(self.__original_data_schema))
 
     def get_data_symbol_by_custom_name(self, custom_name: str) -> DataSymbol:
         """
