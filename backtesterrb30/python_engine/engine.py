@@ -85,6 +85,17 @@ class Engine(Service):
         """
         return self.__data_schema
 
+    def get_original_data_schema(self) -> DataSchema:
+        """
+        Returns data_schema defined in your strategy files in `data_schema.py`
+        Data schema contains list of :class:`DataSymbol` objects. In every :class:`DataSymbol` object,
+        you can use `get_buffer()` function to get current buffer connected to this symbol.
+
+        :return: :class:`DataSchema` object combined with this strategy.
+        :rtype: DataSchema
+        """
+        return self.__original_data_schema
+
     def get_configuration_hash(self) -> str:
         """
         Returns hash of configuration. Hash is generated based on data schema
