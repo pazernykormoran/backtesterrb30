@@ -44,7 +44,7 @@ class Engine(Service):
         self.__data_schema: DataSchema = data_schema
         self.__original_data_schema = data_schema.copy(deep=True)
         self.__columns = ["timestamp"] + [c.symbol for c in self.__data_schema.data]
-        self.__data_buffer = [[] for col in self.__columns]
+        self.__data_buffer = []
         for sym, arr in zip(self.__data_schema.data, self.__data_buffer[1:]):
             sym.additional_properties["buffer"] = arr
             sym.additional_properties["price_events"] = []
@@ -344,12 +344,12 @@ class Engine(Service):
     # COMMANDS
 
     async def __data_feed_event(self, new_data_row):
-        for i, v in enumerate(new_data_row):
-            self.__data_buffer[i].append(v)
-        if len(self.__data_buffer[0]) > self.__buffer_length:
-            for i, v in enumerate(new_data_row):
-                self.__data_buffer[i].pop(0)
-        if len(self.__data_buffer[0]) >= self.__buffer_length:
+        if len(new_data_row) != len(self.__columns):
+            raise Exception("Data row has different length than columns")
+        self.__data_buffer.append(new_data_row)
+        if len(self.__data_buffer) > self.__buffer_length:
+            self.__data_buffer.pop(0)
+        if len(self.__data_buffer) >= self.__buffer_length:
             await self.on_feed(self.__data_buffer)
             if self.__send_breakpoint_after_feed:
                 await self.__send_debug_breakpoint()
